@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"io.h": "c",
+			"usart.h": "c",
+			"array": "c",
+			"string": "c",
+			"string_view": "c",
+			"max7219.h": "c",
+			"setbaud.h": "c",
+			"*.tcc": "c",
+			"main.h": "c",
+			"util.h": "c",
+			"delay.h": "c",
+			"device.h": "c",
+			"stdio.h": "c",
+			"pgmspace.h": "c",
+			"iom328p.h": "c",
+			"iom329.h": "c",
+			"stdlib.h": "c"
+		}
+	}
+}
