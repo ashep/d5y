@@ -1,4 +1,2 @@
-.idea
-/build
-/cmake-build-*
-/lib
+*.code-workspace
+/src/avr/build
