@@ -1,6 +1,3 @@
-[submodule "lib/ESP8266_RTOS_SDK"]
-	path = lib/ESP8266_RTOS_SDK
-	url = https://github.com/espressif/ESP8266_RTOS_SDK.git
 [submodule "lib/ashep-avr"]
 	path = lib/ashep-avr
 	url = https://github.com/ashep/avr-lib

@@ -1,2 +1,4 @@
 *.code-workspace
 /src/avr/build
+/src/esp8266/build
+/src/esp8266/sdkconfig.old

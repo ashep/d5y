@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "make",
+			"command": "make",
+			"options": {
+				"cwd": "${workspaceFolder}/src/esp8266"
+			},
+			"group": "build"
+		},
+		{
+			"type": "shell",
+			"label": "make flash",
+			"command": "make flash",
+			"options": {
+				"cwd": "${workspaceFolder}/src/esp8266"
+			},
+			"group": "build"
+		}
+	]
+}
