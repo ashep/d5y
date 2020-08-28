@@ -23,6 +23,7 @@
             ],
             "includePath": [
                 "./src/esp8266",
+                "./src/esp8266/main/include",
                 "${IDF_PATH}/components/newlib/newlib/include",
                 "${IDF_PATH}/components/newlib/newlib/port/include",
                 "${IDF_PATH}/components/freertos/include",
@@ -41,7 +42,11 @@
                 "${IDF_PATH}/components/lwip/port/esp8266/include",
                 "${IDF_PATH}/components/tcpip_adapter/include",
                 "${IDF_PATH}/components/lwip/include/apps/",
-                "${IDF_PATH}/components/lwip/include/apps/sntp"
+                "${IDF_PATH}/components/lwip/include/apps/sntp",
+                "${IDF_PATH}/components/http_parser/include/",
+                "${IDF_PATH}/components/esp_http_client/include",
+                "${IDF_PATH}/components/esp_http_server/include",
+                "${IDF_PATH}/components/nvs_flash/include"
             ],
             "compilerPath": "${ESP_TOOLCHAIN}/bin/xtensa-lx106-elf-gcc"
         }
