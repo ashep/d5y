@@ -5,8 +5,9 @@
 #define WIFI_AP_PASS "cronus20"
 #define WIFI_AP_MAX_STA_CONN 1
 
-void init_wifi();
-void init();
+// static const char *APP_TAG = "cronus";
+#define APP_TAG "cronus"
+
 void app_main();
 
 #endif
