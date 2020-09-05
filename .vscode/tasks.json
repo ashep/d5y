@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "make",
+			"label": "ESP8266: make",
 			"command": "make",
 			"options": {
 				"cwd": "${workspaceFolder}/src/esp8266"
@@ -12,8 +12,17 @@
 		},
 		{
 			"type": "shell",
-			"label": "make flash",
+			"label": "ESP8266: make flash",
 			"command": "make flash",
+			"options": {
+				"cwd": "${workspaceFolder}/src/esp8266"
+			},
+			"group": "build"
+		},
+		{
+			"type": "shell",
+			"label": "ESP8266: make flash monitor",
+			"command": "make flash monitor",
 			"options": {
 				"cwd": "${workspaceFolder}/src/esp8266"
 			},

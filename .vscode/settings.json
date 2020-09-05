@@ -1,0 +1,14 @@
+{
+    "restructuredtext.confPath": "",
+    "cSpell.ignoreWords": [
+        "esp",
+        "esp logd",
+        "esp logw",
+        "logd",
+        "logi",
+        "logw",
+        "ssid",
+        "wifi"
+    ],
+    "editor.cursorBlinking": "phase"
+}
