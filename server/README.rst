@@ -1,15 +1,15 @@
 Cronus Server
 =============
 
-Local development server
-------------------------
+Development
+-----------
 
 .. sourcecode:: shell
 
     docker-compose -f docker-compose-dev.yml up --build
 
 
-Deployment
+Production
 ----------
 
 .. sourcecode:: shell

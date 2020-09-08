@@ -4,8 +4,6 @@ Cronus
 Hardware
 --------
 
-AVR firmware
-------------
 
 ESP8266 firmware
 ----------------
@@ -16,7 +14,14 @@ ESP8266 firmware
 4. Point the ``ESP_TOOLCHAIN`` env variable to the ESP toolchain location.
 5. Setup the connection between your ESP8266 and computer.
 6. Switch your ESP8266 to firmware upload mode.
-7. ``cd src/esp8266 && make flash``.
+7. ``cd src/esp && make flash``.
+
+
+Server
+------
+
+See ``server``'s directory readme.
+
 
 
 .. _ESP8266 RTOS SDK: https://github.com/espressif/ESP8266_RTOS_SDK
