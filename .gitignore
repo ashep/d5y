@@ -1,5 +1,6 @@
-,idea
 *.code-workspace
-/avr/build
+.idea
+__pycache__
 /esp/build
 /esp/sdkconfig.old
+/server/env
