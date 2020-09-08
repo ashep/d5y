@@ -2,4 +2,4 @@
 *.code-workspace
 /avr/build
 /esp/build
-/espsdkconfig.old
+/esp/sdkconfig.old
