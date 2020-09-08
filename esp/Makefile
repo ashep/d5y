@@ -3,6 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := cronus
+PROJECT_NAME = cronus
+EXTRA_COMPONENT_DIRS := ${AESPL_PATH}/components
 
 include $(IDF_PATH)/make/project.mk

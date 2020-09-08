@@ -6,7 +6,7 @@
 			"label": "ESP8266: make",
 			"command": "make",
 			"options": {
-				"cwd": "${workspaceFolder}/src/esp8266"
+				"cwd": "${workspaceFolder}/esp"
 			},
 			"group": "build"
 		},
@@ -15,7 +15,7 @@
 			"label": "ESP8266: make flash",
 			"command": "make flash",
 			"options": {
-				"cwd": "${workspaceFolder}/src/esp8266"
+				"cwd": "${workspaceFolder}/esp"
 			},
 			"group": "build"
 		},
@@ -24,7 +24,7 @@
 			"label": "ESP8266: make flash monitor",
 			"command": "make flash monitor",
 			"options": {
-				"cwd": "${workspaceFolder}/src/esp8266"
+				"cwd": "${workspaceFolder}/esp"
 			},
 			"group": "build"
 		}

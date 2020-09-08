@@ -1,4 +1,5 @@
+,idea
 *.code-workspace
-/src/avr/build
-/src/esp8266/build
-/src/esp8266/sdkconfig.old
+/avr/build
+/esp/build
+/espsdkconfig.old

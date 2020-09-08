@@ -47,7 +47,7 @@
                 "/usr/avr/include",
                 "${AESPL_PATH}/**",
                 "${AAVRL_PATH}/**",
-                "${workspaceFolder}/src/**"
+                "${workspaceFolder}/esp/**"
             ],
             "compilerPath": "${ESP_TOOLCHAIN}/bin/xtensa-lx106-elf-gcc"
         }

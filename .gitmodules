@@ -1,6 +1,3 @@
-[submodule "lib/aavrl"]
-	path = lib/aavrl
-	url = https://github.com/ashep/aavrl
-[submodule "lib/aespl"]
-	path = lib/aespl
+[submodule "aespl"]
+	path = esp/lib/aespl
 	url = https://github.com/ashep/aespl.git
