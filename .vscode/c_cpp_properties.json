@@ -44,9 +44,7 @@
                 "${IDF_PATH}/components/http_parser/include",
                 "${IDF_PATH}/components/esp_http_client/lib/include",
                 "${IDF_PATH}/components/esp_http_server/include",
-                "/usr/avr/include",
                 "${AESPL_PATH}/**",
-                "${AAVRL_PATH}/**",
                 "${workspaceFolder}/esp/**"
             ],
             "compilerPath": "${ESP_TOOLCHAIN}/bin/xtensa-lx106-elf-gcc"

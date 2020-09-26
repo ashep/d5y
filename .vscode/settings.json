@@ -4,6 +4,7 @@
         "esp",
         "esp logd",
         "esp logw",
+        "gpio",
         "logd",
         "logi",
         "logw",
