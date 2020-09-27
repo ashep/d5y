@@ -15,6 +15,7 @@
 #include "driver/gpio.h"
 #include "aespl_button.h"
 #include "aespl_httpd.h"
+#include "aespl_ds3231.h"
 #include "aespl_gfx.h"
 #include "aespl_max7219.h"
 #include "aespl_max7219_matrix.h"
@@ -28,15 +29,27 @@ typedef enum {
 #endif
 
 #ifndef APP_SHOW_TIME_DURATION
-#define APP_SHOW_TIME_DURATION 50
+#define APP_SHOW_TIME_DURATION 50  // seconds
 #endif
 
 #ifndef APP_SHOW_DATE_DURATION
-#define APP_SHOW_DATE_DURATION 5
+#define APP_SHOW_DATE_DURATION 5  // seconds
+#endif
+
+#ifndef APP_SHOW_AMBIENT_TEMP_DURATION
+#define APP_SHOW_AMBIENT_TEMP_DURATION 5  // seconds
 #endif
 
 #ifndef APP_SHOW_WEATHER_TEMP_DURATION
-#define APP_SHOW_WEATHER_TEMP_DURATION 5
+#define APP_SHOW_WEATHER_TEMP_DURATION 5  // seconds
+#endif
+
+#ifndef APP_NET_UPDATE_TIME_INETRVAL
+#define APP_NET_UPDATE_TIME_INETRVAL 12  // hours
+#endif
+
+#ifndef APP_NET_UPDATE_WEATHER_INETRVAL
+#define APP_NET_UPDATE_WEATHER_INETRVAL 1  // hours
 #endif
 
 #ifndef APP_API_URL_TIME
@@ -83,6 +96,26 @@ typedef enum {
 #define APP_BTN_B_MODE AESPL_BUTTON_PRESS_LOW
 #endif
 
+#ifndef APP_DS3231_SDA_PIN
+#define APP_DS3231_SDA_PIN GPIO_NUM_4
+#endif
+
+#ifndef APP_DS3231_SDA_PULLUP
+#define APP_DS3231_SDA_PULLUP GPIO_PULLUP_DISABLE
+#endif
+
+#ifndef APP_DS3231_SCL_PIN
+#define APP_DS3231_SCL_PIN GPIO_NUM_5
+#endif
+
+#ifndef APP_DS3231_SCL_PULLUP
+#define APP_DS3231_SCL_PULLUP GPIO_PULLUP_DISABLE
+#endif
+
+#ifndef APP_DS3231_TIMEOUT
+#define APP_DS3231_TIMEOUT 100  // milliseconds
+#endif
+
 #ifndef APP_SCREEN_REFRESH_RATE
 #define APP_SCREEN_REFRESH_RATE 100  // milliseconds
 #endif
@@ -111,10 +144,15 @@ typedef enum {
 #define APP_MAX7219_DISP_Y 1
 #endif
 
+#define APP_SECOND 1000
+#define APP_MINUTE APP_SECOND * 60
+#define APP_HOUR APP_MINUTE * 60
+
 typedef enum {
     APP_MODE_SHOW_MIN,
     APP_MODE_SHOW_TIME,
     APP_MODE_SHOW_DATE,
+    APP_MODE_SHOW_AMBIENT_TEMP,
     APP_MODE_SHOW_WEATHER_TEMP,
     APP_MODE_SHOW_MAX,
     APP_MODE_SETTINGS_MIN,
@@ -131,7 +169,7 @@ typedef struct {
     uint16_t year;
     uint8_t month;
     uint8_t day;
-    uint8_t wday;
+    uint8_t dow;
     uint8_t hour;
     uint8_t minute;
     uint8_t second;
@@ -140,6 +178,7 @@ typedef struct {
 } app_date_time_t;
 
 typedef struct {
+    bool update_ok;
     double temp;
 } app_weather_t;
 
@@ -152,6 +191,7 @@ typedef struct {
     aespl_httpd_t httpd;
     aespl_button_t btn_a;
     aespl_button_t btn_b;
+    aespl_ds3231_t ds3231;
     aespl_gfx_buf_t gfx_buf;
     aespl_max7219_config_t max7219;
     aespl_max7219_matrix_config_t max7219_matrix;
@@ -159,8 +199,9 @@ typedef struct {
 
 void app_main();
 esp_err_t cronus_net_init();
+esp_err_t app_keyboard_init(app_t *app);
+esp_err_t app_rtc_init(app_t *app);
 esp_err_t app_display_init(app_t *app);
-esp_err_t app_buttons_init(app_t *app);
 esp_err_t app_net_init(app_t *app);
 
 #endif

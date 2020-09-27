@@ -18,10 +18,14 @@ static void btn_a_l_press(void *args) {
 }
 
 static void switch_show_mode(app_t *app) {
-    if (app->mode + 1 == APP_MODE_SHOW_MAX) {
-        app->mode = APP_MODE_SHOW_MIN + 1;
-    } else {
+    app->mode++;
+
+    if (app->mode == APP_MODE_SHOW_WEATHER_TEMP && !app->weather.update_ok) {
         app->mode++;
+    }
+
+    if (app->mode == APP_MODE_SHOW_MAX) {
+        app->mode = APP_MODE_SHOW_MIN + 1;
     }
 
     ets_printf("Show mode switched: %d\n", app->mode);
@@ -90,13 +94,13 @@ static void show_mode_switcher(void *args) {
 
     for (;;) {
         if (app->mode == APP_MODE_SHOW_TIME) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION * 1000));
-        }
-        else if (app->mode == APP_MODE_SHOW_DATE) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * 1000));
-        }
-        else if (app->mode == APP_MODE_SHOW_WEATHER_TEMP) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION * 1000));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION * APP_SECOND));
+        } else if (app->mode == APP_MODE_SHOW_DATE) {
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
+        } else if (app->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION * APP_SECOND));
+        } else if (app->mode == APP_MODE_SHOW_WEATHER_TEMP) {
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION * APP_SECOND));
         }
         switch_show_mode(app);
     }
@@ -104,7 +108,7 @@ static void show_mode_switcher(void *args) {
     vTaskDelete(NULL);
 }
 
-esp_err_t app_buttons_init(app_t *app) {
+esp_err_t app_keyboard_init(app_t *app) {
     esp_err_t err;
 
     // Init

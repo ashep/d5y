@@ -19,55 +19,68 @@
 #include "aespl_http_client.h"
 #include "app_main.h"
 
-static void fetch_data(app_t *app, const char *url) {
+static esp_err_t fetch_data(app_t *app, const char *url) {
     aespl_http_response resp;
     http_header_handle_t hdr = http_header_init();
 
+    // Make request
     esp_err_t err = aespl_http_client_get_json(&resp, url, hdr);
     if (err) {
         aespl_http_client_free(&resp);
         ESP_LOGE(APP_NAME, "error while requesting %s: %d", url, err);
-        return;
+        return ESP_FAIL;
     }
 
+    // Check response status
     if (resp.status_code != 200) {
         aespl_http_client_free(&resp);
         ESP_LOGE(APP_NAME, "error while requesting %s, status %d", url, resp.status_code);
-        return;
+        return ESP_FAIL;
     }
 
-    ESP_LOGD(APP_NAME, "request OK: %s", url);
-
+    // Lock
     if (xSemaphoreTake(app->mux, (TickType_t)10) != pdTRUE) {
         aespl_http_client_free(&resp);
-        ESP_LOGE(APP_NAME, "error while taking semaphore");
-        return;
+        ESP_LOGE(APP_NAME, "error while locking");
+        return ESP_FAIL;
     }
 
     if (strcmp(url, APP_API_URL_TIME) == 0) {
-        app->time.year = cJSON_GetObjectItem(resp.json, "year")->valueint;
-        app->time.month = cJSON_GetObjectItem(resp.json, "month")->valueint;
-        app->time.day = cJSON_GetObjectItem(resp.json, "day")->valueint;
-        app->time.wday = cJSON_GetObjectItem(resp.json, "wday")->valueint;
-        app->time.hour = cJSON_GetObjectItem(resp.json, "hour")->valueint;
-        app->time.minute = cJSON_GetObjectItem(resp.json, "min")->valueint;
-        app->time.second = cJSON_GetObjectItem(resp.json, "sec")->valueint;
+        app->ds3231.sec = cJSON_GetObjectItem(resp.json, "sec")->valueint;
+        app->ds3231.min = cJSON_GetObjectItem(resp.json, "min")->valueint;
+        app->ds3231.hour = cJSON_GetObjectItem(resp.json, "hour")->valueint;
+        app->ds3231.dow = cJSON_GetObjectItem(resp.json, "dow")->valueint;
+        app->ds3231.day = cJSON_GetObjectItem(resp.json, "day")->valueint;
+        app->ds3231.mon = cJSON_GetObjectItem(resp.json, "month")->valueint;
+        app->ds3231.year = cJSON_GetObjectItem(resp.json, "year")->valueint;
+        aespl_ds3231_set_data(&app->ds3231, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
     } else if (strcmp(url, APP_API_URL_WEATHER) == 0) {
         app->weather.temp = cJSON_GetObjectItem(resp.json, "the_temp")->valuedouble;
     }
 
-    xSemaphoreGive(app->mux);
-
+    // Free HTTP client resources
     aespl_http_client_free(&resp);
+
+    // Unlock
+    if (xSemaphoreGive(app->mux) != pdTRUE) {
+        ESP_LOGE(APP_NAME, "error while unlocking");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
 }
 
 static void time_fetcher(void *args) {
     app_t *app = (app_t *)args;
 
     for (;;) {
-        fetch_data(app, APP_API_URL_TIME);
-        // vTaskDelay(pdMS_TO_TICKS(3600000)); // 60 minutes
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        if (fetch_data(app, APP_API_URL_TIME) == ESP_OK) {
+            ESP_LOGD(APP_NAME, "network time updated");
+            vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INETRVAL * APP_HOUR));
+        } else {
+            ESP_LOGE(APP_NAME, "network time update failed");
+            vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 10));
+        }
     }
 
     vTaskDelete(NULL);
@@ -77,9 +90,15 @@ static void weather_fetcher(void *args) {
     app_t *app = (app_t *)args;
 
     for (;;) {
-        fetch_data(app, APP_API_URL_WEATHER);
-        // vTaskDelay(pdMS_TO_TICKS(1800000)); // 30 minutes
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        if (fetch_data(app, APP_API_URL_WEATHER) == ESP_OK) {
+            app->weather.update_ok = true;
+            ESP_LOGD(APP_NAME, "network weather updated");
+            vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_WEATHER_INETRVAL * APP_HOUR));
+        } else {
+            app->weather.update_ok = false;
+            ESP_LOGE(APP_NAME, "network weather update failed");
+            vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 10));
+        }
     }
 
     vTaskDelete(NULL);
