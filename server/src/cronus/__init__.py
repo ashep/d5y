@@ -17,10 +17,10 @@ async def root(request: Request) -> dict:
     ip_info = get_ip_address_info(request.headers.get("x-forwarded-for", request.client.host))
     now = datetime.now(timezone(ip_info.get("time_zone", "UTC") or "UTC"))
     return {
-        "year": now.year,
+        "year": now.year - 2000,
         "month": now.month,
         "day": now.day,
-        "wday": now.weekday(),
+        "dow": now.weekday(),
         "hour": now.hour,
         "min": now.minute,
         "sec": now.second,

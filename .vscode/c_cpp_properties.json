@@ -24,6 +24,7 @@
             "includePath": [
                 "${IDF_PATH}/components/json/cJSON",
                 "${IDF_PATH}/components/freertos/include",
+                "${IDF_PATH}/components/freertos/include/freertos",
                 "${IDF_PATH}/components/freertos/include/freertos/private",
                 "${IDF_PATH}/components/freertos/port/esp8266/include",
                 "${IDF_PATH}/components/freertos/port/esp8266/include/freertos",
