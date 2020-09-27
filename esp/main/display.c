@@ -23,19 +23,12 @@
  * @brief Draws current time on the screen
  */
 static esp_err_t draw_time(app_t *app) {
-    if (xSemaphoreTake(app->mux, (TickType_t)10) != pdTRUE) {
-        ESP_LOGE(APP_NAME, "error while taking semaphore");
-        return ESP_FAIL;
-    }
-
     char *s = malloc(9);  // "XX:XX:XX\0"
     if (app->time.sep) {
         sprintf(s, "%02d:%02d", app->time.hour, app->time.minute);
     } else {
         sprintf(s, "%02d %02d", app->time.hour, app->time.minute);
     }
-
-    xSemaphoreGive(app->mux);
 
     aespl_gfx_point_t pos = {1, 0};
     aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
@@ -48,43 +41,34 @@ static esp_err_t draw_time(app_t *app) {
 /**
  * @brief Draws current date on the screen
  */
-static esp_err_t draw_date(app_t *app) {
-    if (xSemaphoreTake(app->mux, (TickType_t)10) != pdTRUE) {
-        ESP_LOGE(APP_NAME, "error while taking semaphore");
-        return ESP_FAIL;
-    }
-
+static void draw_date(app_t *app) {
     char *s = malloc(11);  // "XX.XX.XXXX\0"
-    sprintf(s, "%02d/%02d", app->time.day, app->time.month);
-    xSemaphoreGive(app->mux);
-
-    aespl_gfx_point_t pos = {0, 0};
+    sprintf(s, "%02d.%02d", app->time.day, app->time.month);
+    aespl_gfx_point_t pos = {1, 0};
     aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
-
     free(s);
-
-    return ESP_OK;
 }
 
 /**
- * @brief Draws current temperature on the screen
+ * @brief Draws ambient temperature
  */
-static esp_err_t draw_temp(app_t *app) {
-    if (xSemaphoreTake(app->mux, (TickType_t)10) != pdTRUE) {
-        ESP_LOGE(APP_NAME, "error while taking semaphore");
-        return ESP_FAIL;
-    }
-
+static void draw_ambient_temp(app_t *app) {
     char *s = malloc(11);  // "-XX\0"
-    sprintf(s, "%d,", (int)round(app->weather.temp));
-    xSemaphoreGive(app->mux);
-
+    sprintf(s, "%d,", (int)round(app->ds3231.temp - 1));
     aespl_gfx_point_t pos = {0, 0};
     aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
-
     free(s);
+}
 
-    return ESP_OK;
+/**
+ * @brief Draws current weather temperature
+ */
+static void draw_weather_temp(app_t *app) {
+    char *s = malloc(11);  // "-XX\0"
+    sprintf(s, "%d,", (int)round(app->weather.temp));
+    aespl_gfx_point_t pos = {0, 0};
+    aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
+    free(s);
 }
 
 /**
@@ -114,8 +98,11 @@ static void refresh(void *args) {
             case APP_MODE_SHOW_DATE:
                 draw_date(app);
                 break;
+            case APP_MODE_SHOW_AMBIENT_TEMP:
+                draw_ambient_temp(app);
+                break;
             case APP_MODE_SHOW_WEATHER_TEMP:
-                draw_temp(app);
+                draw_weather_temp(app);
                 break;
             case APP_MODE_SETTINGS_TIME_HOUR:
                 // TODO
