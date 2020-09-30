@@ -9,6 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "driver/adc.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "aespl_gfx.h"
@@ -54,7 +55,7 @@ static void draw_date(app_t *app) {
  */
 static void draw_ambient_temp(app_t *app) {
     char *s = malloc(11);  // "-XX\0"
-    sprintf(s, "%d,", (int)round(app->ds3231.temp - 1));
+    sprintf(s, "# %d,", (int)round(app->ds3231.temp - 2));
     aespl_gfx_point_t pos = {0, 0};
     aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
     free(s);
@@ -65,7 +66,7 @@ static void draw_ambient_temp(app_t *app) {
  */
 static void draw_weather_temp(app_t *app) {
     char *s = malloc(11);  // "-XX\0"
-    sprintf(s, "%d,", (int)round(app->weather.temp));
+    sprintf(s, "! %d,", (int)round(app->weather.temp));
     aespl_gfx_point_t pos = {0, 0};
     aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
     free(s);
@@ -141,7 +142,28 @@ static void refresh(void *args) {
     vTaskDelete(NULL);
 }
 
+static void brightness_regulator(void *args) {
+    app_t *app = (app_t *)args;
+    uint16_t data = 0;
+
+    for (;;) {
+        adc_read(&data);
+
+        int8_t intensity = data / 64 - 1;
+        if (intensity < 0) {
+            intensity = 0;
+        }
+
+        aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    vTaskDelete(NULL);
+}
+
 esp_err_t app_display_init(app_t *app) {
+    esp_err_t err;
+
     switch (APP_DISPLAY_DRIVER) {
         case APP_DISPLAY_MAX7219:
             aespl_gfx_init_buf(&app->gfx_buf, APP_MAX7219_DISP_X * 8, APP_MAX7219_DISP_Y * 8, AESPL_GFX_CMODE_MONO);
@@ -156,7 +178,16 @@ esp_err_t app_display_init(app_t *app) {
             break;
     }
 
+    adc_config_t adc = {
+        .mode = ADC_READ_TOUT_MODE,
+    };
+    err = adc_init(&adc);
+    if (err) {
+        return err;
+    }
+
     xTaskCreate(refresh, "display_refresh", 4096, (void *)app, 0, NULL);
+    xTaskCreate(brightness_regulator, "brightness_regulator", 4096, (void *)app, 0, NULL);
 
     ESP_LOGD(APP_NAME, "display initialized");
 
