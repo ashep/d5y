@@ -61,7 +61,7 @@ typedef enum {
 #endif
 
 #ifndef APP_API_TIME_REFRESH_PERIOD
-#define APP_API_TIME_REFRESH_PERIOD 3600
+#define APP_API_TIME_REFRESH_PERIOD 3600  // seconds
 #endif
 
 #ifndef APP_WIFI_STA_HOSTNAME
@@ -117,7 +117,7 @@ typedef enum {
 #endif
 
 #ifndef APP_SCREEN_REFRESH_RATE
-#define APP_SCREEN_REFRESH_RATE 100  // milliseconds
+#define APP_SCREEN_REFRESH_RATE 250  // milliseconds
 #endif
 
 #ifndef APP_DISPLAY_DRIVER
@@ -158,10 +158,10 @@ typedef enum {
     APP_MODE_SETTINGS_MIN,
     APP_MODE_SETTINGS_TIME_HOUR,
     APP_MODE_SETTINGS_TIME_MINUTE,
-    APP_MODE_SETTINGS_DATE_YEAR,
-    APP_MODE_SETTINGS_DATE_MONTH,
     APP_MODE_SETTINGS_DATE_DAY,
+    APP_MODE_SETTINGS_DATE_MONTH,
     APP_MODE_SETTINGS_DATE_DOW,
+    APP_MODE_SETTINGS_DATE_YEAR,
     APP_MODE_SETTINGS_MAX,
 } app_mode_t;
 
@@ -173,8 +173,10 @@ typedef struct {
     uint8_t hour;
     uint8_t minute;
     uint8_t second;
+    uint8_t al_hour;
+    uint8_t al_minute;
     bool sep;
-    uint8_t sep_cnt;
+    bool al_enabled;
 } app_date_time_t;
 
 typedef struct {
@@ -185,6 +187,8 @@ typedef struct {
 typedef struct {
     SemaphoreHandle_t mux;
     TimerHandle_t show_mode_timer;
+    uint16_t display_refresh_cnt;
+    uint16_t display_refresh_cnt_max;
     app_mode_t mode;
     app_date_time_t time;
     app_weather_t weather;
@@ -203,5 +207,11 @@ esp_err_t app_keyboard_init(app_t *app);
 esp_err_t app_rtc_init(app_t *app);
 esp_err_t app_display_init(app_t *app);
 esp_err_t app_net_init(app_t *app);
+
+/**
+ * @brief     Updates RTC time and date from `app->time`
+ * @param app Application
+ */
+esp_err_t app_rtc_update_from_local(app_t *app);
 
 #endif
