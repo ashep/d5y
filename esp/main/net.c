@@ -21,10 +21,9 @@
 
 static esp_err_t fetch_data(app_t *app, const char *url) {
     aespl_http_response resp;
-    http_header_handle_t hdr = http_header_init();
 
     // Make request
-    esp_err_t err = aespl_http_client_get_json(&resp, url, hdr);
+    esp_err_t err = aespl_http_client_get_json(&resp, url, NULL);
     if (err) {
         aespl_http_client_free(&resp);
         ESP_LOGE(APP_NAME, "error while requesting %s: %d", url, err);
@@ -45,6 +44,7 @@ static esp_err_t fetch_data(app_t *app, const char *url) {
         return ESP_FAIL;
     }
 
+    // Update RTC
     if (strcmp(url, APP_API_URL_TIME) == 0) {
         app->ds3231.sec = cJSON_GetObjectItem(resp.json, "sec")->valueint;
         app->ds3231.min = cJSON_GetObjectItem(resp.json, "min")->valueint;

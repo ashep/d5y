@@ -24,8 +24,6 @@ static app_t app = {
 };
 
 void app_main() {
-    esp_log_level_set(APP_NAME, ESP_LOG_NONE);
-
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER));

@@ -23,31 +23,120 @@
 /**
  * @brief Draws current time on the screen
  */
-static esp_err_t draw_time(app_t *app) {
-    char *s = malloc(9);  // "XX:XX:XX\0"
-    if (app->time.sep) {
-        sprintf(s, "%02d:%02d", app->time.hour, app->time.minute);
-    } else {
-        sprintf(s, "%02d %02d", app->time.hour, app->time.minute);
+static void draw_time(app_t *app) {
+    aespl_gfx_point_t pos = {0, 0};
+    char *s = malloc(3);
+
+    // Prepare buffers:
+    // 2-digit hour * 6px + 1px whitespace: 13px
+    // 2-digit minute * 6px + 1px whitespace: 13px
+    // separator: 2px
+    aespl_gfx_buf_t buf_h;
+    aespl_gfx_init_buf(&buf_h, 13, 8, AESPL_GFX_CMODE_MONO);
+    aespl_gfx_buf_t buf_m;
+    aespl_gfx_init_buf(&buf_m, 13, 8, AESPL_GFX_CMODE_MONO);
+    aespl_gfx_buf_t buf_sep;
+    aespl_gfx_init_buf(&buf_sep, 2, 8, AESPL_GFX_CMODE_MONO);
+
+    // Draw hour
+    sprintf(s, "%02d", app->time.hour);
+    pos.x = 0;
+    aespl_gfx_puts(&buf_h, &font8_clock_2, &pos, s, 1, 1);
+
+    // Draw minute
+    sprintf(s, "%02d", app->time.minute);
+    pos.x = 0;
+    aespl_gfx_puts(&buf_m, &font8_clock_2, &pos, s, 1, 1);
+
+    // Draw separator
+    aespl_gfx_set_px(&buf_sep, 0, 2, 1);
+    aespl_gfx_set_px(&buf_sep, 1, 2, 1);
+    aespl_gfx_set_px(&buf_sep, 0, 5, 1);
+    aespl_gfx_set_px(&buf_sep, 1, 5, 1);
+    if (!app->time.al_enabled) {
+        aespl_gfx_set_px(&buf_sep, 0, 6, 1);
+        aespl_gfx_set_px(&buf_sep, 1, 6, 1);
     }
 
-    aespl_gfx_point_t pos = {1, 0};
-    aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
+    // Hour blink
+    if (app->mode == APP_MODE_SETTINGS_TIME_HOUR && !app->time.sep) {
+        aespl_gfx_clear(&buf_h);
+    }
 
+    // Minute blink
+    if (app->mode == APP_MODE_SETTINGS_TIME_MINUTE && !app->time.sep) {
+        aespl_gfx_clear(&buf_m);
+    }
+
+    // Separator blink
+    if (app->mode < APP_MODE_SHOW_MAX && !app->time.sep) {
+        aespl_gfx_clear(&buf_sep);
+    }
+
+    // Merge buffers
+    aespl_gfx_merge(&app->gfx_buf, &buf_h, (aespl_gfx_point_t){0, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(&app->gfx_buf, &buf_sep, (aespl_gfx_point_t){15, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(&app->gfx_buf, &buf_m, (aespl_gfx_point_t){19, 0}, (aespl_gfx_point_t){0, 0});
+
+    // Cleanup
     free(s);
-
-    return ESP_OK;
+    aespl_gfx_free_buf(&buf_h);
+    aespl_gfx_free_buf(&buf_m);
+    aespl_gfx_free_buf(&buf_sep);
 }
 
 /**
  * @brief Draws current date on the screen
  */
 static void draw_date(app_t *app) {
-    char *s = malloc(11);  // "XX.XX.XXXX\0"
-    sprintf(s, "%02d.%02d", app->time.day, app->time.month);
-    aespl_gfx_point_t pos = {1, 0};
-    aespl_gfx_puts(&app->gfx_buf, &font8_clock_2, &pos, s, 1, 1);
+    aespl_gfx_point_t pos = {0, 0};
+    char *s = malloc(3);
+
+    // Prepare buffers:
+    // 2-digit day * 6px + 1px whitespace: 13px
+    // 2-digit month * 6px + 1px whitespace: 13px
+    // separator: 2px
+    aespl_gfx_buf_t buf_d;
+    aespl_gfx_init_buf(&buf_d, 13, 8, AESPL_GFX_CMODE_MONO);
+    aespl_gfx_buf_t buf_m;
+    aespl_gfx_init_buf(&buf_m, 13, 8, AESPL_GFX_CMODE_MONO);
+    aespl_gfx_buf_t buf_sep;
+    aespl_gfx_init_buf(&buf_sep, 2, 8, AESPL_GFX_CMODE_MONO);
+
+    // Draw day
+    sprintf(s, "%02d", app->time.day);
+    pos.x = 0;
+    aespl_gfx_puts(&buf_d, &font8_clock_2, &pos, s, 1, 1);
+
+    // Draw month
+    sprintf(s, "%02d", app->time.month);
+    pos.x = 0;
+    aespl_gfx_puts(&buf_m, &font8_clock_2, &pos, s, 1, 1);
+
+    // Draw separator
+    aespl_gfx_set_px(&buf_sep, 0, 7, 1);
+    aespl_gfx_set_px(&buf_sep, 1, 7, 1);
+
+    // Day blink
+    if (app->mode == APP_MODE_SETTINGS_DATE_DAY && !app->time.sep) {
+        aespl_gfx_clear(&buf_d);
+    }
+
+    // Month blink
+    if (app->mode == APP_MODE_SETTINGS_DATE_MONTH && !app->time.sep) {
+        aespl_gfx_clear(&buf_m);
+    }
+
+    // Merge buffers
+    aespl_gfx_merge(&app->gfx_buf, &buf_d, (aespl_gfx_point_t){0, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(&app->gfx_buf, &buf_sep, (aespl_gfx_point_t){15, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(&app->gfx_buf, &buf_m, (aespl_gfx_point_t){19, 0}, (aespl_gfx_point_t){0, 0});
+
+    // Cleanup
     free(s);
+    aespl_gfx_free_buf(&buf_d);
+    aespl_gfx_free_buf(&buf_m);
+    aespl_gfx_free_buf(&buf_sep);
 }
 
 /**
@@ -77,26 +166,30 @@ static void draw_weather_temp(app_t *app) {
  */
 static void refresh(void *args) {
     ESP_LOGI(APP_NAME, "display refresh task started");
-    uint8_t time_sep_max = 1000 / APP_SCREEN_REFRESH_RATE - 1;
     app_t *app = (app_t *)args;
 
     for (;;) {
         aespl_gfx_clear(&app->gfx_buf);
 
         // Update hour/minute separator state
-        app->time.sep = false;
-        if (app->time.sep_cnt++ >= time_sep_max / 2) {
-            app->time.sep = true;
+        app->time.sep = true;
+        if (app->display_refresh_cnt++ > app->display_refresh_cnt_max / 2) {
+            app->time.sep = false;
         }
-        if (app->time.sep_cnt == time_sep_max) {
-            app->time.sep_cnt = 0;
+        if (app->display_refresh_cnt > app->display_refresh_cnt_max) {
+            app->display_refresh_cnt = 0;
         }
+
 
         switch (app->mode) {
             case APP_MODE_SHOW_TIME:
+            case APP_MODE_SETTINGS_TIME_HOUR:
+            case APP_MODE_SETTINGS_TIME_MINUTE:
                 draw_time(app);
                 break;
             case APP_MODE_SHOW_DATE:
+            case APP_MODE_SETTINGS_DATE_MONTH:
+            case APP_MODE_SETTINGS_DATE_DAY:
                 draw_date(app);
                 break;
             case APP_MODE_SHOW_AMBIENT_TEMP:
@@ -105,19 +198,7 @@ static void refresh(void *args) {
             case APP_MODE_SHOW_WEATHER_TEMP:
                 draw_weather_temp(app);
                 break;
-            case APP_MODE_SETTINGS_TIME_HOUR:
-                // TODO
-                break;
-            case APP_MODE_SETTINGS_TIME_MINUTE:
-                // TODO
-                break;
             case APP_MODE_SETTINGS_DATE_YEAR:
-                // TODO
-                break;
-            case APP_MODE_SETTINGS_DATE_MONTH:
-                // TODO
-                break;
-            case APP_MODE_SETTINGS_DATE_DAY:
                 // TODO
                 break;
             case APP_MODE_SETTINGS_DATE_DOW:
@@ -154,7 +235,8 @@ static void brightness_regulator(void *args) {
             intensity = 0;
         }
 
-        aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
+        // aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
+        aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, AESPL_MAX7219_INTENSITY_MIN);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
@@ -164,6 +246,10 @@ static void brightness_regulator(void *args) {
 esp_err_t app_display_init(app_t *app) {
     esp_err_t err;
 
+    app->display_refresh_cnt = 0;
+    app->display_refresh_cnt_max = 1000 / APP_SCREEN_REFRESH_RATE - 1;
+
+    // Display driver
     switch (APP_DISPLAY_DRIVER) {
         case APP_DISPLAY_MAX7219:
             aespl_gfx_init_buf(&app->gfx_buf, APP_MAX7219_DISP_X * 8, APP_MAX7219_DISP_Y * 8, AESPL_GFX_CMODE_MONO);
@@ -178,6 +264,7 @@ esp_err_t app_display_init(app_t *app) {
             break;
     }
 
+    // ADC for ambient light measurement
     adc_config_t adc = {
         .mode = ADC_READ_TOUT_MODE,
     };
