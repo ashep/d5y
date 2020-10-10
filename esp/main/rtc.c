@@ -13,6 +13,9 @@
 #include "aespl_ds3231.h"
 #include "app_main.h"
 
+/**
+ * @brief Loads data from the RTC and propagates them into `app->time`
+ */
 static void time_reader(void *args) {
     esp_err_t err;
     app_t *app = (app_t *)args;
@@ -20,11 +23,18 @@ static void time_reader(void *args) {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
 
+        // Don't update time in settings mode
+        if (app->mode > APP_MODE_SETTINGS_MIN) {
+            continue;
+        }
+
+        // Lock
         if (xSemaphoreTake(app->mux, 10) != pdTRUE) {
             ESP_LOGE(APP_NAME, "error while locking");
             continue;
         }
 
+        // Load data from RTC
         err = aespl_ds3231_get_data(&app->ds3231, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
         if (!err) {
             app->time.second = app->ds3231.sec;
@@ -38,12 +48,43 @@ static void time_reader(void *args) {
             ESP_LOGE(APP_NAME, "aespl_ds3231_get_data() error: %d", err);
         }
 
+        // Unlock
         if (xSemaphoreGive(app->mux) != pdTRUE) {
             ESP_LOGE(APP_NAME, "error while unlocking");
         }
     }
 
     vTaskDelete(NULL);
+}
+
+esp_err_t app_rtc_update_from_local(app_t *app) {
+    esp_err_t err;
+
+    // Lock
+    if (xSemaphoreTake(app->mux, 10) != pdTRUE) {
+        ESP_LOGE(APP_NAME, "error while locking");
+        return ESP_FAIL;
+    }
+
+    app->ds3231.sec = app->time.second;
+    app->ds3231.min = app->time.minute;
+    app->ds3231.hour = app->time.hour;
+    app->ds3231.dow = app->time.dow;
+    app->ds3231.day = app->time.day;
+    app->ds3231.mon = app->time.month;
+    app->ds3231.year = app->time.year;
+
+    err = aespl_ds3231_set_data(&app->ds3231, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+    if (err) {
+        ESP_LOGE(APP_NAME, "aespl_ds3231_set_data() error: %d", err);
+    }
+
+    // Unlock
+    if (xSemaphoreGive(app->mux) != pdTRUE) {
+        ESP_LOGE(APP_NAME, "error while unlocking");
+    }
+
+    return ESP_OK;
 }
 
 esp_err_t app_rtc_init(app_t *app) {
