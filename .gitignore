@@ -1,5 +1,6 @@
 *.code-workspace
 .idea
+.vscode
 __pycache__
 /esp/build
 /esp/sdkconfig.old

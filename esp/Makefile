@@ -4,6 +4,6 @@
 #
 
 PROJECT_NAME = cronus
-EXTRA_COMPONENT_DIRS := ${AESPL_PATH}/components
+EXTRA_COMPONENT_DIRS := ${AESPL_PATH} ${AGFXL_PATH}
 
 include $(IDF_PATH)/make/project.mk
