@@ -7,7 +7,7 @@ __license__ = 'MIT'
 from requests import request
 
 
-def get_ip_address_info(ip_addr: str) -> dict:
+def get_ip_addr_info(ip_addr: str) -> dict:
     r = request("GET", f"https://freegeoip.app/json/{ip_addr}")
 
     if r.ok:
