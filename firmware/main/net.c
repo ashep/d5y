@@ -14,8 +14,9 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "http_parser.h"
+#include "aespl_spiffs.h"
 #include "aespl_httpd.h"
-#include "aespl_cfs.h"
+#include "aespl_service.h"
 #include "aespl_http_client.h"
 #include "app_main.h"
 
@@ -75,7 +76,7 @@ static void time_fetcher(void *args) {
 
     for (;;) {
         if (fetch_data(app, APP_API_URL_TIME) == ESP_OK) {
-            ESP_LOGD(APP_NAME, "network time updated");
+            ESP_LOGI(APP_NAME, "network time updated");
             vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INETRVAL * APP_HOUR));
         } else {
             ESP_LOGE(APP_NAME, "network time update failed");
@@ -92,7 +93,7 @@ static void weather_fetcher(void *args) {
     for (;;) {
         if (fetch_data(app, APP_API_URL_WEATHER) == ESP_OK) {
             app->weather.update_ok = true;
-            ESP_LOGD(APP_NAME, "network weather updated");
+            ESP_LOGI(APP_NAME, "network weather updated");
             vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_WEATHER_INETRVAL * APP_HOUR));
         } else {
             app->weather.update_ok = false;
@@ -113,7 +114,11 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
         case WIFI_EVENT_AP_START:
             ESP_LOGI(APP_NAME, "access point started");
             ESP_ERROR_CHECK(aespl_httpd_start(&app->httpd, NULL));
-            ESP_ERROR_CHECK(aespl_cfs_init(&app->httpd, NULL));
+            ESP_ERROR_CHECK(aespl_service_init(&app->httpd, NULL));
+
+            aespl_spiffs_register("storage", "");
+            aespl_httpd_handle_spiffs(&app->httpd);
+
             break;
 
         // A station connected to the access point
@@ -139,12 +144,15 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *event_data) {
     app_t *app = (app_t *)arg;
 
-    if (ev_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
+    switch (ev_id) {
+        // Station received an IP-address
+        case IP_EVENT_STA_GOT_IP:;
+            ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+            ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
 
-        xTaskCreate(time_fetcher, "time_fetcher", 4096, (void *)app, 0, NULL);
-        xTaskCreate(weather_fetcher, "weather_fetcher", 4096, (void *)app, 0, NULL);
+            xTaskCreate(time_fetcher, "time_fetcher", 4096, (void *)app, 0, NULL);
+            xTaskCreate(weather_fetcher, "weather_fetcher", 4096, (void *)app, 0, NULL);
+            break;
     }
 }
 

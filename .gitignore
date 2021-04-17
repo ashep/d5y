@@ -2,6 +2,6 @@
 .idea
 .vscode
 __pycache__
-/esp/build
-/esp/sdkconfig.old
-/server/env
+/firmware/build
+/firmware/sdkconfig.old
+/backend/env

@@ -13,16 +13,21 @@
 #include "freertos/semphr.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "agfxl.h"
 #include "aespl_button.h"
 #include "aespl_httpd.h"
 #include "aespl_ds3231.h"
-#include "aespl_gfx.h"
 #include "aespl_max7219.h"
 #include "aespl_max7219_matrix.h"
 
-typedef enum {
-    APP_DISPLAY_MAX7219,
-} app_display_t;
+/**
+ * Hardware versions
+ */
+#define APP_HW_VER_1 0x1
+
+#ifndef APP_HW_VERSION
+#define APP_HW_VERSION APP_HW_VER_1
+#endif
 
 #ifndef APP_NAME
 #define APP_NAME "cronus"
@@ -117,31 +122,21 @@ typedef enum {
 #endif
 
 #ifndef APP_SCREEN_REFRESH_RATE
-#define APP_SCREEN_REFRESH_RATE 250  // milliseconds
+#define APP_SCREEN_REFRESH_RATE 100  // milliseconds
 #endif
 
-#ifndef APP_DISPLAY_DRIVER
-#define APP_DISPLAY_DRIVER APP_DISPLAY_MAX7219
+#ifndef APP_DISPLAY_PIN_EN
+#define APP_DISPLAY_PIN_EN GPIO_NUM_0
 #endif
 
-#ifndef APP_MAX7219_PIN_CS
-#define APP_MAX7219_PIN_CS GPIO_NUM_15
-#endif
-
-#ifndef APP_MAX7219_PIN_CLK
-#define APP_MAX7219_PIN_CLK GPIO_NUM_14
-#endif
-
-#ifndef APP_MAX7219_PIN_DATA
-#define APP_MAX7219_PIN_DATA GPIO_NUM_13
-#endif
-
-#ifndef APP_MAX7219_DISP_X
-#define APP_MAX7219_DISP_X 4
-#endif
-
-#ifndef APP_MAX7219_DISP_Y
-#define APP_MAX7219_DISP_Y 1
+#if APP_HW_VERSION == APP_HW_VER_1
+    #define APP_MAX7219_DISP_X 4
+    #define APP_MAX7219_DISP_Y 1
+    #define APP_MAX7219_PIN_DATA GPIO_NUM_13
+    #define APP_MAX7219_PIN_CLK GPIO_NUM_14
+    #define APP_MAX7219_PIN_CS GPIO_NUM_15
+#else
+    #warning "Unknown hardware version"
 #endif
 
 #define APP_SECOND 1000
@@ -196,9 +191,9 @@ typedef struct {
     aespl_button_t btn_a;
     aespl_button_t btn_b;
     aespl_ds3231_t ds3231;
-    aespl_gfx_buf_t gfx_buf;
-    aespl_max7219_config_t max7219;
-    aespl_max7219_matrix_config_t max7219_matrix;
+    agfxl_buf_t *gfx_buf;
+    aespl_max7219_t max7219;
+    aespl_max7219_matrix_t max7219_matrix;
 } app_t;
 
 void app_main();

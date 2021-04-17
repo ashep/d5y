@@ -101,11 +101,11 @@ static void btn_a_release(void *args) {
             case APP_MODE_SETTINGS_DATE_MONTH:
                 inc_month(app);
                 break;
-            case APP_MODE_SETTINGS_DATE_YEAR:
-                ets_printf("YEAR+\n");
-                break;
             case APP_MODE_SETTINGS_DATE_DOW:
                 ets_printf("DOW+\n");
+                break;
+            case APP_MODE_SETTINGS_DATE_YEAR:
+                ets_printf("YEAR+\n");
                 break;
             default:
                 break;
@@ -132,9 +132,11 @@ static void btn_b_release(void *args) {
     if (app->mode > APP_MODE_SHOW_MAX) {
         app->mode++;
         if (app->mode == APP_MODE_SETTINGS_MAX) {
-            app->mode = APP_MODE_SETTINGS_TIME_HOUR;
+            app->mode = APP_MODE_SHOW_MIN + 1;
+            ets_printf("Exit settings mode: %d\n", app->mode);
+        } else {
+            ets_printf("Next settings mode: %d\n", app->mode);
         }
-        ets_printf("Next settings mode: %d\n", app->mode);
     }
 }
 

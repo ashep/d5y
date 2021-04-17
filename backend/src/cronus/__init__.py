@@ -25,7 +25,6 @@ def _get_client_ip_addr(request: Request) -> str:
 @app.get('/api/1/time')
 async def root(request: Request) -> dict:
     ip_info = get_ip_addr_info(_get_client_ip_addr(request))
-    print(ip_info)
     now = datetime.now(timezone(ip_info.get("time_zone", "UTC") or "UTC"))
     return {
         "year": now.year - 2000,
