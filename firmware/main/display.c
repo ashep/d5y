@@ -22,6 +22,8 @@
 #include "app_font_clock_8_1.h"
 #include "app_font_clock_8_2.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
 /**
  * @brief Draws current time on the screen
  */
@@ -291,3 +293,5 @@ esp_err_t app_display_init(app_t *app) {
 
     return ESP_OK;
 }
+
+#pragma clang diagnostic pop

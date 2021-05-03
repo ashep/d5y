@@ -3,5 +3,6 @@
 .vscode
 __pycache__
 /firmware/build
+/firmware/cmake-build*
 /firmware/sdkconfig.old
 /backend/env
