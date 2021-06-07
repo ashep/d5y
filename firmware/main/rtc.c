@@ -14,17 +14,19 @@
 #include "app_main.h"
 
 /**
- * @brief Loads data from the RTC and propagates them into `app->time`
+ * Periodically sets app->time from RTC values.
+ *
+ * @param args Pointer to app
  */
 static void time_reader(void *args) {
     esp_err_t err;
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
 
         // Don't update time in settings mode
-        if (app->mode > APP_MODE_SETTINGS_MIN) {
+        if (app->mode > APP_MODE_SHOW_MAX) {
             continue;
         }
 
@@ -53,11 +55,9 @@ static void time_reader(void *args) {
             ESP_LOGE(APP_NAME, "error while unlocking");
         }
     }
-
-    vTaskDelete(NULL);
 }
 
-esp_err_t app_rtc_update_from_local(app_t *app) {
+esp_err_t set_rtc_from_app(app_t *app) {
     esp_err_t err;
 
     // Lock
@@ -91,11 +91,11 @@ esp_err_t app_rtc_init(app_t *app) {
     esp_err_t err;
 
     i2c_config_t i2c = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = APP_DS3231_SDA_PIN,
-        .sda_pullup_en = APP_DS3231_SDA_PULLUP,
-        .scl_io_num = APP_DS3231_SCL_PIN,
-        .scl_pullup_en = APP_DS3231_SCL_PULLUP,
+            .mode = I2C_MODE_MASTER,
+            .sda_io_num = APP_DS3231_SDA_PIN,
+            .sda_pullup_en = APP_DS3231_SDA_PULLUP,
+            .scl_io_num = APP_DS3231_SCL_PIN,
+            .scl_pullup_en = APP_DS3231_SCL_PULLUP,
     };
 
     err = i2c_param_config(app->ds3231.i2c_port, &i2c);
@@ -108,7 +108,7 @@ esp_err_t app_rtc_init(app_t *app) {
         return err;
     }
 
-    xTaskCreate(time_reader, "rtc_time_reader", 4096, (void *)app, 0, NULL);
+    xTaskCreate(time_reader, "rtc_time_reader", 4096, (void *) app, 0, NULL);
 
     ESP_LOGI(APP_NAME, "RTC initialized");
 

@@ -8,7 +8,7 @@
 #ifndef _APP_FONT_CLOCK_8_1_H_
 #define _APP_FONT_CLOCK_8_1_H_
 
-#include "agfxl_text.h"
+#include "aespl_gfx_text.h"
 
 static const uint8_t _font8_clock_1[] =
     {
@@ -27,10 +27,10 @@ static const uint8_t _font8_clock_1[] =
         1, 0x00, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00,  // : - 58
 };
 
-agfxl_font_t font8_clock_1 = {
+aespl_gfx_font_t font8_clock_1 = {
     .ascii_offset = 46,
     .length = 13,
-    .width = AGFXL_FONT_WIDTH_8,
+    .width = AESPL_GFX_FONT_WIDTH_8,
     .height = 8,
     .content.c8 = _font8_clock_1,
 };

@@ -121,7 +121,7 @@ static void btn_b_l_press(void *args) {
         ets_printf("Enter settings mode: %d\n", app->mode);
     } else if (app->mode > APP_MODE_SHOW_MAX) {
         app->mode = APP_MODE_SHOW_MIN + 1;
-        app_rtc_update_from_local(app);
+        set_rtc_from_app(app);
         ets_printf("Exit settings mode: %d\n", app->mode);
     }
 }

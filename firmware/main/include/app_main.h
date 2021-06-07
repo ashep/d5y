@@ -13,7 +13,7 @@
 #include "freertos/semphr.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "agfxl.h"
+#include "aespl_gfx.h"
 #include "aespl_button.h"
 #include "aespl_httpd.h"
 #include "aespl_ds3231.h"
@@ -57,12 +57,16 @@
 #define APP_NET_UPDATE_WEATHER_INETRVAL 1  // hours
 #endif
 
-#ifndef APP_API_URL_TIME
-#define APP_API_URL_TIME "http://cronus.33v.xyz/api/1/time"
+#ifndef APP_API_HOST
+#define APP_API_HOST "cronus.33v.xyz"
 #endif
 
-#ifndef APP_API_URL_WEATHER
-#define APP_API_URL_WEATHER "http://cronus.33v.xyz/api/1/weather"
+#ifndef APP_API_PATH_TIME
+#define APP_API_PATH_TIME "/api/1/time"
+#endif
+
+#ifndef APP_API_PATH_WEATHER
+#define APP_API_PATH_WEATHER "/api/1/weather"
 #endif
 
 #ifndef APP_API_TIME_REFRESH_PERIOD
@@ -86,7 +90,7 @@
 #endif
 
 #ifndef APP_BTN_A
-#define APP_BTN_A GPIO_NUM_2
+#define APP_BTN_A GPIO_NUM_0
 #endif
 
 #ifndef APP_BTN_A_MODE
@@ -94,7 +98,7 @@
 #endif
 
 #ifndef APP_BTN_B
-#define APP_BTN_B GPIO_NUM_12
+#define APP_BTN_B GPIO_NUM_2
 #endif
 
 #ifndef APP_BTN_B_MODE
@@ -132,9 +136,9 @@
 #if APP_HW_VERSION == APP_HW_VER_1
     #define APP_MAX7219_DISP_X 4
     #define APP_MAX7219_DISP_Y 1
-    #define APP_MAX7219_PIN_DATA GPIO_NUM_13
+    #define APP_MAX7219_PIN_DATA GPIO_NUM_12
     #define APP_MAX7219_PIN_CLK GPIO_NUM_14
-    #define APP_MAX7219_PIN_CS GPIO_NUM_15
+    #define APP_MAX7219_PIN_CS GPIO_NUM_13
 #else
     #warning "Unknown hardware version"
 #endif
@@ -161,6 +165,7 @@ typedef enum {
 } app_mode_t;
 
 typedef struct {
+    bool update_ok;
     uint16_t year;
     uint8_t month;
     uint8_t day;
@@ -191,22 +196,51 @@ typedef struct {
     aespl_button_t btn_a;
     aespl_button_t btn_b;
     aespl_ds3231_t ds3231;
-    agfxl_buf_t *gfx_buf;
-    aespl_max7219_t max7219;
-    aespl_max7219_matrix_t max7219_matrix;
+    aespl_gfx_buf_t *gfx_buf;
+    aespl_max7219_config_t max7219;
+    aespl_max7219_matrix_config_t max7219_matrix;
 } app_t;
 
 void app_main();
-esp_err_t cronus_net_init();
+
+/**
+ * Initializes keyboard related things.
+ *
+ * @param app Application
+ * @return
+ */
 esp_err_t app_keyboard_init(app_t *app);
-esp_err_t app_rtc_init(app_t *app);
+
+/**
+ * Initializes display related things.
+ *
+ * @param app Application
+ * @return
+ */
 esp_err_t app_display_init(app_t *app);
+
+/**
+ * Initializes network related things.
+ *
+ * @param app Application
+ * @return
+ */
 esp_err_t app_net_init(app_t *app);
 
 /**
- * @brief     Updates RTC time and date from `app->time`
+ * Initializes RTC related things.
+ *
  * @param app Application
+ * @return
  */
-esp_err_t app_rtc_update_from_local(app_t *app);
+esp_err_t app_rtc_init(app_t *app);
+
+/**
+ * Sets RTC values from app->time.
+ *
+ * @param app Application
+ * @return
+ */
+esp_err_t set_rtc_from_app(app_t *app);
 
 #endif
