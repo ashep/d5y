@@ -201,8 +201,7 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
         case IP_EVENT_STA_GOT_IP:;
             ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
             ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-
-            xTaskCreate(data_fetcher, "data_fetcher", 16383, (void *) app, 0, NULL);
+            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
             break;
     }
 }
@@ -210,9 +209,8 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
 esp_err_t app_net_init(app_t *app) {
     esp_err_t err;
 
-    tcpip_adapter_init();
-
     // Initialize WiFi subsystem
+    tcpip_adapter_init();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);
     if (err != ESP_OK) {

@@ -63,5 +63,11 @@ if [ "$1" == "r-flash" ] || [ "$2" == "r-flash" ]; then
     0x8000 ${REMOTE_ROOT}/partition-table.bin \
     0x10000 ${REMOTE_ROOT}/${APP_NAME}.bin
 
-  ssh -t ${REMOTE_HOST} pyserial-miniterm ${FLASH_PORT} 74880
+  ssh -t ${REMOTE_HOST} pyserial-miniterm --raw ${FLASH_PORT} 74880
+fi
+
+# Remote terminal
+if [ "$1" == "r-term" ] || [ "$2" == "r-term" ]; then
+  [ $(ssh ${REMOTE_HOST} killall pyserial-miniterm) ] || echo -n ""
+  ssh -t ${REMOTE_HOST} pyserial-miniterm --raw ${FLASH_PORT} 74880
 fi

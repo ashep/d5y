@@ -148,7 +148,7 @@ static void draw_ambient_temp(app_t *app) {
     char *s = malloc(9);
 
     strcpy(s, "#"); // home sign
-    make_temperature_str(s + 1, (int) round(app->ds3231.temp - 2));
+    make_temperature_str(s + 1, (int) round(app->ds3231.temp - 1.5));
     aespl_gfx_puts(app->gfx_buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
     free(s);
 }

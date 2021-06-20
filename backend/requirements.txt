@@ -1,4 +1,4 @@
-fastapi ~= 0.61.1
+fastapi ~= 0.65.2
 uvicorn ~= 0.11.8
 requests ~= 2.24.0
 pytz ~= 2020.1
