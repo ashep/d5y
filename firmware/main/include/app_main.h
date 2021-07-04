@@ -74,11 +74,11 @@
 #endif
 
 #ifndef APP_WIFI_STA_HOSTNAME
-#define APP_WIFI_STA_HOSTNAME "cronus"
+#define APP_WIFI_STA_HOSTNAME "Cronus"
 #endif
 
 #ifndef APP_WIFI_AP_SSID
-#define APP_WIFI_AP_SSID "cronus"
+#define APP_WIFI_AP_SSID "Cronus"
 #endif
 
 #ifndef APP_WIFI_AP_PASS
