@@ -7,9 +7,15 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
+
 #include "esp_err.h"
+
 #include "aespl_button.h"
-#include "app_main.h"
+
+#include "cronus_main.h"
+#include "cronus_keyboard.h"
+#include "cronus_rtc.h"
+#include "cronus_display.h"
 
 static void switch_show_mode(app_t *app) {
     app->mode++;

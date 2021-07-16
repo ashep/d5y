@@ -1,0 +1,6 @@
+#ifndef CRONUS_WEATHER_H
+#define CRONUS_WEATHER_H
+
+
+
+#endif //CRONUS_WEATHER_H

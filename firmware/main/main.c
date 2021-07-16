@@ -1,5 +1,5 @@
 /**
- * @brief     Cronus Digital Clock Main
+ * @brief     Cronus Digital Clock
  *
  * @author    Alexander Shepetko <a@shepetko.com>
  * @copyright MIT License
@@ -11,8 +11,15 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/uart.h"
+
 #include "aespl_gfx_buffer.h"
-#include "app_main.h"
+
+#include "cronus_main.h"
+#include "cronus_keyboard.h"
+#include "cronus_rtc.h"
+#include "cronus_alarm.h"
+#include "cronus_net.h"
+#include "cronus_display.h"
 
 static app_t app = {
         .mode = APP_MODE_SHOW_TIME,
@@ -24,23 +31,22 @@ void app_main() {
     app.mux = xSemaphoreCreateBinary();
     xSemaphoreGive(app.mux);
 
-    // Initialize keyboard
+    // Keyboard
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
     ESP_ERROR_CHECK(app_keyboard_init(&app));
 
-    // Initialize RTC
+    // RTC
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER));
     ESP_ERROR_CHECK(app_rtc_init(&app));
 
-    // Initialize network
+    // Alarm
+    ESP_ERROR_CHECK(app_alarm_init(&app));
+
+    // Network
     ESP_ERROR_CHECK(app_net_init(&app));
 
-    // Initialize display
+    // Display
     ESP_ERROR_CHECK(app_display_init(&app));
-
-    // for (;;) {
-    //     vTaskDelay(1);
-    // }
 
     vTaskDelete(NULL);
 }

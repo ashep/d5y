@@ -6,21 +6,22 @@
  */
 
 #include <math.h>
+#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/semphr.h"
+
 #include "driver/adc.h"
 #include "esp_err.h"
 #include "esp_log.h"
+
 #include "aespl_gfx_buffer.h"
 #include "aespl_gfx_text.h"
-#include "aespl_gfx_animation.h"
-#include "aespl_gfx_font_1.h"
 #include "aespl_max7219.h"
 #include "aespl_max7219_matrix.h"
-#include "app_main.h"
-#include "app_font_clock_8_1.h"
-#include "app_font_clock_8_2.h"
+
+#include "cronus_main.h"
+#include "cronus_font_8_2.h"
+#include "cronus_display.h"
 
 /**
  * @brief Draws current time on the screen
@@ -237,14 +238,15 @@ static void brightness_regulator(void *args) {
         adc_read(&data);
 
         int8_t intensity = data / 64;
-        if (intensity < 0) {
-            intensity = 0;
+        if (intensity < AESPL_MAX7219_INTENSITY_MIN) {
+            intensity = AESPL_MAX7219_INTENSITY_MIN;
         } else if (intensity > AESPL_MAX7219_INTENSITY_MAX) {
             intensity = AESPL_MAX7219_INTENSITY_MAX;
         }
-        ESP_LOGD(APP_NAME, "adc: %d, %d", data, intensity);
 
+        ESP_LOGI(APP_NAME, "adc1: %d, %d", data, intensity);
         aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
+
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

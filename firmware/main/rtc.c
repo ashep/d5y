@@ -8,10 +8,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+
 #include "esp_err.h"
 #include "driver/i2c.h"
+
 #include "aespl_ds3231.h"
-#include "app_main.h"
+
+#include "cronus_main.h"
+#include "cronus_rtc.h"
 
 /**
  * Periodically sets app->time from RTC values.
@@ -98,12 +102,12 @@ esp_err_t app_rtc_init(app_t *app) {
             .scl_pullup_en = APP_DS3231_SCL_PULLUP,
     };
 
-    err = i2c_param_config(app->ds3231.i2c_port, &i2c);
+    err = i2c_param_config(I2C_NUM_0, &i2c);
     if (err) {
         return err;
     }
 
-    err = aespl_ds3231_init(&app->ds3231, I2C_NUM_0);
+    err = aespl_ds3231_init(&app->ds3231);
     if (err) {
         return err;
     }

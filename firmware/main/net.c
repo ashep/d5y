@@ -6,18 +6,24 @@
  */
 
 #include <string.h>
+#include "cJSON.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_http_client.h"
-#include "cJSON.h"
+
 #include "aespl_httpd.h"
 #include "aespl_service.h"
-#include "app_main.h"
+
+#include "cronus_main.h"
+#include "cronus_net.h"
+#include "cronus_rtc.h"
 
 #define APP_HTTP_BODY_MAX_LEN 2048
 
@@ -156,7 +162,7 @@ static void data_fetcher(void *args) {
         }
 
         if (app->time.update_ok && app->weather.update_ok) {
-            vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INETRVAL * APP_HOUR));
+            vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INTERVAL * APP_HOUR));
         } else {
             vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 10));
         }
