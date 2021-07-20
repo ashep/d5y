@@ -63,8 +63,16 @@ static void inc_month(app_t *app) {
     }
 }
 
+static void inc_year(app_t *app) {
+    app->display_refresh_cnt = 0;
+    app->time.year++;
+    if (app->time.year > 99) {
+        app->time.year = 21;
+    }
+}
+
 static void btn_a_l_press(void *args) {
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
     ets_printf("'A' long pressed %d\n", app->mode);
 
     switch (app->mode) {
@@ -80,19 +88,22 @@ static void btn_a_l_press(void *args) {
         case APP_MODE_SETTINGS_DATE_MONTH:
             inc_month(app);
             break;
+        case APP_MODE_SETTINGS_DATE_YEAR:
+            inc_year(app);
+            break;
         default:
             break;
     }
 }
 
 static void btn_a_release(void *args) {
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
 
     // Show mode
     if (app->mode < APP_MODE_SHOW_MAX) {
         switch_show_mode(app);
     }
-    // Settings mode
+        // Settings mode
     else if (app->mode > APP_MODE_SHOW_MAX) {
         switch (app->mode) {
             case APP_MODE_SETTINGS_TIME_HOUR:
@@ -107,11 +118,8 @@ static void btn_a_release(void *args) {
             case APP_MODE_SETTINGS_DATE_MONTH:
                 inc_month(app);
                 break;
-            case APP_MODE_SETTINGS_DATE_DOW:
-                ets_printf("DOW+\n");
-                break;
             case APP_MODE_SETTINGS_DATE_YEAR:
-                ets_printf("YEAR+\n");
+                inc_year(app);
                 break;
             default:
                 break;
@@ -120,24 +128,25 @@ static void btn_a_release(void *args) {
 }
 
 static void btn_b_l_press(void *args) {
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
 
     if (app->mode < APP_MODE_SHOW_MAX) {
         app->mode = APP_MODE_SETTINGS_MIN + 1;
         ets_printf("Enter settings mode: %d\n", app->mode);
     } else if (app->mode > APP_MODE_SHOW_MAX) {
+        app->time.flush_to_rtc = true;
         app->mode = APP_MODE_SHOW_MIN + 1;
-        set_rtc_from_app(app);
         ets_printf("Exit settings mode: %d\n", app->mode);
     }
 }
 
 static void btn_b_release(void *args) {
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
 
     if (app->mode > APP_MODE_SHOW_MAX) {
         app->mode++;
         if (app->mode == APP_MODE_SETTINGS_MAX) {
+            app->time.flush_to_rtc = true;
             app->mode = APP_MODE_SHOW_MIN + 1;
             ets_printf("Exit settings mode: %d\n", app->mode);
         } else {
@@ -147,7 +156,7 @@ static void btn_b_release(void *args) {
 }
 
 static void show_mode_switcher(void *args) {
-    app_t *app = (app_t *)args;
+    app_t *app = (app_t *) args;
 
     for (;;) {
         if (app->mode == APP_MODE_SHOW_TIME) {
@@ -179,21 +188,21 @@ esp_err_t app_keyboard_init(app_t *app) {
     }
 
     // On long press
-    err = aespl_button_on_l_press(&app->btn_a, btn_a_l_press, (void *)app);
+    err = aespl_button_on_l_press(&app->btn_a, btn_a_l_press, (void *) app);
     if (err) {
         return err;
     }
-    err = aespl_button_on_l_press(&app->btn_b, btn_b_l_press, (void *)app);
+    err = aespl_button_on_l_press(&app->btn_b, btn_b_l_press, (void *) app);
     if (err) {
         return err;
     }
 
     // On release
-    err = aespl_button_on_release(&app->btn_a, btn_a_release, (void *)app);
+    err = aespl_button_on_release(&app->btn_a, btn_a_release, (void *) app);
     if (err) {
         return err;
     }
-    err = aespl_button_on_release(&app->btn_b, btn_b_release, (void *)app);
+    err = aespl_button_on_release(&app->btn_b, btn_b_release, (void *) app);
     if (err) {
         return err;
     }

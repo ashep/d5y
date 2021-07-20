@@ -51,23 +51,23 @@ static void draw_time(app_t *app) {
     aespl_gfx_set_px(buf_sep, 1, 2, 1);
     aespl_gfx_set_px(buf_sep, 0, 5, 1);
     aespl_gfx_set_px(buf_sep, 1, 5, 1);
-    if (!app->time.al_enabled) {
+    if (app->time.alarm_enabled) {
         aespl_gfx_set_px(buf_sep, 0, 6, 1);
         aespl_gfx_set_px(buf_sep, 1, 6, 1);
     }
 
     // Hour blink
-    if (app->mode == APP_MODE_SETTINGS_TIME_HOUR && !app->time.sep) {
+    if (app->mode == APP_MODE_SETTINGS_TIME_HOUR && !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_h);
     }
 
     // Minute blink
-    if (app->mode == APP_MODE_SETTINGS_TIME_MINUTE && !app->time.sep) {
+    if (app->mode == APP_MODE_SETTINGS_TIME_MINUTE && !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
 
     // Separator blink
-    if (app->mode < APP_MODE_SHOW_MAX && !app->time.sep) {
+    if (app->mode < APP_MODE_SHOW_MAX && !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_sep);
     }
 
@@ -91,8 +91,8 @@ static void draw_date(app_t *app) {
     char *s = malloc(4);
 
     // Prepare buffers:
-    // 2-digit day * 6px + 1px whitespace: 13px
-    // 2-digit month * 6px + 1px whitespace: 13px
+    // (2-digit day) * 6px + 1px whitespace: 13px
+    // (2-digit month) * 6px + 1px whitespace: 13px
     // separator: 2px
     aespl_gfx_buf_t *buf_d = aespl_gfx_make_buf(13, 8, AESPL_GFX_C_MODE_MONO);
     aespl_gfx_buf_t *buf_m = aespl_gfx_make_buf(13, 8, AESPL_GFX_C_MODE_MONO);
@@ -110,13 +110,13 @@ static void draw_date(app_t *app) {
     aespl_gfx_set_px(buf_sep, 0, 7, 1);
     aespl_gfx_set_px(buf_sep, 1, 7, 1);
 
-    // Day blink
-    if (app->mode == APP_MODE_SETTINGS_DATE_DAY && !app->time.sep) {
+    // Day blink in settings mode
+    if (app->mode == APP_MODE_SETTINGS_DATE_DAY && !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_d);
     }
 
-    // Month blink
-    if (app->mode == APP_MODE_SETTINGS_DATE_MONTH && !app->time.sep) {
+    // Month blink in settings mode
+    if (app->mode == APP_MODE_SETTINGS_DATE_MONTH && !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
 
@@ -130,6 +130,29 @@ static void draw_date(app_t *app) {
     aespl_gfx_free_buf(buf_d);
     aespl_gfx_free_buf(buf_m);
     aespl_gfx_free_buf(buf_sep);
+}
+
+static void draw_year(app_t *app) {
+    char *s = malloc(6);
+
+    // 6px * (4-digit year) + 1px * (3 whitespace) = 27px
+    aespl_gfx_buf_t *buf_y = aespl_gfx_make_buf(27, 8, AESPL_GFX_C_MODE_MONO);
+
+    // Draw year
+    sprintf(s, "20%02d", app->time.year);
+    aespl_gfx_puts(buf_y, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
+
+    // Settings mode
+    if (app->mode == APP_MODE_SETTINGS_DATE_YEAR && !app->time.sep_visible) {
+        aespl_gfx_clear_buf(buf_y);
+    }
+
+    // Merge buffers
+    aespl_gfx_merge(app->gfx_buf, buf_y, (aespl_gfx_point_t) {2, 0}, (aespl_gfx_point_t) {0, 0});
+
+    // Cleanup
+    free(s);
+    aespl_gfx_free_buf(buf_y);
 }
 
 static void make_temperature_str(char *s, int temp) {
@@ -176,9 +199,9 @@ static void refresh(void *args) {
         aespl_gfx_clear_buf(app->gfx_buf);
 
         // Update hour/minute separator state
-        app->time.sep = true;
+        app->time.sep_visible = true;
         if (app->display_refresh_cnt++ > app->display_refresh_cnt_max / 2) {
-            app->time.sep = false;
+            app->time.sep_visible = false;
         }
         if (app->display_refresh_cnt > app->display_refresh_cnt_max) {
             app->display_refresh_cnt = 0;
@@ -197,20 +220,16 @@ static void refresh(void *args) {
                 draw_date(app);
                 break;
 
+            case APP_MODE_SETTINGS_DATE_YEAR:
+                draw_year(app);
+                break;
+
             case APP_MODE_SHOW_AMBIENT_TEMP:
                 draw_ambient_temp(app);
                 break;
 
             case APP_MODE_SHOW_WEATHER_TEMP:
                 draw_weather_temp(app);
-                break;
-
-            case APP_MODE_SETTINGS_DATE_YEAR:
-                // TODO
-                break;
-
-            case APP_MODE_SETTINGS_DATE_DOW:
-                // TODO
                 break;
 
             default:
@@ -244,7 +263,6 @@ static void brightness_regulator(void *args) {
             intensity = AESPL_MAX7219_INTENSITY_MAX;
         }
 
-        ESP_LOGI(APP_NAME, "adc1: %d, %d", data, intensity);
         aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
 
         vTaskDelay(pdMS_TO_TICKS(5000));

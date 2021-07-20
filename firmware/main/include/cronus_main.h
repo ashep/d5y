@@ -47,14 +47,12 @@ typedef enum {
     APP_MODE_SETTINGS_TIME_MINUTE,
     APP_MODE_SETTINGS_DATE_DAY,
     APP_MODE_SETTINGS_DATE_MONTH,
-    APP_MODE_SETTINGS_DATE_DOW,
     APP_MODE_SETTINGS_DATE_YEAR,
     APP_MODE_SETTINGS_MAX,
 } app_mode_t;
 
 typedef struct {
-    bool update_ok;
-    uint16_t year;
+    uint8_t year;
     uint8_t month;
     uint8_t day;
     uint8_t dow;
@@ -63,8 +61,10 @@ typedef struct {
     uint8_t second;
     uint8_t al_hour;
     uint8_t al_minute;
-    bool sep;
-    bool al_enabled;
+    bool update_ok;
+    bool sep_visible;
+    bool alarm_enabled;
+    bool flush_to_rtc; // whether is datetime should be written to RTC
 } app_date_time_t;
 
 typedef struct {

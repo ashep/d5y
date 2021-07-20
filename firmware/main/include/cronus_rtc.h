@@ -28,7 +28,6 @@
 #define APP_HOUR APP_MINUTE * 60
 
 
-
 /**
  * Initializes RTC related things.
  *
@@ -38,11 +37,19 @@
 esp_err_t app_rtc_init(app_t *app);
 
 /**
+ * Sets app->time from RTC values.
+ *
+ * @param app Application
+ * @return
+ */
+esp_err_t set_app_time_from_rtc(app_t *app);
+
+/**
  * Sets RTC values from app->time.
  *
  * @param app Application
  * @return
  */
-esp_err_t set_rtc_from_app(app_t *app);
+esp_err_t set_rtc_from_app_time(app_t *app);
 
 #endif // CRONUS_RTC_H
