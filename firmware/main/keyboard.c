@@ -5,6 +5,8 @@
  * @copyright MIT License
  */
 
+#include <stdbool.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
@@ -14,8 +16,10 @@
 
 #include "cronus_main.h"
 #include "cronus_keyboard.h"
+#include "cronus_nvs.h"
 #include "cronus_rtc.h"
 #include "cronus_display.h"
+#include "cronus_alarm.h"
 
 static void switch_show_mode(app_t *app) {
     app->mode++;
@@ -39,11 +43,27 @@ static void inc_hour(app_t *app) {
     }
 }
 
+static void inc_alarm_hour(app_t *app) {
+    app->display_refresh_cnt = 0;
+    app->time.alarm_hour++;
+    if (app->time.alarm_hour > 23) {
+        app->time.alarm_hour = 0;
+    }
+}
+
 static void inc_minute(app_t *app) {
     app->display_refresh_cnt = 0;
     app->time.minute++;
     if (app->time.minute > 59) {
         app->time.minute = 0;
+    }
+}
+
+static void inc_alarm_minute(app_t *app) {
+    app->display_refresh_cnt = 0;
+    app->time.alarm_minute++;
+    if (app->time.alarm_minute > 59) {
+        app->time.alarm_minute = 0;
     }
 }
 
@@ -71,11 +91,22 @@ static void inc_year(app_t *app) {
     }
 }
 
-static void btn_a_l_press(void *args) {
+
+static bool btn_a_l_press(void *args) {
     app_t *app = (app_t *) args;
-    ets_printf("'A' long pressed %d\n", app->mode);
+
+    if (app->time.alarm_started) {
+        app_alarm_stop(app);
+    }
 
     switch (app->mode) {
+        case APP_MODE_SHOW_TIME:
+            app->time.alarm_enabled = !app->time.alarm_enabled;
+            app_nvs_set_u8(app, "alarm_en", app->time.alarm_enabled);
+            if (app->time.alarm_enabled) {
+                app_alarm_beep();
+            }
+            return false;
         case APP_MODE_SETTINGS_TIME_HOUR:
             inc_hour(app);
             break;
@@ -91,20 +122,29 @@ static void btn_a_l_press(void *args) {
         case APP_MODE_SETTINGS_DATE_YEAR:
             inc_year(app);
             break;
+        case APP_MODE_SETTINGS_ALARM_HOUR:
+            inc_alarm_hour(app);
+            break;
+        case APP_MODE_SETTINGS_ALARM_MINUTE:
+            inc_alarm_minute(app);
+            break;
         default:
             break;
     }
+
+    return true;
 }
 
-static void btn_a_release(void *args) {
+static bool btn_a_release(void *args) {
     app_t *app = (app_t *) args;
 
-    // Show mode
-    if (app->mode < APP_MODE_SHOW_MAX) {
-        switch_show_mode(app);
+    if (app->time.alarm_started) {
+        app_alarm_stop(app);
     }
-        // Settings mode
-    else if (app->mode > APP_MODE_SHOW_MAX) {
+
+    if (app->mode < APP_MODE_SHOW_MAX) { // Show mode
+        switch_show_mode(app);
+    } else if (app->mode > APP_MODE_SHOW_MAX) { // Settings mode
         switch (app->mode) {
             case APP_MODE_SETTINGS_TIME_HOUR:
                 inc_hour(app);
@@ -121,14 +161,26 @@ static void btn_a_release(void *args) {
             case APP_MODE_SETTINGS_DATE_YEAR:
                 inc_year(app);
                 break;
+            case APP_MODE_SETTINGS_ALARM_HOUR:
+                inc_alarm_hour(app);
+                break;
+            case APP_MODE_SETTINGS_ALARM_MINUTE:
+                inc_alarm_minute(app);
+                break;
             default:
                 break;
         }
     }
+
+    return true;
 }
 
-static void btn_b_l_press(void *args) {
+static bool btn_b_l_press(void *args) {
     app_t *app = (app_t *) args;
+
+    if (app->time.alarm_started) {
+        app_alarm_stop(app);
+    }
 
     if (app->mode < APP_MODE_SHOW_MAX) {
         app->mode = APP_MODE_SETTINGS_MIN + 1;
@@ -138,10 +190,16 @@ static void btn_b_l_press(void *args) {
         app->mode = APP_MODE_SHOW_MIN + 1;
         ets_printf("Exit settings mode: %d\n", app->mode);
     }
+
+    return false;
 }
 
-static void btn_b_release(void *args) {
+static bool btn_b_release(void *args) {
     app_t *app = (app_t *) args;
+
+    if (app->time.alarm_started) {
+        app_alarm_stop(app);
+    }
 
     if (app->mode > APP_MODE_SHOW_MAX) {
         app->mode++;
@@ -153,6 +211,8 @@ static void btn_b_release(void *args) {
             ets_printf("Next settings mode: %d\n", app->mode);
         }
     }
+
+    return true;
 }
 
 static void show_mode_switcher(void *args) {

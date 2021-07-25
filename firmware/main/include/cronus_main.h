@@ -14,6 +14,7 @@
 
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "nvs.h"
 
 #include "aespl_httpd.h"
 #include "aespl_button.h"
@@ -48,6 +49,8 @@ typedef enum {
     APP_MODE_SETTINGS_DATE_DAY,
     APP_MODE_SETTINGS_DATE_MONTH,
     APP_MODE_SETTINGS_DATE_YEAR,
+    APP_MODE_SETTINGS_ALARM_HOUR,
+    APP_MODE_SETTINGS_ALARM_MINUTE,
     APP_MODE_SETTINGS_MAX,
 } app_mode_t;
 
@@ -59,12 +62,13 @@ typedef struct {
     uint8_t hour;
     uint8_t minute;
     uint8_t second;
-    uint8_t al_hour;
-    uint8_t al_minute;
-    bool update_ok;
-    bool sep_visible;
-    bool alarm_enabled;
-    bool flush_to_rtc; // whether is datetime should be written to RTC
+    uint8_t alarm_hour;
+    uint8_t alarm_minute;
+    uint8_t update_ok;
+    uint8_t sep_visible;
+    uint8_t alarm_enabled;
+    uint8_t alarm_started;
+    uint8_t flush_to_rtc; // whether is datetime and alarm settings should be written toe RTC
 } app_date_time_t;
 
 typedef struct {
@@ -74,6 +78,7 @@ typedef struct {
 
 typedef struct {
     SemaphoreHandle_t mux;
+    nvs_handle nvs;
     TimerHandle_t show_mode_timer;
     uint16_t display_refresh_cnt;
     uint16_t display_refresh_cnt_max;

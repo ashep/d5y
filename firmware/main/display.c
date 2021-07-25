@@ -39,11 +39,19 @@ static void draw_time(app_t *app) {
     aespl_gfx_buf_t *buf_sep = aespl_gfx_make_buf(2, 8, AESPL_GFX_C_MODE_MONO);
 
     // Draw hour
-    sprintf(s, "%02d", app->time.hour);
+    if (app->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
+        sprintf(s, "%02d", app->time.alarm_hour);
+    } else {
+        sprintf(s, "%02d", app->time.hour);
+    }
     aespl_gfx_puts(buf_h, &font8_clock_2, pos, s, 1, 1);
 
     // Draw minute
-    sprintf(s, "%02d", app->time.minute);
+    if (app->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
+        sprintf(s, "%02d", app->time.alarm_minute);
+    } else {
+        sprintf(s, "%02d", app->time.minute);
+    }
     aespl_gfx_puts(buf_m, &font8_clock_2, pos, s, 1, 1);
 
     // Draw separator
@@ -51,18 +59,22 @@ static void draw_time(app_t *app) {
     aespl_gfx_set_px(buf_sep, 1, 2, 1);
     aespl_gfx_set_px(buf_sep, 0, 5, 1);
     aespl_gfx_set_px(buf_sep, 1, 5, 1);
-    if (app->time.alarm_enabled) {
+
+    // Double separator bottom dot height in alarm mode
+    if (app->time.alarm_enabled || app->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
         aespl_gfx_set_px(buf_sep, 0, 6, 1);
         aespl_gfx_set_px(buf_sep, 1, 6, 1);
     }
 
     // Hour blink
-    if (app->mode == APP_MODE_SETTINGS_TIME_HOUR && !app->time.sep_visible) {
+    if ((app->mode == APP_MODE_SETTINGS_TIME_HOUR || app->mode == APP_MODE_SETTINGS_ALARM_HOUR) &&
+        !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_h);
     }
 
     // Minute blink
-    if (app->mode == APP_MODE_SETTINGS_TIME_MINUTE && !app->time.sep_visible) {
+    if ((app->mode == APP_MODE_SETTINGS_TIME_MINUTE || app->mode == APP_MODE_SETTINGS_ALARM_MINUTE) &&
+        !app->time.sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
 
@@ -211,6 +223,8 @@ static void refresh(void *args) {
             case APP_MODE_SHOW_TIME:
             case APP_MODE_SETTINGS_TIME_HOUR:
             case APP_MODE_SETTINGS_TIME_MINUTE:
+            case APP_MODE_SETTINGS_ALARM_HOUR:
+            case APP_MODE_SETTINGS_ALARM_MINUTE:
                 draw_time(app);
                 break;
 

@@ -207,7 +207,7 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
         case IP_EVENT_STA_GOT_IP:;
             ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
             ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
+//            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
             break;
     }
 }

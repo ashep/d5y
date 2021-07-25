@@ -48,10 +48,10 @@ if [ "$1" == "r-flash" ] || [ "$2" == "r-flash" ]; then
   fi
 
   # Copy local build
-  ssh ${REMOTE_HOST} mkdir -p "${REMOTE_ROOT}"
-  scp build/partition_table/partition-table.bin ${REMOTE_HOST}:"${REMOTE_ROOT}"/partition-table.bin
-  scp build/bootloader/bootloader.bin ${REMOTE_HOST}:"${REMOTE_ROOT}"/bootloader.bin
-  scp build/${APP_NAME}.bin ${REMOTE_HOST}:${REMOTE_ROOT}/${APP_NAME}.bin
+  ssh ${REMOTE_HOST} mkdir -p "${REMOTE_ROOT}/build"
+  scp build/partition_table/partition-table.bin ${REMOTE_HOST}:"${REMOTE_ROOT}"/build/partition-table.bin
+  scp build/bootloader/bootloader.bin ${REMOTE_HOST}:"${REMOTE_ROOT}"/build/bootloader.bin
+  scp build/${APP_NAME}.bin ${REMOTE_HOST}:${REMOTE_ROOT}/build/${APP_NAME}.bin
 
   # Kill probably working remote serial monitor
   [ $(ssh ${REMOTE_HOST} killall pyserial-miniterm) ] || echo -n ""
@@ -59,9 +59,9 @@ if [ "$1" == "r-flash" ] || [ "$2" == "r-flash" ]; then
   # Execute flash command
   ssh ${REMOTE_HOST} ${REMOTE_ESPTOOL} -p ${FLASH_PORT} -b 460800 --after hard_reset \
     write_flash --flash_mode ${FLASH_MODE} --flash_freq ${FLASH_FREQ} --flash_size ${FLASH_SIZE} \
-    0x0 ${REMOTE_ROOT}/bootloader.bin \
-    0x8000 ${REMOTE_ROOT}/partition-table.bin \
-    0x10000 ${REMOTE_ROOT}/${APP_NAME}.bin
+    0x0 ${REMOTE_ROOT}/build/bootloader.bin \
+    0x8000 ${REMOTE_ROOT}/build/partition-table.bin \
+    0x10000 ${REMOTE_ROOT}/build/${APP_NAME}.bin
 
   ssh -t ${REMOTE_HOST} pyserial-miniterm --raw ${FLASH_PORT} 74880
 fi
