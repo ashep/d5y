@@ -31,8 +31,6 @@ static void switch_show_mode(app_t *app) {
     if (app->mode == APP_MODE_SHOW_MAX) {
         app->mode = APP_MODE_SHOW_MIN + 1;
     }
-
-    ets_printf("Show mode switched: %d\n", app->mode);
 }
 
 static void inc_hour(app_t *app) {
@@ -217,6 +215,7 @@ static bool btn_b_release(void *args) {
 
 static void show_mode_switcher(void *args) {
     app_t *app = (app_t *) args;
+    int last_mode = app->mode;
 
     for (;;) {
         if (app->mode == APP_MODE_SHOW_TIME) {
@@ -225,13 +224,17 @@ static void show_mode_switcher(void *args) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
         } else if (app->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION * APP_SECOND));
-        } else if (app->mode == APP_MODE_SHOW_WEATHER_TEMP) {
+        } else if (app->mode == APP_MODE_SHOW_WEATHER_TEMP && app->weather.update_ok) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION * APP_SECOND));
         }
-        switch_show_mode(app);
-    }
 
-    vTaskDelete(NULL);
+        // Switch only if mode hasn't been changed while this task was sleeping
+        if (app->mode == last_mode) {
+            switch_show_mode(app);
+        }
+
+        last_mode = app->mode;
+    }
 }
 
 esp_err_t app_keyboard_init(app_t *app) {
@@ -268,7 +271,7 @@ esp_err_t app_keyboard_init(app_t *app) {
     }
 
     // Setup show mode toggler timer
-    // xTaskCreate(show_mode_switcher, "show_mode_switcher", 4096, (void *)app, 0, NULL);
+    xTaskCreate(show_mode_switcher, "show_mode_switcher", 4096, (void *) app, 0, NULL);
 
     return ESP_OK;
 }
