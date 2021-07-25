@@ -115,14 +115,14 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
 
     if (strcmp(path, APP_API_PATH_TIME) == 0) {
         // Update RTC
-        app->ds3231.sec = cJSON_GetObjectItem(data, "sec")->valueint;
-        app->ds3231.min = cJSON_GetObjectItem(data, "min")->valueint;
-        app->ds3231.hour = cJSON_GetObjectItem(data, "hour")->valueint;
-        app->ds3231.dow = cJSON_GetObjectItem(data, "dow")->valueint;
-        app->ds3231.day = cJSON_GetObjectItem(data, "day")->valueint;
-        app->ds3231.mon = cJSON_GetObjectItem(data, "month")->valueint;
-        app->ds3231.year = cJSON_GetObjectItem(data, "year")->valueint;
-        aespl_ds3231_set_data(&app->ds3231, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+        app->time.second = cJSON_GetObjectItem(data, "sec")->valueint;
+        app->time.minute = cJSON_GetObjectItem(data, "min")->valueint;
+        app->time.hour = cJSON_GetObjectItem(data, "hour")->valueint;
+        app->time.dow = cJSON_GetObjectItem(data, "dow")->valueint;
+        app->time.day = cJSON_GetObjectItem(data, "day")->valueint;
+        app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
+        app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
+        app->time.flush_to_rtc = 1;
     } else if (strcmp(path, APP_API_PATH_WEATHER) == 0) {
         // Update weather
         app->weather.temp = cJSON_GetObjectItem(data, "the_temp")->valuedouble;
@@ -143,8 +143,10 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
 static void data_fetcher(void *args) {
     app_t *app = (app_t *) args;
 
-    for (;;) {
+    // Delay first run to let application fetch initial data from the RTC
+    vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
 
+    for (;;) {
         if (fetch_data(app, APP_API_HOST, APP_API_PATH_TIME) == ESP_OK) {
             ESP_LOGI(APP_NAME, "network time updated");
             app->time.update_ok = true;
@@ -164,7 +166,7 @@ static void data_fetcher(void *args) {
         if (app->time.update_ok && app->weather.update_ok) {
             vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INTERVAL * APP_HOUR));
         } else {
-            vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 10));
+            vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
         }
     }
 }
@@ -207,7 +209,7 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
         case IP_EVENT_STA_GOT_IP:;
             ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
             ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-//            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
+            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
             break;
     }
 }

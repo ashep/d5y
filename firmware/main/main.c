@@ -55,11 +55,11 @@ void app_main() {
     // Alarm
     ESP_ERROR_CHECK(app_alarm_init(&app));
 
-    // Network
-    ESP_ERROR_CHECK(app_net_init(&app));
-
     // Display
     ESP_ERROR_CHECK(app_display_init(&app));
+
+    // Network
+    ESP_ERROR_CHECK(app_net_init(&app));
 
     vTaskDelete(NULL);
 }
