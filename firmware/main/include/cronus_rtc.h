@@ -24,8 +24,8 @@
 #endif
 
 #define APP_SECOND 1000
-#define APP_MINUTE APP_SECOND * 60
-#define APP_HOUR APP_MINUTE * 60
+#define APP_MINUTE 60000
+#define APP_HOUR 3600000
 
 
 /**

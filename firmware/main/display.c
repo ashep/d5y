@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <string.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -170,8 +171,6 @@ static void draw_year(app_t *app) {
 static void make_temperature_str(char *s, int temp) {
     if (temp > 0) {
         sprintf(s, "+%d,", temp);
-    } else if (temp < 0) {
-        sprintf(s, "-%d,", temp);
     } else {
         sprintf(s, "%d,", temp);
     }
@@ -184,7 +183,7 @@ static void draw_ambient_temp(app_t *app) {
     char *s = malloc(9);
 
     strcpy(s, "#"); // home sign
-    make_temperature_str(s + 1, (int) round(app->ds3231.temp - 1.5));
+    make_temperature_str(s + 1, (int) round(app->ds3231.temp - 4));
     aespl_gfx_puts(app->gfx_buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
     free(s);
 }
@@ -289,7 +288,7 @@ static void init_display_hw_ver_1(app_t *app) {
                                        APP_MAX7219_PIN_CS, APP_MAX7219_PIN_CLK, APP_MAX7219_PIN_DATA,
                                        APP_MAX7219_DISP_X * APP_MAX7219_DISP_Y, AESPL_MAX7219_DECODE_NONE));
     ESP_ERROR_CHECK(aespl_max7219_matrix_init(&app->max7219_matrix, &app->max7219,
-                                              APP_MAX7219_DISP_X, APP_MAX7219_DISP_Y));
+                                              APP_MAX7219_DISP_X, APP_MAX7219_DISP_Y, APP_MAX7219_DISP_REVERSE));
 }
 
 esp_err_t app_display_init(app_t *app) {
