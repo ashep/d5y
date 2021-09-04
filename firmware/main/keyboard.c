@@ -28,6 +28,11 @@ static void switch_show_mode(app_t *app) {
 
     app->mode++;
 
+    // Will work in version 1.1
+    if (app->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
+        app->mode++;
+    }
+
     if (app->mode == APP_MODE_SHOW_WEATHER_TEMP && !app->weather.update_ok) {
         app->mode++;
     }
@@ -85,6 +90,14 @@ static void inc_month(app_t *app) {
     }
 }
 
+static void inc_dow(app_t *app) {
+    app->display_refresh_cnt = 0;
+    app->time.dow++;
+    if (app->time.dow > 6) {
+        app->time.dow = 0;
+    }
+}
+
 static void inc_year(app_t *app) {
     app->display_refresh_cnt = 0;
     app->time.year++;
@@ -92,7 +105,6 @@ static void inc_year(app_t *app) {
         app->time.year = 21;
     }
 }
-
 
 static bool btn_a_l_press(void *args) {
     app_t *app = (app_t *) args;
@@ -120,6 +132,9 @@ static bool btn_a_l_press(void *args) {
             break;
         case APP_MODE_SETTINGS_DATE_MONTH:
             inc_month(app);
+            break;
+        case APP_MODE_SETTINGS_DATE_DOW:
+            inc_dow(app);
             break;
         case APP_MODE_SETTINGS_DATE_YEAR:
             inc_year(app);
@@ -159,6 +174,9 @@ static bool btn_a_release(void *args) {
                 break;
             case APP_MODE_SETTINGS_DATE_MONTH:
                 inc_month(app);
+                break;
+            case APP_MODE_SETTINGS_DATE_DOW:
+                inc_dow(app);
                 break;
             case APP_MODE_SETTINGS_DATE_YEAR:
                 inc_year(app);
@@ -225,6 +243,8 @@ static void show_mode_switcher(void *args) {
         if (last_mode == APP_MODE_SHOW_TIME) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION * APP_SECOND));
         } else if (last_mode == APP_MODE_SHOW_DATE) {
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
+        } else if (last_mode == APP_MODE_SHOW_DOW) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
         } else if (last_mode == APP_MODE_SHOW_AMBIENT_TEMP) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION * APP_SECOND));

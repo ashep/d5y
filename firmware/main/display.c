@@ -145,6 +145,17 @@ static void draw_date(app_t *app) {
     aespl_gfx_free_buf(buf_sep);
 }
 
+static void draw_dow(app_t *app) {
+    if (app->mode == APP_MODE_SETTINGS_DATE_DOW && !app->time.sep_visible) {
+        // In settings mode numbers are blinking, so just keep buffer clear
+    } else {
+        char *s = malloc(8);
+        sprintf(s, "- %d -", app->time.dow + 1);
+        aespl_gfx_puts(app->gfx_buf, &font8_clock_2, (aespl_gfx_point_t) {5, 0}, s, 1, 1);
+        free(s);
+    }
+}
+
 static void draw_year(app_t *app) {
     char *s = malloc(6);
 
@@ -232,6 +243,11 @@ static void refresh(void *args) {
             case APP_MODE_SETTINGS_DATE_MONTH:
             case APP_MODE_SETTINGS_DATE_DAY:
                 draw_date(app);
+                break;
+
+            case APP_MODE_SHOW_DOW:
+            case APP_MODE_SETTINGS_DATE_DOW:
+                draw_dow(app);
                 break;
 
             case APP_MODE_SETTINGS_DATE_YEAR:
