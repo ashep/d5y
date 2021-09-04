@@ -218,6 +218,7 @@ static void refresh(void *args) {
             app->display_refresh_cnt = 0;
         }
 
+        // Fill buffer
         switch (app->mode) {
             case APP_MODE_SHOW_TIME:
             case APP_MODE_SETTINGS_TIME_HOUR:
@@ -249,8 +250,10 @@ static void refresh(void *args) {
                 break;
         }
 
+        // Output buffer to hardware
         switch (APP_HW_VERSION) {
             case APP_HW_VER_1:
+                aespl_max7219_refresh(&app->max7219);
                 aespl_max7219_matrix_draw(&app->max7219_matrix, app->gfx_buf);
                 break;
 
@@ -269,26 +272,42 @@ static void brightness_regulator(void *args) {
     for (;;) {
         adc_read(&data);
 
-        int8_t intensity = data / 64;
+        aespl_max7219_intensity_t intensity = data / 64;
         if (intensity < AESPL_MAX7219_INTENSITY_MIN) {
             intensity = AESPL_MAX7219_INTENSITY_MIN;
         } else if (intensity > AESPL_MAX7219_INTENSITY_MAX) {
             intensity = AESPL_MAX7219_INTENSITY_MAX;
         }
 
-        aespl_max7219_send_all(&app->max7219, AESPL_MAX7219_ADDR_INTENSITY, intensity);
+        app->max7219.intensity = intensity;
 
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(2500));
     }
 }
 
 static void init_display_hw_ver_1(app_t *app) {
     app->gfx_buf = aespl_gfx_make_buf(APP_MAX7219_DISP_X * 8, APP_MAX7219_DISP_Y * 8, AESPL_GFX_C_MODE_MONO);
-    ESP_ERROR_CHECK(aespl_max7219_init(&app->max7219,
-                                       APP_MAX7219_PIN_CS, APP_MAX7219_PIN_CLK, APP_MAX7219_PIN_DATA,
-                                       APP_MAX7219_DISP_X * APP_MAX7219_DISP_Y, AESPL_MAX7219_DECODE_NONE));
-    ESP_ERROR_CHECK(aespl_max7219_matrix_init(&app->max7219_matrix, &app->max7219,
-                                              APP_MAX7219_DISP_X, APP_MAX7219_DISP_Y, APP_MAX7219_DISP_REVERSE));
+
+    ESP_ERROR_CHECK(aespl_max7219_init(
+            &app->max7219,
+            APP_MAX7219_PIN_CS,
+            APP_MAX7219_PIN_CLK,
+            APP_MAX7219_PIN_DATA,
+            AESPL_MAX7219_DECODE_NONE,
+            AESPL_MAX7219_INTENSITY_MIN,
+            AESPL_MAX7219_SCAN_LIMIT_8,
+            AESPL_MAX7219_POWER_ON,
+            AESPL_MAX7219_TEST_MODE_DISABLE,
+            APP_MAX7219_DISP_X * APP_MAX7219_DISP_Y
+    ));
+
+    ESP_ERROR_CHECK(aespl_max7219_matrix_init(
+            &app->max7219_matrix,
+            &app->max7219,
+            APP_MAX7219_DISP_X,
+            APP_MAX7219_DISP_Y,
+            APP_MAX7219_DISP_REVERSE
+    ));
 }
 
 esp_err_t app_display_init(app_t *app) {
