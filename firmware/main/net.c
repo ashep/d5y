@@ -6,7 +6,7 @@
  */
 
 #include <string.h>
-#include "cJSON.h"
+#include <stdbool.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -17,6 +17,8 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_http_client.h"
+
+#include "cJSON.h"
 
 #include "aespl_httpd.h"
 #include "aespl_service.h"
@@ -31,16 +33,11 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     static int output_pos = 0, total_len = 0;
 
     switch (evt->event_id) {
-        case HTTP_EVENT_ERROR:
-            break;
         case HTTP_EVENT_ON_CONNECTED:
             output_pos = 0;
             total_len = 0;
             break;
-        case HTTP_EVENT_HEADERS_SENT:
-            break;
-        case HTTP_EVENT_ON_HEADER:
-            break;
+
         case HTTP_EVENT_ON_DATA:
             total_len += evt->data_len;
             if (total_len > APP_HTTP_BODY_MAX_LEN) {
@@ -51,9 +48,12 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
             memcpy(evt->user_data + output_pos, evt->data, evt->data_len);
             output_pos += evt->data_len;
             break;
+
+        case HTTP_EVENT_ERROR:
         case HTTP_EVENT_ON_FINISH:
-            break;
         case HTTP_EVENT_DISCONNECTED:
+        case HTTP_EVENT_HEADERS_SENT:
+        case HTTP_EVENT_ON_HEADER:
             break;
     }
 
@@ -67,6 +67,7 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     esp_http_client_config_t cli_cfg = {
             .host = host,
             .path = path,
+            .timeout_ms = 30000,
             .event_handler = http_event_handler,
             .user_data = data_buf,
     };
@@ -91,6 +92,10 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     // Free resources
     esp_http_client_close(cli);
     esp_http_client_cleanup(cli);
+
+    if (err != ESP_OK) {
+        return err;
+    }
 
     // Parse response
     cJSON *data = cJSON_Parse(data_buf);
@@ -142,32 +147,37 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
 
 static void data_fetcher(void *args) {
     app_t *app = (app_t *) args;
+    bool need_update = true;
 
     // Delay first run to let application fetch initial data from the RTC
     vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
 
     for (;;) {
-        if (fetch_data(app, APP_API_HOST, APP_API_PATH_TIME) == ESP_OK) {
-            ESP_LOGI(APP_NAME, "network time updated");
-            app->time.update_ok = true;
-        } else {
-            ESP_LOGE(APP_NAME, "network time update failed");
-            app->time.update_ok = false;
+        if (need_update) {
+            if (fetch_data(app, APP_API_HOST, APP_API_PATH_TIME) == ESP_OK) {
+                ESP_LOGI(APP_NAME, "network time updated");
+                app->time.update_ok = true;
+            } else {
+                ESP_LOGE(APP_NAME, "network time update failed");
+                app->time.update_ok = false;
+            }
+
+            if (fetch_data(app, APP_API_HOST, APP_API_PATH_WEATHER) == ESP_OK) {
+                ESP_LOGI(APP_NAME, "network weather updated");
+                app->weather.update_ok = true;
+            } else {
+                ESP_LOGE(APP_NAME, "network weather update failed");
+                app->weather.update_ok = false;
+            }
         }
 
-        if (fetch_data(app, APP_API_HOST, APP_API_PATH_WEATHER) == ESP_OK) {
-            ESP_LOGI(APP_NAME, "network weather updated");
-            app->weather.update_ok = true;
+        if (!(app->time.update_ok && app->weather.update_ok) || app->time.minute == 0) {
+            need_update = true;
         } else {
-            ESP_LOGE(APP_NAME, "network weather update failed");
-            app->weather.update_ok = false;
+            need_update = false;
         }
 
-        if (app->time.update_ok && app->weather.update_ok) {
-            vTaskDelay(pdMS_TO_TICKS(APP_NET_UPDATE_TIME_INTERVAL * APP_HOUR));
-        } else {
-            vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
-        }
+        vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
     }
 }
 
