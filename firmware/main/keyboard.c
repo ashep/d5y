@@ -22,6 +22,10 @@
 #include "cronus_alarm.h"
 
 static void switch_show_mode(app_t *app) {
+    if (app->mode > APP_MODE_SETTINGS_MIN) {
+        return;
+    }
+
     app->mode++;
 
     if (app->mode == APP_MODE_SHOW_WEATHER_TEMP && !app->weather.update_ok) {
@@ -218,22 +222,23 @@ static void show_mode_switcher(void *args) {
     int last_mode = app->mode;
 
     for (;;) {
-        if (app->mode == APP_MODE_SHOW_TIME) {
+        if (last_mode == APP_MODE_SHOW_TIME) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION * APP_SECOND));
-        } else if (app->mode == APP_MODE_SHOW_DATE) {
+        } else if (last_mode == APP_MODE_SHOW_DATE) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
-        } else if (app->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
+        } else if (last_mode == APP_MODE_SHOW_AMBIENT_TEMP) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION * APP_SECOND));
-        } else if (app->mode == APP_MODE_SHOW_WEATHER_TEMP && app->weather.update_ok) {
+        } else if (last_mode == APP_MODE_SHOW_WEATHER_TEMP && app->weather.update_ok) {
             vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION * APP_SECOND));
         }
 
         // Switch only if mode hasn't been changed while this task was sleeping
         if (app->mode == last_mode) {
             switch_show_mode(app);
+            last_mode = app->mode;
+        } else if (app->mode < APP_MODE_SETTINGS_MIN) {
+            last_mode = app->mode;
         }
-
-        last_mode = app->mode;
     }
 }
 
@@ -270,7 +275,7 @@ esp_err_t app_keyboard_init(app_t *app) {
         return err;
     }
 
-    // Setup show mode toggler timer
+    // Setup show mode switcher timer
     xTaskCreate(show_mode_switcher, "show_mode_switcher", 4096, (void *) app, 0, NULL);
 
     return ESP_OK;
