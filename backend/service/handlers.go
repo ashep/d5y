@@ -73,7 +73,7 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 		Dow:    dow,
 		Day:    t.Day(),
 		Month:  int(t.Month()),
-		Year:   t.Year(),
+		Year:   t.Year() - 2000,
 	}
 
 	// Add weather data
