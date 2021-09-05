@@ -217,6 +217,9 @@ static void refresh(void *args) {
     ESP_LOGI(APP_NAME, "display refresh task started");
     app_t *app = (app_t *) args;
 
+    // Keep display off to let weak PSUs provide enough current at startup phase
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
     for (;;) {
         aespl_gfx_clear_buf(app->gfx_buf);
 
@@ -284,6 +287,9 @@ static void refresh(void *args) {
 static void brightness_regulator(void *args) {
     app_t *app = (app_t *) args;
     uint16_t data = 0;
+
+    // Wait at minimum brightness oo let weak PSUs provide enough current at startup phase
+    vTaskDelay(pdMS_TO_TICKS(1500));
 
     for (;;) {
         adc_read(&data);
