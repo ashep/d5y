@@ -25,8 +25,6 @@
 
 #define APP_SECOND 1000
 #define APP_MINUTE 60000
-#define APP_HOUR 3600000
-
 
 /**
  * Initializes RTC related things.

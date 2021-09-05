@@ -17,12 +17,8 @@
 #define APP_API_HOST "cronus.33v.xyz"
 #endif
 
-#ifndef APP_API_PATH_TIME
-#define APP_API_PATH_TIME "/api/1/time"
-#endif
-
-#ifndef APP_API_PATH_WEATHER
-#define APP_API_PATH_WEATHER "/api/1/weather"
+#ifndef APP_API_PATH
+#define APP_API_PATH "/api/1"
 #endif
 
 #ifndef APP_WIFI_STA_HOSTNAME

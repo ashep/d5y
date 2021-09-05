@@ -1,9 +1,10 @@
 *.code-workspace
 .idea
 .vscode
+.env
 __pycache__
 node_modules
 build
-env
 cmake-build*
 sdkconfig.old
+tmp

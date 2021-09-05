@@ -118,19 +118,19 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
         return ESP_FAIL;
     }
 
-    if (strcmp(path, APP_API_PATH_TIME) == 0) {
-        // Update RTC
-        app->time.second = cJSON_GetObjectItem(data, "sec")->valueint;
-        app->time.minute = cJSON_GetObjectItem(data, "min")->valueint;
-        app->time.hour = cJSON_GetObjectItem(data, "hour")->valueint;
-        app->time.dow = cJSON_GetObjectItem(data, "dow")->valueint;
-        app->time.day = cJSON_GetObjectItem(data, "day")->valueint;
-        app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
-        app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
-        app->time.flush_to_rtc = 1;
-    } else if (strcmp(path, APP_API_PATH_WEATHER) == 0) {
-        // Update weather
-        app->weather.temp = cJSON_GetObjectItem(data, "the_temp")->valuedouble;
+    // Update
+    app->time.second = cJSON_GetObjectItem(data, "second")->valueint;
+    app->time.minute = cJSON_GetObjectItem(data, "minute")->valueint;
+    app->time.hour = cJSON_GetObjectItem(data, "hour")->valueint;
+    app->time.dow = cJSON_GetObjectItem(data, "dow")->valueint - 1;
+    app->time.day = cJSON_GetObjectItem(data, "day")->valueint;
+    app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
+    app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
+    app->time.flush_to_rtc = 1;
+
+    app->weather.update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
+    if (app->weather.update_ok) {
+        app->weather.temp = cJSON_GetObjectItem(data, "feels_like")->valuedouble;
     }
 
     // Free resources
@@ -154,16 +154,18 @@ static void data_fetcher(void *args) {
 
     for (;;) {
         if (need_update) {
-            if (fetch_data(app, APP_API_HOST, APP_API_PATH_TIME) == ESP_OK) {
-                ESP_LOGI(APP_NAME, "network time updated");
+            esp_err_t err = fetch_data(app, APP_API_HOST, APP_API_PATH);
+
+            if (err == ESP_OK) {
+                ESP_LOGI(APP_NAME, "network update completed");
                 app->time.update_ok = true;
             } else {
-                ESP_LOGE(APP_NAME, "network time update failed");
+                ESP_LOGE(APP_NAME, "network update failed");
                 app->time.update_ok = false;
             }
 
-            if (fetch_data(app, APP_API_HOST, APP_API_PATH_WEATHER) == ESP_OK) {
-                ESP_LOGI(APP_NAME, "network weather updated");
+            if (app->weather.update_ok) {
+                ESP_LOGI(APP_NAME, "network weather received");
                 app->weather.update_ok = true;
             } else {
                 ESP_LOGE(APP_NAME, "network weather update failed");
@@ -171,7 +173,7 @@ static void data_fetcher(void *args) {
             }
         }
 
-        if (!(app->time.update_ok && app->weather.update_ok) || app->time.minute == 0) {
+        if (!app->time.update_ok || app->time.minute == 0) {
             need_update = true;
         } else {
             need_update = false;
