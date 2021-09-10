@@ -158,25 +158,26 @@ static void data_fetcher(void *args) {
 
             if (err == ESP_OK) {
                 ESP_LOGI(APP_NAME, "network update completed");
-                app->time.update_ok = true;
+                app->net_update_ok = true;
             } else {
                 ESP_LOGE(APP_NAME, "network update failed");
-                app->time.update_ok = false;
-            }
-
-            if (app->weather.update_ok) {
-                ESP_LOGI(APP_NAME, "network weather received");
-                app->weather.update_ok = true;
-            } else {
-                ESP_LOGE(APP_NAME, "network weather update failed");
-                app->weather.update_ok = false;
+                app->net_update_ok = false;
             }
         }
 
-        if (!app->time.update_ok || app->time.minute == 0) {
+        if (!app->net_update_ok) {
             need_update = true;
         } else {
-            need_update = false;
+            switch (app->time.minute) {
+                case 0:
+                case 15:
+                case 30:
+                case 45:
+                    need_update = true;
+                    break;
+                default:
+                    need_update = false;
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
@@ -188,26 +189,35 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
     app_t *app = (app_t *) arg;
 
     switch (ev_id) {
+        case WIFI_EVENT_STA_START: // WiFi station started
+            ESP_LOGI(APP_NAME, "WiFi started");
+            esp_wifi_connect();
+            break;
+
+        case WIFI_EVENT_STA_CONNECTED:
+            ESP_LOGI(APP_NAME, "WiFi connected");
+            break;
+
+        case WIFI_EVENT_STA_DISCONNECTED:
+            ESP_LOGI(APP_NAME, "WiFi disconnected, trying to reconnect");
+            app->net_update_ok = false;
+            esp_wifi_connect();
+            break;
+
         case WIFI_EVENT_AP_START: // the access point started
-            ESP_LOGI(APP_NAME, "access point started");
+            ESP_LOGI(APP_NAME, "WiFi access point started");
             ESP_ERROR_CHECK(aespl_httpd_start(&app->httpd, NULL));
             ESP_ERROR_CHECK(aespl_service_init(&app->httpd, NULL));
             break;
 
         case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
             wifi_event_ap_staconnected_t *ev_st_conn = (wifi_event_ap_staconnected_t *) event_data;
-            ESP_LOGI(APP_NAME, "station connected: %d, " MACSTR, ev_st_conn->aid, MAC2STR(ev_st_conn->mac));
+            ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR, ev_st_conn->aid, MAC2STR(ev_st_conn->mac));
             break;
-
 
         case WIFI_EVENT_AP_STADISCONNECTED:; // a station disconnected from the access point
             wifi_event_ap_stadisconnected_t *ev_st_dis = (wifi_event_ap_stadisconnected_t *) event_data;
-            ESP_LOGI(APP_NAME, "station disconnected: %d, " MACSTR, ev_st_dis->aid, MAC2STR(ev_st_dis->mac));
-            break;
-
-        case WIFI_EVENT_STA_START: // WiFi station started
-            ESP_LOGI(APP_NAME, "WiFi station started");
-            esp_wifi_connect();
+            ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, ev_st_dis->aid, MAC2STR(ev_st_dis->mac));
             break;
     }
 }

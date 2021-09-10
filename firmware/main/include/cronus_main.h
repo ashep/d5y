@@ -66,7 +66,6 @@ typedef struct {
     uint8_t second;
     uint8_t alarm_hour;
     uint8_t alarm_minute;
-    uint8_t update_ok;
     uint8_t sep_visible;
     uint8_t alarm_enabled;
     uint8_t alarm_started;
@@ -85,6 +84,7 @@ typedef struct {
     uint16_t display_refresh_cnt;
     uint16_t display_refresh_cnt_max;
     app_mode_t mode;
+    bool net_update_ok;
     app_date_time_t time;
     app_weather_t weather;
     aespl_httpd_t httpd;
