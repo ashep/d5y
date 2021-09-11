@@ -8,6 +8,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Button from "@material-ui/core/Button";
+import Typography from "@material-ui/core/Typography";
 
 import messages from "./messages";
 
@@ -32,7 +33,11 @@ export default function WiFiConnection(props) {
             </Box>
         </Box>
 
-        <Box className={"wifiConnectionSettings"} hidden={props.wifiConnected}>
+        <Typography align={"center"} hidden={props.wifiConnected || props.wifiScanResult.length !== 0}>
+            <CircularProgress className={'connProgress'}/>
+        </Typography>
+
+        <Box className={"wifiConnectionSettings"} hidden={props.wifiConnected || props.wifiScanResult.length === 0}>
             <Box>
                 <FormControl fullWidth={true}>
                     <InputLabel id="ssid-select-label">{messages.t("ssid")}</InputLabel>

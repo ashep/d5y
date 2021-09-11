@@ -13,7 +13,7 @@ export default function Brightness(props) {
         </Typography>
 
         <Slider
-            defaultValue={30}
+            defaultValue={16}
             // getAriaValueText={messages.t("titleBrightness")}
             aria-labelledby="brightness-slider"
             valueLabelDisplay="auto"

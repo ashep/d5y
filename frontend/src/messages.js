@@ -4,29 +4,22 @@ const messages = {
             "titleAlarm": "Alarm",
             "titleBrightness": "Brightness",
             "titleWifiConnection": "Wi-Fi Connection",
-
             "brightness": "Brightness",
             "maxBrightness": "Maximum brightness",
-
-            "apConnHelp": "Cronus is not found. Connect your computer to 'Cronus' WiFi network " +
+            "apConnHelp": "Cronus is not found. Connect your computer or mobile phone to the 'Cronus' Wi-Fi network " +
                 "using password you've got with your device.",
-
-            "wifiNotConnectedHelp": "Currently your Cronus is not connected to a WiFi network. " +
+            "wifiNotConnectedHelp": "Currently your Cronus is not connected to a Wi-Fi network. " +
                 "In order to receive correct time and weather updates you should connect Cronus to a WiFi network. " +
                 "Please choose the network, enter the password and click 'Connect'.",
-            "wifiConnectedHelp": "Currently your Cronus is connected to the Wifi network '{1}'.",
+            "wifiConnectedHelp": "Currently your Cronus is connected to the Wi-fi network <b>'{1}'</b>.",
             "ssid": "Network",
             "rssi": "Signal strength",
             "password": "Password",
             "connect": "Connect",
             "disconnect": "Disconnect",
         },
-        "ru": {
-
-        },
-        "uk": {
-
-        },
+        "ru": {},
+        "uk": {},
     },
 
     t: (id, ...args) => {

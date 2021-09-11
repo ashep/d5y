@@ -106,9 +106,6 @@ function wifiScan(apConnected, wifiConnected, setWifiScanResult) {
             }
         );
     }
-
-    console.log("FALSE", apConnected, wifiConnected)
-    // setTimeout(() => wifiScan(apConnected, wifiConnected, setWifiScanResult), 10000);
 }
 
 export default function Connection(props) {
