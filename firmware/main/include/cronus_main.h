@@ -59,6 +59,7 @@ typedef enum {
 } app_mode_t;
 
 typedef struct {
+    bool wifi_connected;
     bool update_ok;
 } app_net_t;
 

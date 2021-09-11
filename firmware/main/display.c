@@ -271,6 +271,7 @@ static void refresh(void *args) {
 
         // Output buffer to hardware
         switch (APP_HW_VERSION) {
+            case APP_HW_VER_1_0:
             case APP_HW_VER_1_1:
                 aespl_max7219_refresh(&app->max7219);
                 aespl_max7219_matrix_draw(&app->max7219_matrix, app->gfx_buf);
@@ -340,6 +341,7 @@ esp_err_t app_display_init(app_t *app) {
 
     // Initialize display
     switch (APP_HW_VERSION) {
+        case APP_HW_VER_1_0:
         case APP_HW_VER_1_1:
             init_display_hw_ver_1(app);
             break;

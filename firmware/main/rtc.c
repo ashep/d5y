@@ -36,7 +36,8 @@ static void time_reader(void *args) {
             continue;
         }
 
-        if (app->time.flush_to_rtc) {  // flush app time to the RTC
+        if (app->time.flush_to_rtc) {
+            // flush app time to the RTC
             err = set_rtc_from_app_time(app);
             if (err) {
                 ESP_LOGE(APP_NAME, "failed to flush datetime to the RTC");
@@ -44,7 +45,8 @@ static void time_reader(void *args) {
                 app->time.flush_to_rtc = false;
                 ESP_LOGI(APP_NAME, "datetime has been flushed to the RTC");
             }
-        } else {  // read time from the RTC to the app
+        } else {
+            // read time from the RTC to the app
             err = set_app_time_from_rtc(app);
             if (err) {
                 ESP_LOGE(APP_NAME, "failed to read datetime from the RTC");

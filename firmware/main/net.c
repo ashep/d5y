@@ -129,7 +129,11 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     app->time.day = cJSON_GetObjectItem(data, "day")->valueint;
     app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
     app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
-    app->time.flush_to_rtc = 1;
+
+    // Don't abuse RTC's flash memory too much
+    if (app->time.hour == 0 && app->time.minute == 0) {
+        app->time.flush_to_rtc = true;
+    }
 
     app->weather.update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
     if (app->weather.update_ok) {
@@ -150,15 +154,24 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
 
 static void data_fetcher(void *args) {
     app_t *app = (app_t *) args;
+    esp_err_t err;
     bool need_update = true;
 
-    // Delay first run to let application fetch initial data from the RTC
-    vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
-
     for (;;) {
-        if (need_update) {
-            esp_err_t err = fetch_data(app, APP_API_HOST, APP_API_PATH);
+        vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
 
+        if (need_update) {
+            if (!app->net.wifi_connected) {
+                ESP_LOGI(APP_NAME, "WiFi is not connected, try to reconnect");
+
+                err = esp_wifi_connect();
+                if (err != ESP_OK) {
+                    ESP_LOGE(APP_NAME, "failed to connect to WiFi");
+                    continue;
+                }
+            }
+
+            err = fetch_data(app, APP_API_HOST, APP_API_PATH);
             if (err == ESP_OK) {
                 ESP_LOGI(APP_NAME, "network update completed");
                 app->net.update_ok = true;
@@ -199,12 +212,12 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
         case WIFI_EVENT_STA_CONNECTED:
             ESP_LOGI(APP_NAME, "WiFi connected");
+            app->net.wifi_connected = true;
             break;
 
         case WIFI_EVENT_STA_DISCONNECTED:
-            ESP_LOGI(APP_NAME, "WiFi disconnected, trying to reconnect");
-            app->net.update_ok = false;
-            esp_wifi_connect();
+            ESP_LOGI(APP_NAME, "WiFi disconnected");
+            app->net.wifi_connected = false;
             break;
 
         case WIFI_EVENT_AP_START: // the access point started
@@ -241,6 +254,7 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
 
 esp_err_t app_net_init(app_t *app) {
     esp_err_t err;
+    uint8_t mac[6];
 
     // Initialize WiFi subsystem
     tcpip_adapter_init();
@@ -249,6 +263,12 @@ esp_err_t app_net_init(app_t *app) {
     if (err != ESP_OK) {
         return err;
     }
+
+    // Get MAC-address
+    char mac_s[13] = {0};
+    char sig[50] = {0};
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
 
     // Register WiFi events handler
     err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh, (void *) app);
@@ -263,25 +283,31 @@ esp_err_t app_net_init(app_t *app) {
     }
 
     // Access point configuration
-    wifi_config_t wifi_config = {
+    wifi_config_t ap_config = {
             .ap = {
-                    .ssid = APP_WIFI_AP_SSID,
-                    .ssid_len = strlen(APP_WIFI_AP_SSID),
-                    .password = APP_WIFI_AP_PASS,
                     .max_connection = APP_WIFI_AP_MAX_CONN,
                     .authmode = WIFI_AUTH_WPA_WPA2_PSK,
             },
     };
-    if (strlen(APP_WIFI_AP_PASS) == 0) {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
+
+    // Access point name
+    char hostname[32] = {0};
+    strncpy(hostname, APP_NAME "_", 32);
+    strncat(hostname, mac_s, 4);
+    strncpy((char *) ap_config.ap.ssid, hostname, 32);
+    ap_config.ap.ssid_len = strlen(hostname);
+
+    // Access point password
+    char password[64] = {0};
+    strcpy(password, mac_s);
+    strncpy((char *) ap_config.ap.password, password, 64);
 
     // Initialize access point
     err = esp_wifi_set_mode(WIFI_MODE_APSTA);
     if (err != ESP_OK) {
         return err;
     }
-    err = esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config);
+    err = esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config);
     if (err != ESP_OK) {
         return err;
     }
@@ -290,22 +316,22 @@ esp_err_t app_net_init(app_t *app) {
         return err;
     }
 
-    // Set hostname
-    err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, APP_WIFI_STA_HOSTNAME);
+    err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
+    if (err) {
+        return err;
+    }
+    err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
     if (err) {
         return err;
     }
 
     // Set device signature
-    uint8_t mac[6];
-    char mac_s[13] = {0};
-    char sig[50] = {0};
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
-    sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
     strncpy(sig, app->signature, 50);
     sprintf(app->signature, "%s/%s", sig, mac_s);
 
     ESP_LOGI(APP_NAME, "network stack initialized");
+    ESP_LOGI(APP_NAME, "hostname: %s", hostname);
+    ESP_LOGI(APP_NAME, "password: %s", password);
 
     return ESP_OK;
 }
