@@ -32,13 +32,14 @@ void app_main() {
     app.mux = xSemaphoreCreateBinary();
     xSemaphoreGive(app.mux);
 
+    sprintf(app.signature, APP_NAME "/" APP_VERSION ":%d", APP_HW_VERSION);
+
     // Keyboard
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
     ESP_ERROR_CHECK(app_keyboard_init(&app));
 
     // NVS flash
     ESP_ERROR_CHECK(app_nvs_init(&app));
-
 
     // Full reset
     if ((APP_BTN_A_MODE == AESPL_BUTTON_PRESS_LOW && gpio_get_level(APP_BTN_A)) == 0 ||

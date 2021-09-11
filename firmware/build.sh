@@ -25,7 +25,7 @@ fi
 
 # Local build
 if [ "$1" == "build" ]; then
-  "${IDF_PATH}"/tools/idf.py build
+  "${IDF_PATH}"/tools/idf.py build -D "APP_NAME=${APP_NAME}"
 fi
 
 # Local flash

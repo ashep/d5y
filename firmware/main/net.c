@@ -76,6 +76,9 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
         return ESP_FAIL;
     }
 
+    // Set user agent
+    esp_http_client_set_header(cli, "User-Agent", app->signature);
+
     // Perform a request
     esp_err_t err = esp_http_client_perform(cli);
     if (err == ESP_OK) {
@@ -158,14 +161,14 @@ static void data_fetcher(void *args) {
 
             if (err == ESP_OK) {
                 ESP_LOGI(APP_NAME, "network update completed");
-                app->net_update_ok = true;
+                app->net.update_ok = true;
             } else {
                 ESP_LOGE(APP_NAME, "network update failed");
-                app->net_update_ok = false;
+                app->net.update_ok = false;
             }
         }
 
-        if (!app->net_update_ok) {
+        if (!app->net.update_ok) {
             need_update = true;
         } else {
             switch (app->time.minute) {
@@ -185,7 +188,7 @@ static void data_fetcher(void *args) {
 }
 
 // WiFi events handler
-static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *event_data) {
+static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev_data) {
     app_t *app = (app_t *) arg;
 
     switch (ev_id) {
@@ -200,7 +203,7 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
         case WIFI_EVENT_STA_DISCONNECTED:
             ESP_LOGI(APP_NAME, "WiFi disconnected, trying to reconnect");
-            app->net_update_ok = false;
+            app->net.update_ok = false;
             esp_wifi_connect();
             break;
 
@@ -211,13 +214,13 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
             break;
 
         case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
-            wifi_event_ap_staconnected_t *ev_st_conn = (wifi_event_ap_staconnected_t *) event_data;
-            ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR, ev_st_conn->aid, MAC2STR(ev_st_conn->mac));
+            wifi_event_ap_staconnected_t *d_ap_con = (wifi_event_ap_staconnected_t *) ev_data;
+            ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR, d_ap_con->aid, MAC2STR(d_ap_con->mac));
             break;
 
         case WIFI_EVENT_AP_STADISCONNECTED:; // a station disconnected from the access point
-            wifi_event_ap_stadisconnected_t *ev_st_dis = (wifi_event_ap_stadisconnected_t *) event_data;
-            ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, ev_st_dis->aid, MAC2STR(ev_st_dis->mac));
+            wifi_event_ap_stadisconnected_t *d_ap_dis = (wifi_event_ap_stadisconnected_t *) ev_data;
+            ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, d_ap_dis->aid, MAC2STR(d_ap_dis->mac));
             break;
     }
 }
@@ -292,6 +295,15 @@ esp_err_t app_net_init(app_t *app) {
     if (err) {
         return err;
     }
+
+    // Set device signature
+    uint8_t mac[6];
+    char mac_s[13] = {0};
+    char sig[50] = {0};
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
+    strncpy(sig, app->signature, 50);
+    sprintf(app->signature, "%s/%s", sig, mac_s);
 
     ESP_LOGI(APP_NAME, "network stack initialized");
 

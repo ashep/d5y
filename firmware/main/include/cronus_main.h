@@ -23,17 +23,19 @@
 #include "aespl_max7219.h"
 #include "aespl_max7219_matrix.h"
 
-/**
- * Hardware versions
- */
-#define APP_HW_VER_1 0x1
-
-#ifndef APP_HW_VERSION
-#define APP_HW_VERSION APP_HW_VER_1
+#ifndef APP_NAME
+#define APP_NAME "Cronus"
 #endif
 
-#ifndef APP_NAME
-#define APP_NAME "cronus"
+#ifndef APP_VERSION
+#define APP_VERSION "1.0"
+#endif
+
+#define APP_HW_VER_1_0 0x1
+#define APP_HW_VER_1_1 0x2
+
+#ifndef APP_HW_VERSION
+#define APP_HW_VERSION APP_HW_VER_1_1
 #endif
 
 typedef enum {
@@ -57,6 +59,10 @@ typedef enum {
 } app_mode_t;
 
 typedef struct {
+    bool update_ok;
+} app_net_t;
+
+typedef struct {
     uint8_t year;
     uint8_t month;
     uint8_t day;
@@ -78,13 +84,14 @@ typedef struct {
 } app_weather_t;
 
 typedef struct {
+    char signature[100];
     SemaphoreHandle_t mux;
     nvs_handle nvs;
     TimerHandle_t show_mode_timer;
     uint16_t display_refresh_cnt;
     uint16_t display_refresh_cnt_max;
     app_mode_t mode;
-    bool net_update_ok;
+    app_net_t net;
     app_date_time_t time;
     app_weather_t weather;
     aespl_httpd_t httpd;

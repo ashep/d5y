@@ -21,7 +21,7 @@
 #define APP_SCREEN_REFRESH_RATE 100  // milliseconds
 #endif
 
-#if APP_HW_VERSION == APP_HW_VER_1
+#if APP_HW_VERSION == APP_HW_VER_1_1
 #define APP_MAX7219_DISP_X 4
 #define APP_MAX7219_DISP_Y 1
 #define APP_MAX7219_DISP_REVERSE 0
