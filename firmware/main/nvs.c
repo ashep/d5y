@@ -28,11 +28,21 @@ esp_err_t app_nvs_init(app_t *app) {
 }
 
 esp_err_t app_nvs_set_u8(app_t *app, const char *key, uint8_t value) {
-    return nvs_set_u8(app->nvs, key, value);
+    esp_err_t err = nvs_set_u8(app->nvs, key, value);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    return nvs_commit(app->nvs);
 }
 
 esp_err_t app_nvs_get_u8(app_t *app, const char *key, uint8_t *value) {
-    return nvs_get_u8(app->nvs, key, value);
+    esp_err_t err = nvs_get_u8(app->nvs, key, value);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    return nvs_commit(app->nvs);
 }
 
 esp_err_t app_nvs_erase(app_t *app) {

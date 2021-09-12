@@ -130,11 +130,6 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
     app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
 
-    // Don't abuse RTC's flash memory too much
-    if (app->time.hour == 0 && app->time.minute == 0) {
-        app->time.flush_to_rtc = true;
-    }
-
     app->weather.update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
     if (app->weather.update_ok) {
         app->weather.temp = cJSON_GetObjectItem(data, "feels_like")->valuedouble;
@@ -156,6 +151,7 @@ static void data_fetcher(void *args) {
     app_t *app = (app_t *) args;
     esp_err_t err;
     bool need_update = true;
+    bool first_update = true;
 
     for (;;) {
         if (need_update) {
@@ -172,6 +168,15 @@ static void data_fetcher(void *args) {
 
             err = fetch_data(app, APP_API_HOST, APP_API_PATH);
             if (err == ESP_OK) {
+                // Don't abuse RTC's flash memory too much
+                if (first_update || (app->time.hour == 0 && app->time.minute <= 30)) {
+                    app->time.flush_to_rtc = true;
+                }
+
+                if (first_update) {
+                    first_update = false;
+                }
+
                 ESP_LOGI(APP_NAME, "network update completed");
                 need_update = false;
             } else {
@@ -181,9 +186,6 @@ static void data_fetcher(void *args) {
         } else if (app->time.minute == app->net.update_delay || app->time.minute == 30 + app->net.update_delay) {
             need_update = true;
         }
-
-        ESP_LOGI(APP_NAME, "minute: %d, update delay: %d, need update: %d",
-                 app->time.minute, app->net.update_delay, need_update);
 
         vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
     }

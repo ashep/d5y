@@ -1,6 +1,8 @@
 #ifndef CRONUS_NVS_H
 #define CRONUS_NVS_H
 
+#define CRONUS_NVS_K_MAX_BRIGHTNESS "scr_max_bri"
+
 /**
  * @brief Initializes the NVS.
  *

@@ -21,6 +21,14 @@
 #define APP_SCREEN_REFRESH_RATE 100  // milliseconds
 #endif
 
+#ifndef APP_SCREEN_MIN_BRIGHTNESS
+#define APP_SCREEN_MIN_BRIGHTNESS 0
+#endif
+
+#ifndef APP_SCREEN_MAX_BRIGHTNESS
+#define APP_SCREEN_MAX_BRIGHTNESS 15
+#endif
+
 #if APP_HW_VERSION == APP_HW_VER_1_0 || \
     APP_HW_VERSION == APP_HW_VER_1_1
 #define APP_MAX7219_DISP_X 4
@@ -33,12 +41,17 @@
 #warning "Unknown hardware version"
 #endif
 
-/**
- * Initializes display related things.
- *
- * @param app Application
- * @return
- */
-esp_err_t app_display_init(app_t *app);
+typedef struct {
+    aespl_gfx_buf_t *buf;
+    aespl_max7219_config_t max7219;
+    aespl_max7219_matrix_config_t max7219_matrix;
+    uint16_t refresh_cnt;
+    uint16_t refresh_cnt_max;
+    uint8_t brightness;
+    uint8_t min_brightness;
+    uint8_t max_brightness;
+    bool max_brightness_changed;
+} app_display_t;
+
 
 #endif // CRONUS_DISPLAY_H

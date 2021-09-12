@@ -43,7 +43,7 @@ static void switch_show_mode(app_t *app) {
 }
 
 static void inc_hour(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.hour++;
     if (app->time.hour > 23) {
         app->time.hour = 0;
@@ -51,7 +51,7 @@ static void inc_hour(app_t *app) {
 }
 
 static void inc_alarm_hour(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.alarm_hour++;
     if (app->time.alarm_hour > 23) {
         app->time.alarm_hour = 0;
@@ -59,7 +59,7 @@ static void inc_alarm_hour(app_t *app) {
 }
 
 static void inc_minute(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.minute++;
     if (app->time.minute > 59) {
         app->time.minute = 0;
@@ -67,7 +67,7 @@ static void inc_minute(app_t *app) {
 }
 
 static void inc_alarm_minute(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.alarm_minute++;
     if (app->time.alarm_minute > 59) {
         app->time.alarm_minute = 0;
@@ -75,7 +75,7 @@ static void inc_alarm_minute(app_t *app) {
 }
 
 static void inc_day(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.day++;
     if (app->time.day > 31) {
         app->time.day = 1;
@@ -83,7 +83,7 @@ static void inc_day(app_t *app) {
 }
 
 static void inc_month(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.month++;
     if (app->time.month > 12) {
         app->time.month = 1;
@@ -91,7 +91,7 @@ static void inc_month(app_t *app) {
 }
 
 static void inc_dow(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.dow++;
     if (app->time.dow > 6) {
         app->time.dow = 0;
@@ -99,10 +99,19 @@ static void inc_dow(app_t *app) {
 }
 
 static void inc_year(app_t *app) {
-    app->display_refresh_cnt = 0;
+    app->display.refresh_cnt = 0;
     app->time.year++;
     if (app->time.year > 99) {
         app->time.year = 21;
+    }
+}
+
+static void inc_screen_brightness(app_t *app) {
+    app->display.refresh_cnt = 0;
+    app->display.max_brightness++;
+    app->display.max_brightness_changed = true;
+    if (app->display.max_brightness > APP_SCREEN_MAX_BRIGHTNESS) {
+        app->display.max_brightness = 0;
     }
 }
 
@@ -117,9 +126,7 @@ static bool btn_a_l_press(void *args) {
         case APP_MODE_SHOW_TIME:
             app->time.alarm_enabled = !app->time.alarm_enabled;
             app_nvs_set_u8(app, "alarm_en", app->time.alarm_enabled);
-            if (app->time.alarm_enabled) {
-                app_alarm_beep();
-            }
+            app_alarm_beep();
             return false;
         case APP_MODE_SETTINGS_TIME_HOUR:
             inc_hour(app);
@@ -144,6 +151,9 @@ static bool btn_a_l_press(void *args) {
             break;
         case APP_MODE_SETTINGS_ALARM_MINUTE:
             inc_alarm_minute(app);
+            break;
+        case APP_MODE_SETTINGS_BRIGHTNESS:
+            inc_screen_brightness(app);
             break;
         default:
             break;
@@ -186,6 +196,9 @@ static bool btn_a_release(void *args) {
                 break;
             case APP_MODE_SETTINGS_ALARM_MINUTE:
                 inc_alarm_minute(app);
+                break;
+            case APP_MODE_SETTINGS_BRIGHTNESS:
+                inc_screen_brightness(app);
                 break;
             default:
                 break;

@@ -17,13 +17,9 @@
 #define APP_WIFI_AP_MAX_CONN 5
 #endif
 
-/**
- * Initializes network related things.
- *
- * @param app Application
- * @return
- */
-esp_err_t app_net_init(app_t *app);
-
+typedef struct {
+    bool wifi_connected;
+    int update_delay;
+} app_net_t;
 
 #endif //CRONUS_NET_H

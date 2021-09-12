@@ -8,6 +8,21 @@
 #ifndef CRONUS_MAIN_H
 #define CRONUS_MAIN_H
 
+#ifndef APP_NAME
+#define APP_NAME "Cronus"
+#endif
+
+#ifndef APP_VERSION
+#define APP_VERSION "1.0"
+#endif
+
+#define APP_HW_VER_1_0 0x1
+#define APP_HW_VER_1_1 0x2
+
+#ifndef APP_HW_VERSION
+#define APP_HW_VERSION APP_HW_VER_1_1
+#endif
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -23,20 +38,9 @@
 #include "aespl_max7219.h"
 #include "aespl_max7219_matrix.h"
 
-#ifndef APP_NAME
-#define APP_NAME "Cronus"
-#endif
-
-#ifndef APP_VERSION
-#define APP_VERSION "1.0"
-#endif
-
-#define APP_HW_VER_1_0 0x1
-#define APP_HW_VER_1_1 0x2
-
-#ifndef APP_HW_VERSION
-#define APP_HW_VERSION APP_HW_VER_1_1
-#endif
+#include "cronus_display.h"
+#include "cronus_net.h"
+#include "cronus_weather.h"
 
 typedef enum {
     APP_MODE_SHOW_MIN,
@@ -55,13 +59,9 @@ typedef enum {
     APP_MODE_SETTINGS_DATE_YEAR,
     APP_MODE_SETTINGS_ALARM_HOUR,
     APP_MODE_SETTINGS_ALARM_MINUTE,
+    APP_MODE_SETTINGS_BRIGHTNESS,
     APP_MODE_SETTINGS_MAX,
 } app_mode_t;
-
-typedef struct {
-    bool wifi_connected;
-    int update_delay;
-} app_net_t;
 
 typedef struct {
     uint8_t year;
@@ -80,17 +80,10 @@ typedef struct {
 } app_date_time_t;
 
 typedef struct {
-    bool update_ok;
-    double temp;
-} app_weather_t;
-
-typedef struct {
     char signature[100];
     SemaphoreHandle_t mux;
     nvs_handle nvs;
     TimerHandle_t show_mode_timer;
-    uint16_t display_refresh_cnt;
-    uint16_t display_refresh_cnt_max;
     app_mode_t mode;
     app_net_t net;
     app_date_time_t time;
@@ -99,11 +92,25 @@ typedef struct {
     aespl_button_t btn_a;
     aespl_button_t btn_b;
     aespl_ds3231_t ds3231;
-    aespl_gfx_buf_t *gfx_buf;
-    aespl_max7219_config_t max7219;
-    aespl_max7219_matrix_config_t max7219_matrix;
+    app_display_t display;
     TaskHandle_t alarm_task;
 } app_t;
+
+/**
+ * Initializes display related things.
+ *
+ * @param app Application
+ * @return
+ */
+esp_err_t app_display_init(app_t *app);
+
+/**
+ * Initializes network related things.
+ *
+ * @param app Application
+ * @return
+ */
+esp_err_t app_net_init(app_t *app);
 
 /**
  * RTOS app entry point.
