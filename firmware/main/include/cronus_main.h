@@ -60,7 +60,7 @@ typedef enum {
 
 typedef struct {
     bool wifi_connected;
-    bool update_ok;
+    int update_delay;
 } app_net_t;
 
 typedef struct {

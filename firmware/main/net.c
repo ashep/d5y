@@ -158,8 +158,6 @@ static void data_fetcher(void *args) {
     bool need_update = true;
 
     for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
-
         if (need_update) {
             if (!app->net.wifi_connected) {
                 ESP_LOGI(APP_NAME, "WiFi is not connected, try to reconnect");
@@ -167,6 +165,7 @@ static void data_fetcher(void *args) {
                 err = esp_wifi_connect();
                 if (err != ESP_OK) {
                     ESP_LOGE(APP_NAME, "failed to connect to WiFi");
+                    vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
                     continue;
                 }
             }
@@ -174,27 +173,17 @@ static void data_fetcher(void *args) {
             err = fetch_data(app, APP_API_HOST, APP_API_PATH);
             if (err == ESP_OK) {
                 ESP_LOGI(APP_NAME, "network update completed");
-                app->net.update_ok = true;
+                need_update = false;
             } else {
                 ESP_LOGE(APP_NAME, "network update failed");
-                app->net.update_ok = false;
+                need_update = true;
             }
+        } else if (app->time.minute == app->net.update_delay || app->time.minute == 30 + app->net.update_delay) {
+            need_update = true;
         }
 
-        if (!app->net.update_ok) {
-            need_update = true;
-        } else {
-            switch (app->time.minute) {
-                case 0:
-                case 15:
-                case 30:
-                case 45:
-                    need_update = true;
-                    break;
-                default:
-                    need_update = false;
-            }
-        }
+        ESP_LOGI(APP_NAME, "minute: %d, update delay: %d, need update: %d",
+                 app->time.minute, app->net.update_delay, need_update);
 
         vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
     }
@@ -270,6 +259,14 @@ esp_err_t app_net_init(app_t *app) {
     esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
     sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
 
+    // Update delay minutes
+    for (uint8_t i = 0; i < 6; i++) {
+        app->net.update_delay = mac[i] >> 4; // can be from 0 to 15
+        if (app->net.update_delay != 0) { // out target is to have delay grater than 0
+            break;
+        }
+    }
+
     // Register WiFi events handler
     err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh, (void *) app);
     if (err != ESP_OK) {
@@ -316,6 +313,7 @@ esp_err_t app_net_init(app_t *app) {
         return err;
     }
 
+    // Hostname
     err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
     if (err) {
         return err;
@@ -329,9 +327,7 @@ esp_err_t app_net_init(app_t *app) {
     strncpy(sig, app->signature, 50);
     sprintf(app->signature, "%s/%s", sig, mac_s);
 
-    ESP_LOGI(APP_NAME, "network stack initialized");
-    ESP_LOGI(APP_NAME, "hostname: %s", hostname);
-    ESP_LOGI(APP_NAME, "password: %s", password);
+    ESP_LOGI(APP_NAME, "network stack initialized; hostname: %s, AP password: %s", hostname, password);
 
     return ESP_OK;
 }
