@@ -1,5 +1,21 @@
 # Cronus Digital Clock
 
+## Electornics
+
+Coming soon.
+
+## Enclosure
+
+Coming soon.
+
+## Backend
+
+Coming soon.
+
+## Fontend
+
+Coming soon.
+
 ## Changelog
 
 ### v1.1 (2021-??-??)
