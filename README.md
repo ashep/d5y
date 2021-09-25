@@ -1,6 +1,6 @@
 # Cronus Digital Clock
 
-## Electornics
+## Electronics
 
 Coming soon.
 
@@ -12,7 +12,7 @@ Coming soon.
 
 Coming soon.
 
-## Fontend
+## Frontend
 
 Coming soon.
 
@@ -22,9 +22,9 @@ Coming soon.
 
 Schematic:
 
-- Forgotten pull-down of GPIO 15 added (R8).
-- Forgotten pull-up of GPIO 2 added (R8).
-- NC pins of DS3231 connected to GND.
+- Added forgotten pull-down to GPIO 15 (R8).
+- Added forgotten pull-up to GPIO 2 (R8).
+- NC pins of DS3231 connected to GND as its datasheet requires.
 
 Firmware:
 
@@ -32,4 +32,4 @@ Firmware:
 
 ### v1.0 (2021-07-13)
 
-First version.
+First unstable development version.
