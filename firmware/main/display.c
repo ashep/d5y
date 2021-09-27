@@ -186,10 +186,15 @@ static void draw_max_brightness(app_t *app) {
 }
 
 static void make_temperature_str(char *s, int temp) {
-    if (temp > 0) {
-        sprintf(s, "+%d,", temp);
+    if (temp > 9) {
+        sprintf(s, "    %d,", temp);
+    }
+    else if (temp >= 0) {
+        sprintf(s, "      %d,", temp);
+    } else if (temp > -9) {
+        sprintf(s, "   %d,", temp);
     } else {
-        sprintf(s, "%d,", temp);
+        sprintf(s, "  %d,", temp);
     }
 }
 
@@ -208,8 +213,7 @@ static void draw_ambient_temp(app_t *app) {
  */
 static void draw_weather_temp(app_t *app) {
     char s[5];
-    strcpy(s, "!"); // thermometer sign
-    make_temperature_str(s + 1, (int) round(app->weather.temp));
+    make_temperature_str(s, (int) round(app->weather.temp));
     aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
 }
 

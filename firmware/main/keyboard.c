@@ -254,15 +254,15 @@ static void show_mode_switcher(void *args) {
 
     for (;;) {
         if (last_mode == APP_MODE_SHOW_TIME) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION * APP_SECOND));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION));
         } else if (last_mode == APP_MODE_SHOW_DATE) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION));
         } else if (last_mode == APP_MODE_SHOW_DOW) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION * APP_SECOND));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION));
         } else if (last_mode == APP_MODE_SHOW_AMBIENT_TEMP) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION * APP_SECOND));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION));
         } else if (last_mode == APP_MODE_SHOW_WEATHER_TEMP && app->weather.update_ok) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION * APP_SECOND));
+            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION));
         }
 
         // Switch only if mode hasn't been changed while this task was sleeping
