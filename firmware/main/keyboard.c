@@ -28,7 +28,7 @@ static void switch_show_mode(app_t *app) {
 
     app->mode++;
 
-    // Will work in version 1.1
+    // Will work in version 1.2
     if (app->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
         app->mode++;
     }

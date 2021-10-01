@@ -57,14 +57,14 @@ static void draw_time(app_t *app) {
     aespl_gfx_puts(buf_m, &font8_clock_2, pos, s, 1, 1);
 
     // Draw separator
+    aespl_gfx_set_px(buf_sep, 1, 1, 1);
     aespl_gfx_set_px(buf_sep, 0, 2, 1);
-    aespl_gfx_set_px(buf_sep, 1, 2, 1);
-    aespl_gfx_set_px(buf_sep, 0, 5, 1);
+    aespl_gfx_set_px(buf_sep, 0, 6, 1);
     aespl_gfx_set_px(buf_sep, 1, 5, 1);
 
     // Double separator bottom dot height in alarm mode
     if (app->time.alarm_enabled || app->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
-        aespl_gfx_set_px(buf_sep, 0, 6, 1);
+        aespl_gfx_set_px(buf_sep, 0, 1, 1);
         aespl_gfx_set_px(buf_sep, 1, 6, 1);
     }
 
@@ -150,7 +150,7 @@ static void draw_dow(app_t *app) {
     } else {
         char s[8];
         sprintf(s, "- %d -", app->time.dow + 1);
-        aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {5, 0}, s, 1, 1);
+        aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {6, 0}, s, 1, 1);
     }
 }
 
@@ -185,16 +185,15 @@ static void draw_max_brightness(app_t *app) {
     aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {4, 0}, s, 1, 1);
 }
 
-static void make_temperature_str(char *s, int temp) {
-    if (temp > 9) {
-        sprintf(s, "    %d,", temp);
-    }
-    else if (temp >= 0) {
-        sprintf(s, "      %d,", temp);
-    } else if (temp > -9) {
-        sprintf(s, "   %d,", temp);
-    } else {
-        sprintf(s, "  %d,", temp);
+static void make_temperature_str(char sign, char *s, int temp) {
+    if (temp < -9) {
+        sprintf(s, "%c%d,", sign, temp);
+    } else if (temp >= -9 && temp < 0) {
+        sprintf(s, "%c %d,", sign, temp);
+    } else if (temp >= 0 && temp < 10) {
+        sprintf(s, "%c  %d,", sign, temp);
+    } else { // >= 10
+        sprintf(s, "%c %d,", sign, temp);
     }
 }
 
@@ -203,8 +202,7 @@ static void make_temperature_str(char *s, int temp) {
  */
 static void draw_ambient_temp(app_t *app) {
     char s[5];
-    strcpy(s, "#"); // home sign
-    make_temperature_str(s + 1, (int) round(app->ds3231.temp - 4));
+    make_temperature_str('#', s, (int) round(app->ds3231.temp - 4));
     aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
 }
 
@@ -213,7 +211,7 @@ static void draw_ambient_temp(app_t *app) {
  */
 static void draw_weather_temp(app_t *app) {
     char s[5];
-    make_temperature_str(s, (int) round(app->weather.temp));
+    make_temperature_str('!', s, (int) round(app->weather.temp));
     aespl_gfx_puts(app->display.buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
 }
 
@@ -297,9 +295,6 @@ static void brightness_regulator(void *args) {
     app_t *app = (app_t *) args;
     uint16_t data = 0;
 
-    // Wait at minimum brightness oo let weak PSUs provide enough current at startup phase
-    vTaskDelay(pdMS_TO_TICKS(1500));
-
     for (;;) {
         // Maximum brightness in settings mode to let user make estimation
         if (app->mode == APP_MODE_SETTINGS_BRIGHTNESS) {
@@ -324,7 +319,7 @@ static void brightness_regulator(void *args) {
         }
 
         app->display.max7219.intensity = app->display.brightness;
-        vTaskDelay(pdMS_TO_TICKS(2500));
+        vTaskDelay(pdMS_TO_TICKS(APP_SCREEN_BRIGHTNESS_REG_TIMEOUT));
     }
 }
 
