@@ -23,23 +23,44 @@
 #include "cronus/weather.h"
 
 static void switch_show_mode(app_keyboard_t *kb) {
-    if (*kb->mode > APP_MODE_SETTINGS_MIN) {
+    // Don't switch while app is in settings mode
+    if (*kb->app_mode > APP_MODE_SETTINGS_MIN) {
         return;
     }
 
-    (*kb->mode)++;
+    (*kb->app_mode)++;
 
     // Will work in version 1.2, skip for now
-    if (*kb->mode == APP_MODE_SHOW_AMBIENT_TEMP) {
-        (*kb->mode)++;
+    if (*kb->app_mode == APP_MODE_SHOW_AMBIENT_TEMP) {
+        (*kb->app_mode)++;
     }
 
-    if (*kb->mode == APP_MODE_SHOW_WEATHER_TEMP && !kb->weather->update_ok) {
-        (*kb->mode)++;
+    // Don't show weather temperature if it wasn't received properly
+    if (*kb->app_mode == APP_MODE_SHOW_WEATHER_TEMP && !kb->weather->update_ok) {
+        (*kb->app_mode)++;
     }
 
-    if (*kb->mode == APP_MODE_SHOW_MAX) {
-        *kb->mode = APP_MODE_SHOW_MIN + 1;
+    // Reached last show mode, need to start from the first one
+    if (*kb->app_mode == APP_MODE_SHOW_MAX) {
+        *kb->app_mode = APP_MODE_SHOW_MIN + 1;
+    }
+
+    // Adjust automatic show mode switcher
+    switch (*kb->app_mode) {
+        case APP_MODE_SHOW_TIME:
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_TIME_DURATION), 0);
+            break;
+        case APP_MODE_SHOW_DATE:
+        case APP_MODE_SHOW_DOW:
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
+            break;
+        case APP_MODE_SHOW_WEATHER_TEMP:
+        case APP_MODE_SHOW_AMBIENT_TEMP:
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_TEMP_DURATION), 0);
+            break;
+        default:
+            break;
     }
 }
 
@@ -123,7 +144,7 @@ static bool btn_a_l_press(void *args) {
         app_alarm_stop(kb->time);
     }
 
-    switch (*kb->mode) {
+    switch (*kb->app_mode) {
         case APP_MODE_SHOW_TIME:
             kb->time->alarm_enabled = !kb->time->alarm_enabled;
             nvs_set_u8(kb->nvs, "alarm_en", kb->time->alarm_enabled);
@@ -170,10 +191,10 @@ static bool btn_a_release(void *args) {
         app_alarm_stop(kb->time);
     }
 
-    if (*kb->mode < APP_MODE_SHOW_MAX) { // Show mode
+    if (*kb->app_mode < APP_MODE_SHOW_MAX) { // Show mode
         switch_show_mode(kb);
-    } else if (*kb->mode > APP_MODE_SHOW_MAX) { // Settings mode
-        switch (*kb->mode) {
+    } else if (*kb->app_mode > APP_MODE_SHOW_MAX) { // Settings mode
+        switch (*kb->app_mode) {
             case APP_MODE_SETTINGS_TIME_HOUR:
                 inc_hour(kb);
                 break;
@@ -216,13 +237,13 @@ static bool btn_b_l_press(void *args) {
         app_alarm_stop(kb->time);
     }
 
-    if (*kb->mode < APP_MODE_SHOW_MAX) {
-        *kb->mode = APP_MODE_SETTINGS_MIN + 1;
-        ets_printf("Enter settings mode: %d\n", kb->mode);
-    } else if (*kb->mode > APP_MODE_SHOW_MAX) {
+    if (*kb->app_mode < APP_MODE_SHOW_MAX) {
+        *kb->app_mode = APP_MODE_SETTINGS_MIN + 1;
+        ets_printf("Enter settings mode: %d\n", kb->app_mode);
+    } else if (*kb->app_mode > APP_MODE_SHOW_MAX) {
         kb->time->flush_to_rtc = true;
-        *kb->mode = APP_MODE_SHOW_MIN + 1;
-        ets_printf("Exit settings mode: %d\n", kb->mode);
+        *kb->app_mode = APP_MODE_SHOW_MIN + 1;
+        ets_printf("Exit settings mode: %d\n", kb->app_mode);
     }
 
     return false;
@@ -235,49 +256,29 @@ static bool btn_b_release(void *args) {
         app_alarm_stop(kb->time);
     }
 
-    if (*kb->mode > APP_MODE_SHOW_MAX) {
-        (*kb->mode)++;
-        if (*kb->mode == APP_MODE_SETTINGS_MAX) {
+    if (*kb->app_mode > APP_MODE_SHOW_MAX) {
+        (*kb->app_mode)++;
+        if (*kb->app_mode == APP_MODE_SETTINGS_MAX) {
             kb->time->flush_to_rtc = true;
-            *kb->mode = APP_MODE_SHOW_MIN + 1;
-            ets_printf("Exit settings mode: %d\n", kb->mode);
+            *kb->app_mode = APP_MODE_SHOW_MIN + 1;
+            ets_printf("Exit settings mode: %d\n", kb->app_mode);
         } else {
-            ets_printf("Next settings mode: %d\n", kb->mode);
+            ets_printf("Next settings mode: %d\n", kb->app_mode);
         }
     }
 
     return true;
 }
 
-static void show_mode_switcher(void *args) {
-    app_keyboard_t *kb = (app_keyboard_t *) args;
-    int last_mode = *kb->mode;
+static void show_mode_switcher(TimerHandle_t timer) {
+    app_keyboard_t *kb = (app_keyboard_t *) pvTimerGetTimerID(timer);
 
-    for (;;) {
-        if (last_mode == APP_MODE_SHOW_TIME) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_TIME_DURATION));
-        } else if (last_mode == APP_MODE_SHOW_DATE) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION));
-        } else if (last_mode == APP_MODE_SHOW_DOW) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_DATE_DURATION));
-        } else if (last_mode == APP_MODE_SHOW_AMBIENT_TEMP) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_AMBIENT_TEMP_DURATION));
-        } else if (last_mode == APP_MODE_SHOW_WEATHER_TEMP && kb->weather->update_ok) {
-            vTaskDelay(pdMS_TO_TICKS(APP_SHOW_WEATHER_TEMP_DURATION));
-        }
-
-        // Switch only if mode hasn't been changed while this task was sleeping
-        if (*kb->mode == last_mode) {
-            switch_show_mode(kb);
-            last_mode = *kb->mode;
-        } else if (*kb->mode < APP_MODE_SETTINGS_MIN) {
-            last_mode = *kb->mode;
-        }
-    }
+    ESP_LOGI(APP_NAME, "tick; mode=%d", *kb->app_mode);
+    switch_show_mode(kb);
 }
 
 app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_display_t *display, app_weather_t *weather,
-                                 nvs_handle_t nvs) {
+                                  nvs_handle_t nvs) {
     esp_err_t err;
 
     err = gpio_install_isr_service(0);
@@ -300,7 +301,7 @@ app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_displa
     }
     xSemaphoreGive(kb->mux);
 
-    kb->mode = mode;
+    kb->app_mode = mode;
     kb->time = time;
     kb->display = display;
     kb->nvs = nvs;
@@ -349,8 +350,20 @@ app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_displa
     }
 
     // Setup time based automatic show mode switcher
-    xTaskCreate(show_mode_switcher, "show_mode_switcher", 4096, (void *) kb, 0, NULL);
-    ESP_LOGI(APP_NAME, "keyboard initialized");
+    kb->app_mode_timer = xTimerCreate("mode_switch", pdMS_TO_TICKS(APP_SHOW_TIME_DURATION), pdTRUE,
+                                      (void *) kb, show_mode_switcher);
+    if (kb->app_mode_timer == NULL) {
+        free(kb);
+        ESP_LOGE(APP_NAME, "failed to init automatic mode switcher");
+        return NULL;
+    }
+    if (xTimerStart(kb->app_mode_timer, 0) != pdPASS) {
+        free(kb);
+        ESP_LOGE(APP_NAME, "failed to start automatic mode switcher");
+        return NULL;
+    }
+    ESP_LOGI(APP_NAME, "automatic mode switcher initialized");
 
+    ESP_LOGI(APP_NAME, "keyboard initialized");
     return kb;
 }
