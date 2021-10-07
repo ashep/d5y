@@ -1,6 +1,7 @@
-#ifndef CRONUS_DISPLAY_H
-#define CRONUS_DISPLAY_H
+#ifndef CRONUS_DISPLAY_HW_VER_1_H
+#define CRONUS_DISPLAY_HW_VER_1_H
 
+#include "freertos/timers.h"
 #include "semphr.h"
 #include "nvs.h"
 
@@ -36,19 +37,17 @@
 #define APP_DISPLAY_MAX_BRIGHTNESS 15
 #endif
 
-#ifndef APP_DISPLAY_BRIGHTNESS_REG_TIMEOUT
-#define APP_DISPLAY_BRIGHTNESS_REG_TIMEOUT 2500
+#ifndef APP_BRIGHTNESS_REG_TIMEOUT
+#define APP_BRIGHTNESS_REG_TIMEOUT 2500
 #endif
 
-
-#if APP_HW_VERSION == APP_HW_VER_1_0 || \
-    APP_HW_VERSION == APP_HW_VER_1_1
-#define APP_MAX7219_DISP_X 4
-#define APP_MAX7219_DISP_Y 1
-#define APP_MAX7219_DISP_REVERSE 0
-#define APP_MAX7219_PIN_DATA GPIO_NUM_12
-#define APP_MAX7219_PIN_CLK GPIO_NUM_14
-#define APP_MAX7219_PIN_CS GPIO_NUM_13
+#if APP_HW_VERSION == APP_HW_VER_1
+#define APP_HW_V1_DISPLAYS_X 4
+#define APP_HW_V1_DISPLAYS_Y 1
+#define APP_HW_V1_DISPLAY_HORIZ_REVERSE 0
+#define APP_HW_V1_DISPLAY_PIN_DATA GPIO_NUM_12
+#define APP_HW_V1_DISPLAY_PIN_CLK GPIO_NUM_14
+#define APP_HW_V1_DISPLAY_PIN_CS GPIO_NUM_13
 #else
 #warning "Unknown hardware version"
 #endif
@@ -63,6 +62,7 @@ typedef struct {
     uint8_t brightness;
     uint8_t min_brightness;
     uint8_t max_brightness;
+    xTimerHandle brightness_timer;
     bool sep_visible;
     bool max_brightness_changed;
     char splash_screen_text[20];
@@ -78,6 +78,6 @@ typedef struct {
  *
  * @return
  */
-app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs);
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs);
 
-#endif // CRONUS_DISPLAY_H
+#endif // CRONUS_DISPLAY_HW_VER_1_H

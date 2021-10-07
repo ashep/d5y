@@ -24,7 +24,6 @@
 
 void app_main() {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-//    sprintf(app.signature, APP_NAME "/" APP_VERSION ":%d", APP_HW_VERSION);
 
     // App mode
     app_mode_t *mode = malloc(sizeof (app_mode_t));
@@ -58,7 +57,7 @@ void app_main() {
     memset(weather, 0, sizeof(app_weather_t));
 
     // Display
-    app_display_t *display = app_display_init(mode, time, weather, nvs);
+    app_display_t *display = app_display_hw_ver_1_init(mode, time, weather, nvs);
     if (display == NULL) {
         return;
     }

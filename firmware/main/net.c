@@ -310,7 +310,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     // Access point name
     char hostname[32] = {0};
     strncpy(hostname, APP_NAME "_", 32);
-    strncat(hostname, mac_s, 4);
+    strncat(hostname, mac_s + 8, 4);
     strncpy((char *) ap_config.ap.ssid, hostname, 32);
     ap_config.ap.ssid_len = strlen(hostname);
 
@@ -344,9 +344,8 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     }
 
     // Set device signature
-    sprintf(net->signature, "%s/%s/%s", APP_NAME, APP_VERSION, mac_s);
+    sprintf(net->signature, "%s/%s:%02x/%s", APP_NAME, APP_VERSION, APP_HW_VERSION, mac_s);
 
-    ESP_LOGI(APP_NAME, "network stack initialized; hostname: %s, AP password: %s", hostname, password);
-
+    ESP_LOGI(APP_NAME, "network stack initialized; mac=%s, host=%s, pass=%s", mac_s, hostname, password);
     return ESP_OK;
 }

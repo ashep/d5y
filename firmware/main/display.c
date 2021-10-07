@@ -10,6 +10,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/timers.h"
 
 #include "driver/adc.h"
 #include "esp_err.h"
@@ -182,7 +183,7 @@ static void draw_year(app_display_t *display) {
 /**
  * @brief Draws maximum brightness level
  */
-static void draw_max_brightness(app_display_t *display) {
+static void draw_brightness(app_display_t *display) {
     char s[6];
     sprintf(s, "$ %02d", display->max_brightness + 1);
     aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {4, 0}, s, 1, 1);
@@ -270,7 +271,9 @@ static void refresh(void *args) {
                 break;
 
             case APP_MODE_SETTINGS_BRIGHTNESS:
-                draw_max_brightness(d);
+                // Increase brightness task frequency to make display more responsive to user input
+                xTimerChangePeriod(d->brightness_timer, pdMS_TO_TICKS(APP_DISPLAY_REFRESH_RATE), 0);
+                draw_brightness(d);
                 break;
 
             default:
@@ -278,51 +281,45 @@ static void refresh(void *args) {
         }
 
         // Output buffer to hardware
-        switch (APP_HW_VERSION) {
-            case APP_HW_VER_1_0:
-            case APP_HW_VER_1_1:
-                aespl_max7219_refresh(&d->max7219);
-                aespl_max7219_matrix_draw(&d->max7219_matrix, d->buf);
-                break;
-
-            default:
-                break;
-        }
+        aespl_max7219_refresh(&d->max7219);
+        aespl_max7219_matrix_draw(&d->max7219_matrix, d->buf);
 
         vTaskDelay(pdMS_TO_TICKS(APP_DISPLAY_REFRESH_RATE));
     }
 }
 
-static void brightness_regulator(void *args) {
-    app_display_t *display = (app_display_t *) args;
+static void brightness_regulator(xTimerHandle timer) {
+    app_display_t *display = (app_display_t *) pvTimerGetTimerID(timer);
     uint16_t data = 0;
 
-    for (;;) {
-        // Maximum brightness in settings mode to let user make estimation
-        if (*display->mode == APP_MODE_SETTINGS_BRIGHTNESS) {
-            display->max7219.intensity = display->max_brightness;
-            vTaskDelay(pdMS_TO_TICKS(1));
-            continue;
+    // Set brightness in settings mode to let user make estimation
+    if (*display->mode == APP_MODE_SETTINGS_BRIGHTNESS) {
+        display->max7219.intensity = display->max_brightness;
+        return;
+    } else {
+        // Since timer can be changed by refresh(), ensure we have correct period
+        int p = pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT);
+        if (xTimerGetPeriod(timer) != p) {
+            xTimerChangePeriod(timer, p, 0);
         }
-
-        // Store maximum brightness level to the NVS
-        if (display->max_brightness_changed) {
-            nvs_set_u8(display->nvs, "scr_max_bri", display->max_brightness);
-            display->max_brightness_changed = false;
-        }
-
-        adc_read(&data);
-
-        display->brightness = data / 64;
-        if (display->brightness < display->min_brightness) {
-            display->brightness = display->min_brightness;
-        } else if (display->brightness > display->max_brightness) {
-            display->brightness = display->max_brightness;
-        }
-
-        display->max7219.intensity = display->brightness;
-        vTaskDelay(pdMS_TO_TICKS(APP_DISPLAY_BRIGHTNESS_REG_TIMEOUT));
     }
+
+    // Store maximum brightness level to the NVS
+    if (display->max_brightness_changed) {
+        nvs_set_u8(display->nvs, "scr_max_bri", display->max_brightness);
+        display->max_brightness_changed = false;
+    }
+
+    adc_read(&data);
+
+    display->brightness = data / 64;
+    if (display->brightness < display->min_brightness) {
+        display->brightness = display->min_brightness;
+    } else if (display->brightness > display->max_brightness) {
+        display->brightness = display->max_brightness;
+    }
+
+    display->max7219.intensity = display->brightness;
 }
 
 static aespl_gfx_anim_state_t splash_screen_animation(void *args, uint32_t frame_n) {
@@ -391,32 +388,32 @@ static void splash_screen(app_display_t *display) {
     aespl_max7219_matrix_draw(&display->max7219_matrix, display->buf);
 }
 
-static void init_display_hw_ver_1(app_display_t *display) {
-    display->buf = aespl_gfx_make_buf(APP_MAX7219_DISP_X * 8, APP_MAX7219_DISP_Y * 8, AESPL_GFX_C_MODE_MONO);
+static void init_display(app_display_t *display) {
+    display->buf = aespl_gfx_make_buf(APP_HW_V1_DISPLAYS_X * 8, APP_HW_V1_DISPLAYS_Y * 8, AESPL_GFX_C_MODE_MONO);
 
     ESP_ERROR_CHECK(aespl_max7219_init(
             &display->max7219,
-            APP_MAX7219_PIN_CS,
-            APP_MAX7219_PIN_CLK,
-            APP_MAX7219_PIN_DATA,
+            APP_HW_V1_DISPLAY_PIN_CS,
+            APP_HW_V1_DISPLAY_PIN_CLK,
+            APP_HW_V1_DISPLAY_PIN_DATA,
             AESPL_MAX7219_DECODE_NONE,
             AESPL_MAX7219_INTENSITY_MIN,
             AESPL_MAX7219_SCAN_LIMIT_8,
             AESPL_MAX7219_POWER_ON,
             AESPL_MAX7219_TEST_MODE_DISABLE,
-            APP_MAX7219_DISP_X * APP_MAX7219_DISP_Y
+            APP_HW_V1_DISPLAYS_X * APP_HW_V1_DISPLAYS_Y
     ));
 
     ESP_ERROR_CHECK(aespl_max7219_matrix_init(
             &display->max7219_matrix,
             &display->max7219,
-            APP_MAX7219_DISP_X,
-            APP_MAX7219_DISP_Y,
-            APP_MAX7219_DISP_REVERSE
+            APP_HW_V1_DISPLAYS_X,
+            APP_HW_V1_DISPLAYS_Y,
+            APP_HW_V1_DISPLAY_HORIZ_REVERSE
     ));
 }
 
-app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs) {
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs) {
     int err;
     app_display_t *d = NULL;
 
@@ -450,17 +447,7 @@ app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_
     }
 
     // Initialize display
-    switch (APP_HW_VERSION) {
-        case APP_HW_VER_1_0:
-        case APP_HW_VER_1_1:
-            init_display_hw_ver_1(d);
-            break;
-
-        default:
-            free(d);
-            ESP_LOGE(APP_NAME, "unknown hardware version %d", APP_HW_VERSION);
-            return NULL;
-    }
+    init_display(d);
 
     // Show splash screen
     sprintf(d->splash_screen_text, "Cronus     v%s", APP_VERSION);
@@ -474,7 +461,18 @@ app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_
         ESP_LOGE(APP_NAME, "adc_init() failed; err=%d", err);
         return NULL;
     }
-    xTaskCreate(brightness_regulator, "display_brightness", 4096, (void *) d, 0, NULL);
+    d->brightness_timer = xTimerCreate(
+            "brightness", pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT), pdTRUE, (void *) d, brightness_regulator);
+    if (d->brightness_timer == NULL) {
+        ESP_LOGE(APP_NAME, "failed to initialize brightness regulator timer");
+        free(d);
+        return NULL;
+    }
+    if (xTimerStart(d->brightness_timer, 0) != pdPASS) {
+        ESP_LOGE(APP_NAME, "failed to start brightness regulator timer");
+        free(d);
+        return NULL;
+    }
     ESP_LOGI(APP_NAME, "brightness regulator initialized");
 
     // Screen draw task

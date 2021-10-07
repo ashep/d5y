@@ -64,7 +64,7 @@ static void switch_show_mode(app_keyboard_t *kb) {
     }
 }
 
-static void inc_hour(app_keyboard_t *kb) {
+static void inc_setting_hour(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->hour++;
     if (kb->time->hour > 23) {
@@ -72,7 +72,7 @@ static void inc_hour(app_keyboard_t *kb) {
     }
 }
 
-static void inc_alarm_hour(app_keyboard_t *kb) {
+static void inc_setting_alarm_hour(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->alarm_hour++;
     if (kb->time->alarm_hour > 23) {
@@ -80,7 +80,7 @@ static void inc_alarm_hour(app_keyboard_t *kb) {
     }
 }
 
-static void inc_minute(app_keyboard_t *kb) {
+static void inc_setting_minute(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->minute++;
     if (kb->time->minute > 59) {
@@ -88,7 +88,7 @@ static void inc_minute(app_keyboard_t *kb) {
     }
 }
 
-static void inc_alarm_minute(app_keyboard_t *kb) {
+static void inc_setting_alarm_minute(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->alarm_minute++;
     if (kb->time->alarm_minute > 59) {
@@ -96,7 +96,7 @@ static void inc_alarm_minute(app_keyboard_t *kb) {
     }
 }
 
-static void inc_day(app_keyboard_t *kb) {
+static void inc_setting_day(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->day++;
     if (kb->time->day > 31) {
@@ -104,7 +104,7 @@ static void inc_day(app_keyboard_t *kb) {
     }
 }
 
-static void inc_month(app_keyboard_t *kb) {
+static void inc_setting_month(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->month++;
     if (kb->time->month > 12) {
@@ -112,7 +112,7 @@ static void inc_month(app_keyboard_t *kb) {
     }
 }
 
-static void inc_dow(app_keyboard_t *kb) {
+static void inc_setting_dow(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->dow++;
     if (kb->time->dow > 6) {
@@ -120,7 +120,7 @@ static void inc_dow(app_keyboard_t *kb) {
     }
 }
 
-static void inc_year(app_keyboard_t *kb) {
+static void inc_setting_year(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->time->year++;
     if (kb->time->year > 99) {
@@ -128,7 +128,7 @@ static void inc_year(app_keyboard_t *kb) {
     }
 }
 
-static void inc_screen_brightness(app_keyboard_t *kb) {
+static void inc_setting_brightness(app_keyboard_t *kb) {
     kb->display->refresh_cnt = 0;
     kb->display->max_brightness++;
     kb->display->max_brightness_changed = true;
@@ -151,31 +151,31 @@ static bool btn_a_l_press(void *args) {
             app_alarm_beep();
             return false;
         case APP_MODE_SETTINGS_TIME_HOUR:
-            inc_hour(kb);
+            inc_setting_hour(kb);
             break;
         case APP_MODE_SETTINGS_TIME_MINUTE:
-            inc_minute(kb);
+            inc_setting_minute(kb);
             break;
         case APP_MODE_SETTINGS_DATE_DAY:
-            inc_day(kb);
+            inc_setting_day(kb);
             break;
         case APP_MODE_SETTINGS_DATE_MONTH:
-            inc_month(kb);
+            inc_setting_month(kb);
             break;
         case APP_MODE_SETTINGS_DATE_DOW:
-            inc_dow(kb);
+            inc_setting_dow(kb);
             break;
         case APP_MODE_SETTINGS_DATE_YEAR:
-            inc_year(kb);
+            inc_setting_year(kb);
             break;
         case APP_MODE_SETTINGS_ALARM_HOUR:
-            inc_alarm_hour(kb);
+            inc_setting_alarm_hour(kb);
             break;
         case APP_MODE_SETTINGS_ALARM_MINUTE:
-            inc_alarm_minute(kb);
+            inc_setting_alarm_minute(kb);
             break;
         case APP_MODE_SETTINGS_BRIGHTNESS:
-            inc_screen_brightness(kb);
+            inc_setting_brightness(kb);
             break;
         default:
             break;
@@ -196,31 +196,31 @@ static bool btn_a_release(void *args) {
     } else if (*kb->app_mode > APP_MODE_SHOW_MAX) { // Settings mode
         switch (*kb->app_mode) {
             case APP_MODE_SETTINGS_TIME_HOUR:
-                inc_hour(kb);
+                inc_setting_hour(kb);
                 break;
             case APP_MODE_SETTINGS_TIME_MINUTE:
-                inc_minute(kb);
+                inc_setting_minute(kb);
                 break;
             case APP_MODE_SETTINGS_DATE_DAY:
-                inc_day(kb);
+                inc_setting_day(kb);
                 break;
             case APP_MODE_SETTINGS_DATE_MONTH:
-                inc_month(kb);
+                inc_setting_month(kb);
                 break;
             case APP_MODE_SETTINGS_DATE_DOW:
-                inc_dow(kb);
+                inc_setting_dow(kb);
                 break;
             case APP_MODE_SETTINGS_DATE_YEAR:
-                inc_year(kb);
+                inc_setting_year(kb);
                 break;
             case APP_MODE_SETTINGS_ALARM_HOUR:
-                inc_alarm_hour(kb);
+                inc_setting_alarm_hour(kb);
                 break;
             case APP_MODE_SETTINGS_ALARM_MINUTE:
-                inc_alarm_minute(kb);
+                inc_setting_alarm_minute(kb);
                 break;
             case APP_MODE_SETTINGS_BRIGHTNESS:
-                inc_screen_brightness(kb);
+                inc_setting_brightness(kb);
                 break;
             default:
                 break;
@@ -238,12 +238,10 @@ static bool btn_b_l_press(void *args) {
     }
 
     if (*kb->app_mode < APP_MODE_SHOW_MAX) {
-        *kb->app_mode = APP_MODE_SETTINGS_MIN + 1;
-        ets_printf("Enter settings mode: %d\n", kb->app_mode);
+        *kb->app_mode = APP_MODE_SETTINGS_MIN + 1;  // enter settings mode
     } else if (*kb->app_mode > APP_MODE_SHOW_MAX) {
         kb->time->flush_to_rtc = true;
-        *kb->app_mode = APP_MODE_SHOW_MIN + 1;
-        ets_printf("Exit settings mode: %d\n", kb->app_mode);
+        *kb->app_mode = APP_MODE_SHOW_MIN + 1;  // exit from settings mode
     }
 
     return false;
@@ -257,13 +255,13 @@ static bool btn_b_release(void *args) {
     }
 
     if (*kb->app_mode > APP_MODE_SHOW_MAX) {
+        // Switch to the next settings mode
         (*kb->app_mode)++;
+
+        // Exit from settings mode if reached the last one
         if (*kb->app_mode == APP_MODE_SETTINGS_MAX) {
             kb->time->flush_to_rtc = true;
             *kb->app_mode = APP_MODE_SHOW_MIN + 1;
-            ets_printf("Exit settings mode: %d\n", kb->app_mode);
-        } else {
-            ets_printf("Next settings mode: %d\n", kb->app_mode);
         }
     }
 
