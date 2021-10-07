@@ -88,6 +88,8 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
             ESP_LOGD(APP_NAME, "response: %s", data_buf);
         } else {
             ESP_LOGE(APP_NAME, "bad status code: %d", status);
+            ESP_LOGE(APP_NAME, "received data: %s", data_buf);
+            err = ESP_FAIL;
         }
     } else {
         ESP_LOGE(APP_NAME, "request failed: %s", esp_err_to_name(err));
@@ -274,7 +276,6 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
 
     // Get MAC-address
     char mac_s[13] = {0};
-    char sig[50] = {0};
     esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
     sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
 
@@ -343,8 +344,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     }
 
     // Set device signature
-    strncpy(sig, net->signature, 50);
-    sprintf(net->signature, "%s/%s", sig, mac_s);
+    sprintf(net->signature, "%s/%s/%s", APP_NAME, APP_VERSION, mac_s);
 
     ESP_LOGI(APP_NAME, "network stack initialized; hostname: %s, AP password: %s", hostname, password);
 
