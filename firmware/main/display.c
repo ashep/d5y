@@ -444,7 +444,7 @@ app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_
     d->min_brightness = APP_DISPLAY_MIN_BRIGHTNESS;
 
     // Set maximum allowed brightness
-    nvs_get_u8(d->nvs, "src_max_bri", &d->max_brightness);
+    nvs_get_u8(d->nvs, "scr_max_bri", &d->max_brightness);
     if (d->max_brightness > APP_DISPLAY_MAX_BRIGHTNESS) {
         d->max_brightness = APP_DISPLAY_MAX_BRIGHTNESS;
     }
