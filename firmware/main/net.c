@@ -23,9 +23,10 @@
 #include "aespl_httpd.h"
 #include "aespl_service.h"
 
-#include "cronus_main.h"
-#include "cronus_net.h"
-#include "cronus_rtc.h"
+#include "cronus/main.h"
+#include "cronus/network.h"
+#include "cronus/dtime.h"
+#include "cronus/weather.h"
 
 #define APP_HTTP_BODY_MAX_LEN 2048
 
@@ -60,7 +61,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
-static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
+static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) {
     char data_buf[APP_HTTP_BODY_MAX_LEN] = {0};
 
     // Initialize an HTTP client
@@ -77,7 +78,7 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     }
 
     // Set user agent
-    esp_http_client_set_header(cli, "User-Agent", app->signature);
+    esp_http_client_set_header(cli, "User-Agent", net->signature);
 
     // Perform a request
     esp_err_t err = esp_http_client_perform(cli);
@@ -115,31 +116,31 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
     }
 
     // Lock
-    if (xSemaphoreTake(app->mux, (TickType_t) 10) != pdTRUE) {
+    if (xSemaphoreTake(net->mux, (TickType_t) 10) != pdTRUE) {
         cJSON_Delete(data);
         ESP_LOGE(APP_NAME, "error while locking");
         return ESP_FAIL;
     }
 
     // Update
-    app->time.second = cJSON_GetObjectItem(data, "second")->valueint;
-    app->time.minute = cJSON_GetObjectItem(data, "minute")->valueint;
-    app->time.hour = cJSON_GetObjectItem(data, "hour")->valueint;
-    app->time.dow = cJSON_GetObjectItem(data, "dow")->valueint - 1;
-    app->time.day = cJSON_GetObjectItem(data, "day")->valueint;
-    app->time.month = cJSON_GetObjectItem(data, "month")->valueint;
-    app->time.year = cJSON_GetObjectItem(data, "year")->valueint;
+    net->time->second = cJSON_GetObjectItem(data, "second")->valueint;
+    net->time->minute = cJSON_GetObjectItem(data, "minute")->valueint;
+    net->time->hour = cJSON_GetObjectItem(data, "hour")->valueint;
+    net->time->dow = cJSON_GetObjectItem(data, "dow")->valueint - 1;
+    net->time->day = cJSON_GetObjectItem(data, "day")->valueint;
+    net->time->month = cJSON_GetObjectItem(data, "month")->valueint;
+    net->time->year = cJSON_GetObjectItem(data, "year")->valueint;
 
-    app->weather.update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
-    if (app->weather.update_ok) {
-        app->weather.temp = cJSON_GetObjectItem(data, "feels_like")->valuedouble;
+    net->weather->update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
+    if (net->weather->update_ok) {
+        net->weather->temp = cJSON_GetObjectItem(data, "feels_like")->valuedouble;
     }
 
     // Free resources
     cJSON_Delete(data);
 
     // Unlock
-    if (xSemaphoreGive(app->mux) != pdTRUE) {
+    if (xSemaphoreGive(net->mux) != pdTRUE) {
         ESP_LOGE(APP_NAME, "error while unlocking");
         return ESP_FAIL;
     }
@@ -148,14 +149,14 @@ static esp_err_t fetch_data(app_t *app, const char *host, const char *path) {
 }
 
 static void data_fetcher(void *args) {
-    app_t *app = (app_t *) args;
+    app_net_t *net = (app_net_t *) args;
     esp_err_t err;
     bool need_update = true;
     bool first_update = true;
 
     for (;;) {
         if (need_update) {
-            if (!app->net.wifi_connected) {
+            if (!net->wifi_connected) {
                 ESP_LOGI(APP_NAME, "WiFi is not connected, try to reconnect");
 
                 err = esp_wifi_connect();
@@ -166,11 +167,11 @@ static void data_fetcher(void *args) {
                 }
             }
 
-            err = fetch_data(app, APP_API_HOST, APP_API_PATH);
+            err = fetch_data(net, APP_API_HOST, APP_API_PATH);
             if (err == ESP_OK) {
                 // Don't abuse RTC's flash memory too much
-                if (first_update || (app->time.hour == 0 && app->time.minute <= 30)) {
-                    app->time.flush_to_rtc = true;
+                if (first_update || (net->time->hour == 0 && net->time->minute <= 30)) {
+                    net->time->flush_to_rtc = true;
                 }
 
                 if (first_update) {
@@ -183,7 +184,7 @@ static void data_fetcher(void *args) {
                 ESP_LOGE(APP_NAME, "network update failed");
                 need_update = true;
             }
-        } else if (app->time.minute == app->net.update_delay || app->time.minute == 30 + app->net.update_delay) {
+        } else if (net->time->minute == net->update_delay || net->time->minute == 30 + net->update_delay) {
             need_update = true;
         }
 
@@ -193,7 +194,7 @@ static void data_fetcher(void *args) {
 
 // WiFi events handler
 static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev_data) {
-    app_t *app = (app_t *) arg;
+    app_net_t *net = (app_net_t *) arg;
 
     switch (ev_id) {
         case WIFI_EVENT_STA_START: // WiFi station started
@@ -203,18 +204,18 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
         case WIFI_EVENT_STA_CONNECTED:
             ESP_LOGI(APP_NAME, "WiFi connected");
-            app->net.wifi_connected = true;
+            net->wifi_connected = true;
             break;
 
         case WIFI_EVENT_STA_DISCONNECTED:
             ESP_LOGI(APP_NAME, "WiFi disconnected");
-            app->net.wifi_connected = false;
+            net->wifi_connected = false;
             break;
 
         case WIFI_EVENT_AP_START: // the access point started
             ESP_LOGI(APP_NAME, "WiFi access point started");
-            ESP_ERROR_CHECK(aespl_httpd_start(&app->httpd, NULL));
-            ESP_ERROR_CHECK(aespl_service_init(&app->httpd, NULL));
+            ESP_ERROR_CHECK(aespl_httpd_start(&net->httpd, NULL));
+            ESP_ERROR_CHECK(aespl_service_init(&net->httpd, NULL));
             break;
 
         case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
@@ -231,21 +232,37 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
 // IP events handler
 static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *event_data) {
-    app_t *app = (app_t *) arg;
+    app_net_t *net = (app_net_t *) arg;
 
     switch (ev_id) {
         // Station received an IP-address
         case IP_EVENT_STA_GOT_IP:;
             ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
             ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) app, 0, NULL);
+            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) net, 0, NULL);
             break;
     }
 }
 
-esp_err_t app_net_init(app_t *app) {
+esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather) {
     esp_err_t err;
     uint8_t mac[6];
+
+    net = malloc(sizeof(app_net_t));
+    if (net == NULL) {
+        ESP_LOGE(APP_NAME, "failed to allocate memory for network");
+        return ESP_ERR_NO_MEM;
+    }
+
+    net->mux = xSemaphoreCreateBinary();
+    if (net->mux == NULL) {
+        ESP_LOGE(APP_NAME, "failed to allocate a semaphore for time");
+        return ESP_ERR_NO_MEM;
+    }
+    xSemaphoreGive(net->mux);
+
+    net->time = time;
+    net->weather = weather;
 
     // Initialize WiFi subsystem
     tcpip_adapter_init();
@@ -263,20 +280,20 @@ esp_err_t app_net_init(app_t *app) {
 
     // Update delay minutes
     for (uint8_t i = 0; i < 6; i++) {
-        app->net.update_delay = mac[i] >> 4; // can be from 0 to 15
-        if (app->net.update_delay != 0) { // out target is to have delay grater than 0
+        net->update_delay = mac[i] >> 4; // can be from 0 to 15
+        if (net->update_delay != 0) { // out target is to have delay grater than 0
             break;
         }
     }
 
     // Register WiFi events handler
-    err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh, (void *) app);
+    err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh, (void *) net);
     if (err != ESP_OK) {
         return err;
     }
 
     // Register IP events handler
-    err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, ip_eh, (void *) app);
+    err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, ip_eh, (void *) net);
     if (err != ESP_OK) {
         return err;
     }
@@ -326,8 +343,8 @@ esp_err_t app_net_init(app_t *app) {
     }
 
     // Set device signature
-    strncpy(sig, app->signature, 50);
-    sprintf(app->signature, "%s/%s", sig, mac_s);
+    strncpy(sig, net->signature, 50);
+    sprintf(net->signature, "%s/%s", sig, mac_s);
 
     ESP_LOGI(APP_NAME, "network stack initialized; hostname: %s, AP password: %s", hostname, password);
 

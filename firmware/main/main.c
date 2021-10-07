@@ -5,55 +5,73 @@
  * @copyright MIT License
  */
 
+#include "string.h"
+
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_event.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/uart.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 
-#include "aespl_gfx_buffer.h"
-
-#include "cronus_main.h"
-#include "cronus_nvs.h"
-#include "cronus_keyboard.h"
-#include "cronus_rtc.h"
-#include "cronus_alarm.h"
-#include "cronus_net.h"
-#include "cronus_display.h"
-
-static app_t app = {
-        .mode = APP_MODE_SHOW_TIME,
-};
+#include "cronus/main.h"
+#include "cronus/dtime.h"
+#include "cronus/keyboard.h"
+#include "cronus/alarm.h"
+#include "cronus/network.h"
 
 void app_main() {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+//    sprintf(app.signature, APP_NAME "/" APP_VERSION ":%d", APP_HW_VERSION);
 
-    app.mux = xSemaphoreCreateBinary();
-    xSemaphoreGive(app.mux);
+    // App mode
+    app_mode_t *mode = malloc(sizeof (app_mode_t));
+    if (mode == NULL) {
+        ESP_LOGE(APP_NAME, "failed to allocate memory for app mode");
+        return;
+    }
+    *mode = APP_MODE_SHOW_MIN + 1;
 
-    sprintf(app.signature, APP_NAME "/" APP_VERSION ":%d", APP_HW_VERSION);
+    // NVS
+    nvs_handle_t nvs;
+    ESP_ERROR_CHECK(nvs_flash_init());
+    ESP_ERROR_CHECK(nvs_open(APP_NAME, NVS_READWRITE, &nvs));
 
-    // Keyboard
-    ESP_ERROR_CHECK(gpio_install_isr_service(0));
-    ESP_ERROR_CHECK(app_keyboard_init(&app));
-
-    // NVS flash
-    ESP_ERROR_CHECK(app_nvs_init(&app));
-//    ESP_ERROR_CHECK(app_nvs_erase(&app));
-
-    // RTC
-    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER));
-    ESP_ERROR_CHECK(app_rtc_init(&app));
+    // Time
+    app_time_t *time = app_time_init(mode, nvs);
+    if (time == NULL) {
+        vTaskDelete(NULL);
+        return;
+    }
 
     // Alarm
-    ESP_ERROR_CHECK(app_alarm_init(&app));
+    ESP_ERROR_CHECK(app_alarm_init());
+
+    // Weather
+    app_weather_t *weather = malloc(sizeof(app_weather_t));
+    if (weather == NULL) {
+        ESP_LOGE(APP_NAME, "failed to allocate memory for weather");
+        return;
+    }
+    memset(weather, 0, sizeof(app_weather_t));
 
     // Display
-    ESP_ERROR_CHECK(app_display_init(&app));
+    app_display_t *display = app_display_init(mode, time, weather, nvs);
+    if (display == NULL) {
+        return;
+    }
+
+    // Keyboard
+    app_keyboard_t *kb = app_keyboard_init(mode, time, display, weather, nvs);
+    if (kb == NULL) {
+        return;
+    }
 
     // Network
-    ESP_ERROR_CHECK(app_net_init(&app));
+    app_net_t *net = NULL;
+    ESP_ERROR_CHECK(app_net_init(net, time, weather));
 
     vTaskDelete(NULL);
 }

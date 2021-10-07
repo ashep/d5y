@@ -1,6 +1,17 @@
 #ifndef CRONUS_DISPLAY_H
 #define CRONUS_DISPLAY_H
 
+#include "semphr.h"
+#include "nvs.h"
+
+#include "aespl_gfx_buffer.h"
+#include "aespl_max7219.h"
+#include "aespl_max7219_matrix.h"
+
+#include "cronus/mode.h"
+#include "cronus/weather.h"
+#include "cronus/dtime.h"
+
 #ifndef APP_SHOW_TIME_DURATION
 #define APP_SHOW_TIME_DURATION 50000
 #endif
@@ -17,20 +28,20 @@
 #define APP_SHOW_WEATHER_TEMP_DURATION 5000
 #endif
 
-#ifndef APP_SCREEN_REFRESH_RATE
-#define APP_SCREEN_REFRESH_RATE 100
+#ifndef APP_DISPLAY_REFRESH_RATE
+#define APP_DISPLAY_REFRESH_RATE 100
 #endif
 
-#ifndef APP_SCREEN_MIN_BRIGHTNESS
-#define APP_SCREEN_MIN_BRIGHTNESS 0
+#ifndef APP_DISPLAY_MIN_BRIGHTNESS
+#define APP_DISPLAY_MIN_BRIGHTNESS 0
 #endif
 
-#ifndef APP_SCREEN_MAX_BRIGHTNESS
-#define APP_SCREEN_MAX_BRIGHTNESS 15
+#ifndef APP_DISPLAY_MAX_BRIGHTNESS
+#define APP_DISPLAY_MAX_BRIGHTNESS 15
 #endif
 
-#ifndef APP_SCREEN_BRIGHTNESS_REG_TIMEOUT
-#define APP_SCREEN_BRIGHTNESS_REG_TIMEOUT 2500
+#ifndef APP_DISPLAY_BRIGHTNESS_REG_TIMEOUT
+#define APP_DISPLAY_BRIGHTNESS_REG_TIMEOUT 2500
 #endif
 
 
@@ -47,6 +58,7 @@
 #endif
 
 typedef struct {
+    SemaphoreHandle_t mux;
     aespl_gfx_buf_t *buf;
     aespl_max7219_config_t max7219;
     aespl_max7219_matrix_config_t max7219_matrix;
@@ -55,8 +67,21 @@ typedef struct {
     uint8_t brightness;
     uint8_t min_brightness;
     uint8_t max_brightness;
+    bool sep_visible;
     bool max_brightness_changed;
+    char splash_screen_text[20];
+    app_mode_t *mode;
+    nvs_handle_t nvs;
+    app_time_t *time;
+    app_weather_t *weather;
 } app_display_t;
 
+
+/**
+ * Initializes display.
+ *
+ * @return
+ */
+app_display_t *app_display_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs);
 
 #endif // CRONUS_DISPLAY_H

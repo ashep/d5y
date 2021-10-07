@@ -1,7 +1,8 @@
-#ifndef CRONUS_CRONUS_ALARM_H
-#define CRONUS_CRONUS_ALARM_H
+#ifndef CRONUS_ALARM_H
+#define CRONUS_ALARM_H
 
 #include "gpio.h"
+#include "cronus/dtime.h"
 
 #ifndef APP_ALARM_PIN
 #define APP_ALARM_PIN GPIO_NUM_15
@@ -13,7 +14,7 @@
  * @param app Application
  * @return
  */
-esp_err_t app_alarm_init(app_t *app);
+esp_err_t app_alarm_init();
 
 /**
  * Issues single alarm beep.
@@ -27,13 +28,13 @@ void app_alarm_beep();
  *
  * @param app
  */
-void app_alarm_start(app_t *app);
+void app_alarm_start(app_time_t *time);
 
 /**
  * Stops the alarm.
  *
  * @param app
  */
-void app_alarm_stop(app_t *app);
+void app_alarm_stop(app_time_t *time);
 
-#endif // CRONUS_CRONUS_ALARM_H
+#endif // CRONUS_ALARM_H

@@ -1,6 +1,11 @@
 #ifndef CRONUS_NET_H
 #define CRONUS_NET_H
 
+#include "semphr.h"
+#include "aespl_httpd.h"
+#include "cronus/dtime.h"
+#include "cronus/weather.h"
+
 #ifndef APP_API_HOST
 #define APP_API_HOST "cronus.33v.xyz"
 #endif
@@ -18,8 +23,15 @@
 #endif
 
 typedef struct {
+    xSemaphoreHandle mux;
+    char signature[100];
     bool wifi_connected;
     int update_delay;
+    aespl_httpd_t httpd;
+    app_time_t *time;
+    app_weather_t *weather;
 } app_net_t;
+
+esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather);
 
 #endif //CRONUS_NET_H
