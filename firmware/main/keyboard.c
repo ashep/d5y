@@ -271,10 +271,7 @@ static bool btn_b_release(void *args) {
 }
 
 static void show_mode_switcher(TimerHandle_t timer) {
-    app_keyboard_t *kb = (app_keyboard_t *) pvTimerGetTimerID(timer);
-
-    ESP_LOGI(APP_NAME, "tick; mode=%d", *kb->app_mode);
-    switch_show_mode(kb);
+    switch_show_mode((app_keyboard_t *) pvTimerGetTimerID(timer));
 }
 
 app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_display_t *display, app_weather_t *weather,
