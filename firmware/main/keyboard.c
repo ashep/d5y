@@ -5,10 +5,8 @@
  * @copyright MIT License
  */
 
-#include <stdbool.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/timers.h"
+#include "FreeRTOS.h"
+#include "timers.h"
 
 #include "esp_err.h"
 #include "esp_log.h"

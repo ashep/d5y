@@ -1,5 +1,5 @@
 /**
- * @brief     Cronus Digital Clock RTC Functions
+ * @brief     Cronus Digital Clock Datetime Functions
  *
  * @author    Alexander Shepetko <a@shepetko.com>
  * @copyright MIT License

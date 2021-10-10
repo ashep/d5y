@@ -8,11 +8,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/timers.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
 
-#include "driver/adc.h"
+#include "adc.h"
 #include "esp_err.h"
 #include "esp_log.h"
 
@@ -25,7 +25,7 @@
 #include "aespl_max7219_matrix.h"
 
 #include "cronus/main.h"
-#include "cronus/font_8_2.h"
+#include "cronus/font_8_1.h"
 #include "cronus/display.h"
 #include "cronus/weather.h"
 

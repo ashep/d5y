@@ -6,20 +6,24 @@
 #include "cronus/dtime.h"
 #include "cronus/weather.h"
 
-#ifndef APP_API_HOST
-#define APP_API_HOST "cronus.33v.xyz"
+#ifndef APP_NET_URI_SETUP
+#define APP_NET_URI_SETUP "/setup"
 #endif
 
-#ifndef APP_API_PATH
-#define APP_API_PATH "/api/1"
+#ifndef APP_NET_REMOTE_API_HOST
+#define APP_NET_REMOTE_API_HOST "cronus.33v.xyz"
 #endif
 
-#ifndef APP_WIFI_STA_HOSTNAME
-#define APP_WIFI_STA_HOSTNAME "Cronus"
+#ifndef APP_NET_REMOTE_API_PATH
+#define APP_NET_REMOTE_API_PATH "/api/1"
 #endif
 
-#ifndef APP_WIFI_AP_MAX_CONN
-#define APP_WIFI_AP_MAX_CONN 5
+#ifndef APP_NET_STA_HOSTNAME
+#define APP_NET_STA_HOSTNAME "Cronus"
+#endif
+
+#ifndef APP_NET_AP_MAX_CONN
+#define APP_NET_AP_MAX_CONN 5
 #endif
 
 typedef struct {

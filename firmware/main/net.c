@@ -30,6 +30,24 @@
 
 #define APP_HTTP_BODY_MAX_LEN 2048
 
+static esp_err_t httpd_handler_get_root(httpd_req_t *req) {
+    esp_err_t err;
+
+    err = httpd_resp_set_hdr(req, "Location", APP_NET_URI_SETUP);
+    if (err != ESP_OK) {
+        ESP_LOGE(APP_NAME, "failed to set an HTTP header: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = aespl_httpd_send(req, "302 Found", "");
+    if (err != ESP_OK) {
+        ESP_LOGE(APP_NAME, "failed to send an HTTP response: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    return ESP_OK;
+}
+
 static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     static int output_pos = 0, total_len = 0;
 
@@ -169,7 +187,7 @@ static void data_fetcher(void *args) {
                 }
             }
 
-            err = fetch_data(net, APP_API_HOST, APP_API_PATH);
+            err = fetch_data(net, APP_NET_REMOTE_API_HOST, APP_NET_REMOTE_API_PATH);
             if (err == ESP_OK) {
                 // Don't abuse RTC's flash memory too much
                 if (first_update || (net->time->hour == 0 && net->time->minute <= 30)) {
@@ -217,7 +235,8 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
         case WIFI_EVENT_AP_START: // the access point started
             ESP_LOGI(APP_NAME, "WiFi access point started");
             ESP_ERROR_CHECK(aespl_httpd_start(&net->httpd, NULL));
-            ESP_ERROR_CHECK(aespl_service_init(&net->httpd, NULL));
+            ESP_ERROR_CHECK(aespl_service_init(&net->httpd));
+            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/", httpd_handler_get_root, NULL));
             break;
 
         case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
@@ -229,6 +248,9 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
             wifi_event_ap_stadisconnected_t *d_ap_dis = (wifi_event_ap_stadisconnected_t *) ev_data;
             ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, d_ap_dis->aid, MAC2STR(d_ap_dis->mac));
             break;
+
+            default:
+            break;
     }
 }
 
@@ -236,13 +258,10 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *event_data) {
     app_net_t *net = (app_net_t *) arg;
 
-    switch (ev_id) {
-        // Station received an IP-address
-        case IP_EVENT_STA_GOT_IP:;
-            ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
-            ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-            xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) net, 0, NULL);
-            break;
+    if (ev_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
+        ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
+        xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) net, 0, NULL);
     }
 }
 
@@ -279,7 +298,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
     sprintf(mac_s, "%02x%02x%02x%02x%02x%02x", MAC2STR(mac));
 
-    // Update delay minutes
+    // Update delay, in minutes
     for (uint8_t i = 0; i < 6; i++) {
         net->update_delay = mac[i] >> 4; // can be from 0 to 15
         if (net->update_delay != 0) { // out target is to have delay grater than 0
@@ -302,7 +321,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     // Access point configuration
     wifi_config_t ap_config = {
             .ap = {
-                    .max_connection = APP_WIFI_AP_MAX_CONN,
+                    .max_connection = APP_NET_AP_MAX_CONN,
                     .authmode = WIFI_AUTH_WPA_WPA2_PSK,
             },
     };
@@ -316,8 +335,8 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
 
     // Access point password
     char password[64] = {0};
-    strcpy(password, mac_s);
-    strncpy((char *) ap_config.ap.password, password, 64);
+    strncpy(password, mac_s, 8);
+    strncpy((char *) ap_config.ap.password, password, 8);
 
     // Initialize access point
     err = esp_wifi_set_mode(WIFI_MODE_APSTA);

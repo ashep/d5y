@@ -10,13 +10,13 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_event.h"
-#include "driver/gpio.h"
-#include "driver/i2c.h"
-#include "driver/uart.h"
+
+#include "i2c.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 
 #include "cronus/main.h"
+#include "cronus/fs.h"
 #include "cronus/dtime.h"
 #include "cronus/keyboard.h"
 #include "cronus/alarm.h"
@@ -37,6 +37,9 @@ void app_main() {
     nvs_handle_t nvs;
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(nvs_open(APP_NAME, NVS_READWRITE, &nvs));
+
+    // SPIFFS
+    app_fs_t *fs = app_fs_init();
 
     // Time
     app_time_t *time = app_time_init(mode, nvs);
