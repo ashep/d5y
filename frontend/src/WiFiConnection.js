@@ -18,10 +18,11 @@ export default function WiFiConnection(props) {
     const [password, setPassword] = useState("");
 
     return <Box hidden={!props.apConnected}>
-        <h2>{messages.t("titleWifiConnection")}</h2>
+        <h2 align={"center"}>{messages.t("titleWifiConnection")}</h2>
 
         <Box className={"wifiConnectionStatus"}>
-            <p hidden={!props.wifiConnected}
+            <p align={"center"}
+               hidden={!props.wifiConnected}
                dangerouslySetInnerHTML={{__html: messages.t("wifiConnectedHelp", props.wifiConnInfo.ssid)}}/>
 
             <p hidden={props.wifiConnected} dangerouslySetInnerHTML={{__html: messages.t("wifiNotConnectedHelp")}}/>
@@ -58,7 +59,7 @@ export default function WiFiConnection(props) {
             <Box>
                 <TextField type={"password"}
                            id={"password"}
-                           label={"Password"}
+                           label={messages.t("password")}
                            fullWidth={true}
                            disabled={props.wifiConnInProgress || !props.wifiScanResult.length}
                            onChange={e => setPassword(e.target.value)}
