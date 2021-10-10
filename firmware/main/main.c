@@ -39,7 +39,7 @@ void app_main() {
     ESP_ERROR_CHECK(nvs_open(APP_NAME, NVS_READWRITE, &nvs));
 
     // SPIFFS
-    app_fs_t *fs = app_fs_init();
+    ESP_ERROR_CHECK(app_fs_init());
 
     // Time
     app_time_t *time = app_time_init(mode, nvs);

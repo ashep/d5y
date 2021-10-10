@@ -16,26 +16,26 @@
 #include "cronus/main.h"
 #include "cronus/fs.h"
 
-app_fs_t *app_fs_init() {
+esp_err_t app_fs_init() {
     app_fs_t *fs = malloc(sizeof(app_fs_t));
     if (fs == NULL) {
         ESP_LOGE(APP_NAME, "failed to allocate memory for the filesystem");
-        return NULL;
+        return ESP_FAIL;
     }
 
     fs->mux = xSemaphoreCreateBinary();
     if (fs->mux == NULL) {
         free(fs);
         ESP_LOGE(APP_NAME, "failed to allocate a semaphore for the filesystem");
-        return NULL;
+        return ESP_FAIL;
     }
     xSemaphoreGive(fs->mux);
 
     esp_vfs_spiffs_conf_t conf = {
-            .base_path = "/"APP_NAME,
-            .partition_label = NULL,
-            .max_files = 25,
-            .format_if_mount_failed = true
+            .base_path = "",
+            .partition_label = APP_FS_PARTITION_NAME,
+            .max_files = 5,
+            .format_if_mount_failed = true,
     };
 
     esp_err_t err = esp_vfs_spiffs_register(&conf);
@@ -50,18 +50,17 @@ app_fs_t *app_fs_init() {
             ESP_LOGE(APP_NAME, "failed to initialize SPIFFS: %s", esp_err_to_name(err));
         }
 
-        return NULL;
+        return err;
     }
 
     size_t total = 0, used = 0;
-    err = esp_spiffs_info(NULL, &total, &used);
+    err = esp_spiffs_info(APP_FS_PARTITION_NAME, &total, &used);
     if (err != ESP_OK) {
         free(fs);
-        ESP_LOGE(APP_NAME, "failed to get SPIFFS partition information: %s", esp_err_to_name(err));
-        return NULL;
-    } else {
-        ESP_LOGI(APP_NAME, "filesystem size: total: %d, used: %d", total, used);
+        ESP_LOGE(APP_NAME, "failed to get partition information; err=%s", esp_err_to_name(err));
+        return err;
     }
+    ESP_LOGI(APP_NAME, "filesystem '%s': total=%d, used=%d", APP_FS_PARTITION_NAME, total, used);
 
-    return fs;
+    return ESP_OK;
 }

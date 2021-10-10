@@ -30,22 +30,22 @@
 
 #define APP_HTTP_BODY_MAX_LEN 2048
 
-static esp_err_t httpd_handler_get_root(httpd_req_t *req) {
-    esp_err_t err;
-
-    err = httpd_resp_set_hdr(req, "Location", APP_NET_URI_SETUP);
+static esp_err_t httpd_handler_get_index(httpd_req_t *req) {
+    esp_err_t err = aespl_httpd_send_file(req, "/index", "text/html", "gzip");
     if (err != ESP_OK) {
-        ESP_LOGE(APP_NAME, "failed to set an HTTP header: %s", esp_err_to_name(err));
-        return err;
+        ESP_LOGE(APP_NAME, "failed to send index; err=%d", err);
     }
 
-    err = aespl_httpd_send(req, "302 Found", "");
+    return err;
+}
+
+static esp_err_t httpd_handler_get_favicon(httpd_req_t *req) {
+    esp_err_t err = aespl_httpd_send_file(req, "/favicon", "image/x-icon", "gzip");
     if (err != ESP_OK) {
-        ESP_LOGE(APP_NAME, "failed to send an HTTP response: %s", esp_err_to_name(err));
-        return err;
+        ESP_LOGE(APP_NAME, "failed to send favicon; err=%d", err);
     }
 
-    return ESP_OK;
+    return err;
 }
 
 static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
@@ -236,7 +236,8 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
             ESP_LOGI(APP_NAME, "WiFi access point started");
             ESP_ERROR_CHECK(aespl_httpd_start(&net->httpd, NULL));
             ESP_ERROR_CHECK(aespl_service_init(&net->httpd));
-            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/", httpd_handler_get_root, NULL));
+            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/", httpd_handler_get_index, NULL));
+            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/favicon.ico", httpd_handler_get_favicon, NULL));
             break;
 
         case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
@@ -334,8 +335,9 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     ap_config.ap.ssid_len = strlen(hostname);
 
     // Access point password
-    char password[64] = {0};
-    strncpy(password, mac_s, 8);
+    char password[9] = {0};
+    strncpy(password, mac_s + 8, 4);
+    strncat(password, mac_s + 8, 4);
     strncpy((char *) ap_config.ap.password, password, 8);
 
     // Initialize access point

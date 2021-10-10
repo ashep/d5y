@@ -449,9 +449,11 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app
     // Initialize display
     init_display(d);
 
-    // Show splash screen
-    sprintf(d->splash_screen_text, "Cronus     v%s", APP_VERSION);
-    splash_screen(d);
+    // Splash screen
+    if (APP_SPLASH_SCREEN_ENABLED) {
+        sprintf(d->splash_screen_text, "Cronus     v%s", APP_VERSION);
+        splash_screen(d);
+    }
 
     // Brightness regulator
     adc_config_t adc = {.mode = ADC_READ_TOUT_MODE};
