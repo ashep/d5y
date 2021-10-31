@@ -5,28 +5,28 @@
  * @copyright MIT License
  */
 
-#include "string.h"
-
-#include "esp_err.h"
-#include "esp_log.h"
-#include "esp_event.h"
-
-#include "i2c.h"
-#include "nvs_flash.h"
-#include "nvs.h"
-
 #include "cronus/main.h"
-#include "cronus/fs.h"
-#include "cronus/dtime.h"
-#include "cronus/keyboard.h"
+
+#include <string.h>
+
+#include "FreeRTOS.h"
 #include "cronus/alarm.h"
+#include "cronus/dtime.h"
+#include "cronus/fs.h"
+#include "cronus/keyboard.h"
 #include "cronus/network.h"
+#include "esp_err.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "i2c.h"
+#include "nvs.h"
+#include "nvs_flash.h"
 
 void app_main() {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // App mode
-    app_mode_t *mode = malloc(sizeof (app_mode_t));
+    app_mode_t *mode = malloc(sizeof(app_mode_t));
     if (mode == NULL) {
         ESP_LOGE(APP_NAME, "failed to allocate memory for app mode");
         return;
@@ -60,7 +60,8 @@ void app_main() {
     memset(weather, 0, sizeof(app_weather_t));
 
     // Display
-    app_display_t *display = app_display_hw_ver_1_init(mode, time, weather, nvs);
+    app_display_t *display =
+        app_display_hw_ver_1_init(mode, time, weather, nvs);
     if (display == NULL) {
         return;
     }

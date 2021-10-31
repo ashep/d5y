@@ -1,10 +1,11 @@
 #ifndef CRONUS_NET_H
 #define CRONUS_NET_H
 
-#include "semphr.h"
-#include "aespl_httpd.h"
+#include "aespl/httpd.h"
 #include "cronus/dtime.h"
 #include "cronus/weather.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #ifndef APP_NET_URI_SETUP
 #define APP_NET_URI_SETUP "/setup"
@@ -36,6 +37,7 @@ typedef struct {
     app_weather_t *weather;
 } app_net_t;
 
-esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather);
+esp_err_t app_net_init(app_net_t *net, app_time_t *time,
+                       app_weather_t *weather);
 
-#endif //CRONUS_NET_H
+#endif  // CRONUS_NET_H

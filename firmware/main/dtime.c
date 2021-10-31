@@ -7,19 +7,16 @@
 
 #include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-
+#include "aespl/ds3231.h"
+#include "cronus/alarm.h"
+#include "cronus/main.h"
+#include "driver/i2c.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "nvs.h"
-
-#include "aespl_ds3231.h"
-
-#include "cronus/main.h"
-#include "cronus/alarm.h"
 
 static esp_err_t set_app_time_from_rtc(app_time_t *time) {
     if (xSemaphoreTake(time->mux, 10) != pdTRUE) {
@@ -27,7 +24,8 @@ static esp_err_t set_app_time_from_rtc(app_time_t *time) {
         return ESP_FAIL;
     }
 
-    esp_err_t err = aespl_ds3231_get_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+    esp_err_t err =
+        aespl_ds3231_get_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
     if (err == ESP_OK) {
         time->second = time->rtc->sec;
         time->minute = time->rtc->min;
@@ -66,7 +64,8 @@ static esp_err_t set_rtc_from_app_time(app_time_t *time) {
     time->rtc->alarm_1_min = time->alarm_minute;
     time->rtc->alarm_1_hour = time->alarm_hour;
 
-    esp_err_t err = aespl_ds3231_set_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+    esp_err_t err =
+        aespl_ds3231_set_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
     if (err != ESP_OK) {
         ESP_LOGE(APP_NAME, "aespl_ds3231_set_data error: %d", err);
     }
@@ -81,7 +80,7 @@ static esp_err_t set_rtc_from_app_time(app_time_t *time) {
 
 static void time_reader(void *args) {
     esp_err_t err;
-    app_time_t *time = (app_time_t *) args;
+    app_time_t *time = (app_time_t *)args;
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -111,10 +110,12 @@ static void time_reader(void *args) {
         // Start/stop alarm
         if (time->alarm_enabled) {
             if (time->alarm_started) {
-                if (time->hour != time->alarm_hour || time->minute != time->alarm_minute) {
+                if (time->hour != time->alarm_hour ||
+                    time->minute != time->alarm_minute) {
                     app_alarm_stop(time);
                 }
-            } else if (time->hour == time->alarm_hour && time->minute == time->alarm_minute && time->second < 2) {
+            } else if (time->hour == time->alarm_hour &&
+                       time->minute == time->alarm_minute && time->second < 2) {
                 app_alarm_start(time);
             }
         }
@@ -148,11 +149,11 @@ app_time_t *app_time_init(app_mode_t *app_mode, nvs_handle_t nvs) {
     time->app_mode = app_mode;
 
     i2c_config_t i2c = {
-            .mode = I2C_MODE_MASTER,
-            .sda_io_num = APP_DS3231_SDA_PIN,
-            .sda_pullup_en = APP_DS3231_SDA_PULLUP,
-            .scl_io_num = APP_DS3231_SCL_PIN,
-            .scl_pullup_en = APP_DS3231_SCL_PULLUP,
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = APP_DS3231_SDA_PIN,
+        .sda_pullup_en = APP_DS3231_SDA_PULLUP,
+        .scl_io_num = APP_DS3231_SCL_PIN,
+        .scl_pullup_en = APP_DS3231_SCL_PULLUP,
     };
     err = i2c_param_config(I2C_NUM_0, &i2c);
     if (err != ESP_OK) {
@@ -163,7 +164,7 @@ app_time_t *app_time_init(app_mode_t *app_mode, nvs_handle_t nvs) {
     ESP_LOGI(APP_NAME, "RTC I2C bus initialized");
 
     // RTC connection
-    time->rtc = malloc(sizeof (aespl_ds3231_t));
+    time->rtc = malloc(sizeof(aespl_ds3231_t));
     if (time->rtc == NULL) {
         free(time);
         ESP_LOGE(APP_NAME, "failed to allocate memory for the RTC");
@@ -181,7 +182,7 @@ app_time_t *app_time_init(app_mode_t *app_mode, nvs_handle_t nvs) {
     // Alarm enabled/disabled setting from NVS
     nvs_get_u8(nvs, "alarm_en", &time->alarm_enabled);
 
-    xTaskCreate(time_reader, "rtc_time_reader", 4096, (void *) time, 0, NULL);
+    xTaskCreate(time_reader, "rtc_time_reader", 4096, (void *)time, 0, NULL);
     ESP_LOGI(APP_NAME, "time functions initialized");
 
     return time;

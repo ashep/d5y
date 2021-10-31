@@ -1,17 +1,17 @@
-#ifndef CRONUS_DISPLAY_HW_VER_1_H
-#define CRONUS_DISPLAY_HW_VER_1_H
+#ifndef CRONUS_DISPLAY_H
+#define CRONUS_DISPLAY_H
 
-#include "freertos/timers.h"
-#include "semphr.h"
-#include "nvs.h"
-
-#include "aespl_gfx_buffer.h"
-#include "aespl_max7219.h"
-#include "aespl_max7219_matrix.h"
-
-#include "cronus/mode.h"
-#include "cronus/weather.h"
+#include "aespl/gfx_buffer.h"
+#include "aespl/max7219.h"
+#include "aespl/max7219_matrix.h"
 #include "cronus/dtime.h"
+#include "cronus/mode.h"
+#include "cronus/version.h"
+#include "cronus/weather.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/timers.h"
+#include "nvs.h"
 
 #ifndef APP_SHOW_TIME_DURATION
 #define APP_SHOW_TIME_DURATION 50000
@@ -45,10 +45,10 @@
 #define APP_SPLASH_SCREEN_ENABLED 1
 #endif
 
-#if APP_HW_VERSION == APP_HW_VER_1
+#if APP_HW_VER_MAJ == 1
 #define APP_HW_V1_DISPLAYS_X 4
 #define APP_HW_V1_DISPLAYS_Y 1
-#define APP_HW_V1_DISPLAY_HORIZ_REVERSE 0
+#define APP_HW_V1_DISPLAY_HORIZ_REVERSE 1
 #define APP_HW_V1_DISPLAY_PIN_DATA GPIO_NUM_12
 #define APP_HW_V1_DISPLAY_PIN_CLK GPIO_NUM_14
 #define APP_HW_V1_DISPLAY_PIN_CS GPIO_NUM_13
@@ -76,12 +76,13 @@ typedef struct {
     app_weather_t *weather;
 } app_display_t;
 
-
 /**
  * Initializes display.
  *
  * @return
  */
-app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs);
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
+                                         app_weather_t *weather,
+                                         nvs_handle_t nvs);
 
-#endif // CRONUS_DISPLAY_HW_VER_1_H
+#endif  // CRONUS_DISPLAY_H

@@ -5,29 +5,27 @@
  * @copyright MIT License
  */
 
+#include "cronus/display.h"
+
 #include <math.h>
 #include <string.h>
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "timers.h"
-
-#include "adc.h"
+#include "aespl/gfx.h"
+#include "aespl/gfx_animation.h"
+#include "aespl/gfx_buffer.h"
+#include "aespl/gfx_font_1.h"
+#include "aespl/gfx_text.h"
+#include "aespl/max7219.h"
+#include "aespl/max7219_matrix.h"
+#include "cronus/font_8_1.h"
+#include "cronus/main.h"
+#include "cronus/weather.h"
+#include "driver/adc.h"
 #include "esp_err.h"
 #include "esp_log.h"
-
-#include "aespl_gfx.h"
-#include "aespl_gfx_buffer.h"
-#include "aespl_gfx_text.h"
-#include "aespl_gfx_font_1.h"
-#include "aespl_gfx_animation.h"
-#include "aespl_max7219.h"
-#include "aespl_max7219_matrix.h"
-
-#include "cronus/main.h"
-#include "cronus/font_8_1.h"
-#include "cronus/display.h"
-#include "cronus/weather.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
 
 /**
  * @brief Draws current time on the screen
@@ -67,19 +65,22 @@ static void draw_time(app_display_t *display) {
     aespl_gfx_set_px(buf_sep, 1, 5, 1);
 
     // Double separator bottom dot height in alarm mode
-    if (display->time->alarm_enabled || *display->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
+    if (display->time->alarm_enabled ||
+        *display->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
         aespl_gfx_set_px(buf_sep, 0, 1, 1);
         aespl_gfx_set_px(buf_sep, 1, 6, 1);
     }
 
     // Hour blink
-    if ((*display->mode == APP_MODE_SETTINGS_TIME_HOUR || *display->mode == APP_MODE_SETTINGS_ALARM_HOUR) &&
+    if ((*display->mode == APP_MODE_SETTINGS_TIME_HOUR ||
+         *display->mode == APP_MODE_SETTINGS_ALARM_HOUR) &&
         !display->sep_visible) {
         aespl_gfx_clear_buf(buf_h);
     }
 
     // Minute blink
-    if ((*display->mode == APP_MODE_SETTINGS_TIME_MINUTE || *display->mode == APP_MODE_SETTINGS_ALARM_MINUTE) &&
+    if ((*display->mode == APP_MODE_SETTINGS_TIME_MINUTE ||
+         *display->mode == APP_MODE_SETTINGS_ALARM_MINUTE) &&
         !display->sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
@@ -90,9 +91,12 @@ static void draw_time(app_display_t *display) {
     }
 
     // Merge buffers
-    aespl_gfx_merge(display->buf, buf_h, (aespl_gfx_point_t) {0, 0}, (aespl_gfx_point_t) {0, 0});
-    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t) {15, 0}, (aespl_gfx_point_t) {0, 0});
-    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t) {19, 0}, (aespl_gfx_point_t) {0, 0});
+    aespl_gfx_merge(display->buf, buf_h, (aespl_gfx_point_t){0, 0},
+                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0},
+                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0},
+                    (aespl_gfx_point_t){0, 0});
 
     // Cleanup
     aespl_gfx_free_buf(buf_h);
@@ -133,14 +137,18 @@ static void draw_date(app_display_t *display) {
     }
 
     // Month blink in settings mode
-    if (*display->mode == APP_MODE_SETTINGS_DATE_MONTH && !display->sep_visible) {
+    if (*display->mode == APP_MODE_SETTINGS_DATE_MONTH &&
+        !display->sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
 
     // Merge buffers
-    aespl_gfx_merge(display->buf, buf_d, (aespl_gfx_point_t) {0, 0}, (aespl_gfx_point_t) {0, 0});
-    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t) {15, 0}, (aespl_gfx_point_t) {0, 0});
-    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t) {19, 0}, (aespl_gfx_point_t) {0, 0});
+    aespl_gfx_merge(display->buf, buf_d, (aespl_gfx_point_t){0, 0},
+                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0},
+                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0},
+                    (aespl_gfx_point_t){0, 0});
 
     // Cleanup
     aespl_gfx_free_buf(buf_d);
@@ -154,7 +162,8 @@ static void draw_dow(app_display_t *display) {
     } else {
         char s[8];
         sprintf(s, "- %d -", display->time->dow + 1);
-        aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {6, 0}, s, 1, 1);
+        aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){6, 0},
+                       s, 1, 1);
     }
 }
 
@@ -166,15 +175,17 @@ static void draw_year(app_display_t *display) {
 
     // Draw year
     sprintf(s, "20%02d", display->time->year);
-    aespl_gfx_puts(buf_y, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
+    aespl_gfx_puts(buf_y, &font8_clock_2, (aespl_gfx_point_t){0, 0}, s, 1, 1);
 
     // Settings mode
-    if (*display->mode == APP_MODE_SETTINGS_DATE_YEAR && !display->sep_visible) {
+    if (*display->mode == APP_MODE_SETTINGS_DATE_YEAR &&
+        !display->sep_visible) {
         aespl_gfx_clear_buf(buf_y);
     }
 
     // Merge buffers
-    aespl_gfx_merge(display->buf, buf_y, (aespl_gfx_point_t) {2, 0}, (aespl_gfx_point_t) {0, 0});
+    aespl_gfx_merge(display->buf, buf_y, (aespl_gfx_point_t){2, 0},
+                    (aespl_gfx_point_t){0, 0});
 
     // Cleanup
     aespl_gfx_free_buf(buf_y);
@@ -186,7 +197,8 @@ static void draw_year(app_display_t *display) {
 static void draw_brightness(app_display_t *display) {
     char s[6];
     sprintf(s, "$ %02d", display->max_brightness + 1);
-    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {4, 0}, s, 1, 1);
+    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){4, 0}, s,
+                   1, 1);
 }
 
 static void make_temperature_str(char sign, char *s, int temp) {
@@ -196,7 +208,7 @@ static void make_temperature_str(char sign, char *s, int temp) {
         sprintf(s, "%c %d,", sign, temp);
     } else if (temp >= 0 && temp < 10) {
         sprintf(s, "%c   %d,", sign, temp);
-    } else { // >= 10
+    } else {  // >= 10
         sprintf(s, "%c %d,", sign, temp);
     }
 }
@@ -204,10 +216,11 @@ static void make_temperature_str(char sign, char *s, int temp) {
 /**
  * @brief Draws ambient temperature
  */
-//static void draw_ambient_temp(app_display_t *display) {
+// static void draw_ambient_temp(app_display_t *display) {
 //    char s[5];
 //    make_temperature_str('#', s, (int) round(display->ds3231.temp - 4));
-//    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
+//    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0},
+//    s, 1, 1);
 //}
 
 /**
@@ -215,15 +228,16 @@ static void make_temperature_str(char sign, char *s, int temp) {
  */
 static void draw_weather_temp(app_display_t *display) {
     char s[5];
-    make_temperature_str('!', s, (int) round(display->weather->temp));
-    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t) {0, 0}, s, 1, 1);
+    make_temperature_str('!', s, (int)round(display->weather->temp));
+    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){0, 0}, s,
+                   1, 1);
 }
 
 /**
  * @brief Refresh display task
  */
 static void refresh(void *args) {
-    app_display_t *d = (app_display_t *) args;
+    app_display_t *d = (app_display_t *)args;
 
     for (;;) {
         aespl_gfx_clear_buf(d->buf);
@@ -262,17 +276,19 @@ static void refresh(void *args) {
                 draw_year(d);
                 break;
 
-//            case APP_MODE_SHOW_AMBIENT_TEMP:
-//                draw_ambient_temp(display);
-//                break;
+                //            case APP_MODE_SHOW_AMBIENT_TEMP:
+                //                draw_ambient_temp(display);
+                //                break;
 
             case APP_MODE_SHOW_WEATHER_TEMP:
                 draw_weather_temp(d);
                 break;
 
             case APP_MODE_SETTINGS_BRIGHTNESS:
-                // Increase brightness task frequency to make display more responsive to user input
-                xTimerChangePeriod(d->brightness_timer, pdMS_TO_TICKS(APP_DISPLAY_REFRESH_RATE), 0);
+                // Increase brightness task frequency to make display more
+                // responsive to user input
+                xTimerChangePeriod(d->brightness_timer,
+                                   pdMS_TO_TICKS(APP_DISPLAY_REFRESH_RATE), 0);
                 draw_brightness(d);
                 break;
 
@@ -289,7 +305,7 @@ static void refresh(void *args) {
 }
 
 static void brightness_regulator(xTimerHandle timer) {
-    app_display_t *display = (app_display_t *) pvTimerGetTimerID(timer);
+    app_display_t *display = (app_display_t *)pvTimerGetTimerID(timer);
     uint16_t data = 0;
 
     // Set brightness in settings mode to let user make estimation
@@ -297,7 +313,8 @@ static void brightness_regulator(xTimerHandle timer) {
         display->max7219.intensity = display->max_brightness;
         return;
     } else {
-        // Since timer can be changed by refresh(), ensure we have correct period
+        // Since timer can be changed by refresh(), ensure we have correct
+        // period
         int p = pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT);
         if (xTimerGetPeriod(timer) != p) {
             xTimerChangePeriod(timer, p, 0);
@@ -322,11 +339,13 @@ static void brightness_regulator(xTimerHandle timer) {
     display->max7219.intensity = display->brightness;
 }
 
-static aespl_gfx_anim_state_t splash_screen_animation(void *args, uint32_t frame_n) {
-    app_display_t *d = (app_display_t *) args;
+static aespl_gfx_anim_state_t splash_screen_animation(void *args,
+                                                      uint32_t frame_n) {
+    app_display_t *d = (app_display_t *)args;
 
     aespl_gfx_clear_buf(d->buf);
-    aespl_gfx_puts(d->buf, &font_1, (aespl_gfx_point_t) {32 - frame_n, 0}, d->splash_screen_text, 1, 1);
+    aespl_gfx_puts(d->buf, &font_1, (aespl_gfx_point_t){32 - frame_n, 0},
+                   d->splash_screen_text, 1, 1);
     aespl_max7219_matrix_draw(&d->max7219_matrix, d->buf);
 
     if (frame_n < 70) {
@@ -337,7 +356,7 @@ static aespl_gfx_anim_state_t splash_screen_animation(void *args, uint32_t frame
 }
 
 static void splash_screen(app_display_t *display) {
-    aespl_gfx_animate(splash_screen_animation, (void *) display, 15);
+    aespl_gfx_animate(splash_screen_animation, (void *)display, 15);
     vTaskDelay(pdMS_TO_TICKS(6000));
 
     for (uint8_t x = 0; x < 32; x = x + 2) {
@@ -372,13 +391,15 @@ static void splash_screen(app_display_t *display) {
     aespl_max7219_matrix_draw(&display->max7219_matrix, display->buf);
     vTaskDelay(pdMS_TO_TICKS(100));
 
-    for (int i = APP_DISPLAY_MIN_BRIGHTNESS; i <= APP_DISPLAY_MAX_BRIGHTNESS; i++) {
+    for (int i = APP_DISPLAY_MIN_BRIGHTNESS; i <= APP_DISPLAY_MAX_BRIGHTNESS;
+         i++) {
         display->max7219.intensity = i;
         aespl_max7219_refresh(&display->max7219);
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 
-    for (int i = APP_DISPLAY_MAX_BRIGHTNESS; i >= APP_DISPLAY_MIN_BRIGHTNESS; i--) {
+    for (int i = APP_DISPLAY_MAX_BRIGHTNESS; i >= APP_DISPLAY_MIN_BRIGHTNESS;
+         i--) {
         display->max7219.intensity = i;
         aespl_max7219_refresh(&display->max7219);
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -389,31 +410,25 @@ static void splash_screen(app_display_t *display) {
 }
 
 static void init_display(app_display_t *display) {
-    display->buf = aespl_gfx_make_buf(APP_HW_V1_DISPLAYS_X * 8, APP_HW_V1_DISPLAYS_Y * 8, AESPL_GFX_C_MODE_MONO);
+    display->buf =
+        aespl_gfx_make_buf(APP_HW_V1_DISPLAYS_X * 8, APP_HW_V1_DISPLAYS_Y * 8,
+                           AESPL_GFX_C_MODE_MONO);
 
     ESP_ERROR_CHECK(aespl_max7219_init(
-            &display->max7219,
-            APP_HW_V1_DISPLAY_PIN_CS,
-            APP_HW_V1_DISPLAY_PIN_CLK,
-            APP_HW_V1_DISPLAY_PIN_DATA,
-            AESPL_MAX7219_DECODE_NONE,
-            AESPL_MAX7219_INTENSITY_MIN,
-            AESPL_MAX7219_SCAN_LIMIT_8,
-            AESPL_MAX7219_POWER_ON,
-            AESPL_MAX7219_TEST_MODE_DISABLE,
-            APP_HW_V1_DISPLAYS_X * APP_HW_V1_DISPLAYS_Y
-    ));
+        &display->max7219, APP_HW_V1_DISPLAY_PIN_CS, APP_HW_V1_DISPLAY_PIN_CLK,
+        APP_HW_V1_DISPLAY_PIN_DATA, AESPL_MAX7219_DECODE_NONE,
+        AESPL_MAX7219_INTENSITY_MIN, AESPL_MAX7219_SCAN_LIMIT_8,
+        AESPL_MAX7219_POWER_ON, AESPL_MAX7219_TEST_MODE_DISABLE,
+        APP_HW_V1_DISPLAYS_X * APP_HW_V1_DISPLAYS_Y));
 
     ESP_ERROR_CHECK(aespl_max7219_matrix_init(
-            &display->max7219_matrix,
-            &display->max7219,
-            APP_HW_V1_DISPLAYS_X,
-            APP_HW_V1_DISPLAYS_Y,
-            APP_HW_V1_DISPLAY_HORIZ_REVERSE
-    ));
+        &display->max7219_matrix, &display->max7219, APP_HW_V1_DISPLAYS_X,
+        APP_HW_V1_DISPLAYS_Y, APP_HW_V1_DISPLAY_HORIZ_REVERSE));
 }
 
-app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs) {
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
+                                         app_weather_t *weather,
+                                         nvs_handle_t nvs) {
     int err;
     app_display_t *d = NULL;
 
@@ -451,7 +466,8 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app
 
     // Splash screen
     if (APP_SPLASH_SCREEN_ENABLED) {
-        sprintf(d->splash_screen_text, "Cronus     v%s", APP_VERSION);
+        sprintf(d->splash_screen_text, "Cronus     v%d.%d", APP_FW_VER_MAJ,
+                APP_FW_VER_MIN);
         splash_screen(d);
     }
 
@@ -463,8 +479,9 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app
         ESP_LOGE(APP_NAME, "adc_init() failed; err=%d", err);
         return NULL;
     }
-    d->brightness_timer = xTimerCreate(
-            "brightness", pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT), pdTRUE, (void *) d, brightness_regulator);
+    d->brightness_timer =
+        xTimerCreate("brightness", pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT),
+                     pdTRUE, (void *)d, brightness_regulator);
     if (d->brightness_timer == NULL) {
         ESP_LOGE(APP_NAME, "failed to initialize brightness regulator timer");
         free(d);
@@ -478,7 +495,7 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app
     ESP_LOGI(APP_NAME, "brightness regulator initialized");
 
     // Screen draw task
-    xTaskCreate(refresh, "display", 4096, (void *) d, 0, NULL);
+    xTaskCreate(refresh, "display", 4096, (void *)d, 0, NULL);
     ESP_LOGI(APP_NAME, "display initialized");
 
     return d;

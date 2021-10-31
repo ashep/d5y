@@ -1,8 +1,8 @@
 #ifndef CRONUS_ALARM_H
 #define CRONUS_ALARM_H
 
-#include "gpio.h"
 #include "cronus/dtime.h"
+#include "driver/gpio.h"
 
 #ifndef APP_ALARM_PIN
 #define APP_ALARM_PIN GPIO_NUM_15
@@ -37,4 +37,4 @@ void app_alarm_start(app_time_t *time);
  */
 void app_alarm_stop(app_time_t *time);
 
-#endif // CRONUS_ALARM_H
+#endif  // CRONUS_ALARM_H

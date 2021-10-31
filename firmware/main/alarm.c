@@ -1,17 +1,18 @@
-#include "FreeRTOS.h"
-#include "task.h"
+#include "cronus/alarm.h"
 
+#include "FreeRTOS.h"
+#include "cronus/main.h"
+#include "cronus/version.h"
 #include "esp_err.h"
 #include "esp_log.h"
-
-#include "cronus/main.h"
-#include "cronus/alarm.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 esp_err_t app_alarm_init() {
     gpio_config_t io = {
-            .pin_bit_mask = 1UL << APP_ALARM_PIN,
-            .pull_down_en = GPIO_PULLDOWN_ENABLE,
-            .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask = 1UL << APP_ALARM_PIN,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .mode = GPIO_MODE_OUTPUT,
     };
 
     esp_err_t err = gpio_config(&io);
@@ -32,7 +33,7 @@ void app_alarm_beep() {
 }
 
 static void alarm_task(void *args) {
-    app_time_t *time = (app_time_t *) args;
+    app_time_t *time = (app_time_t *)args;
 
     for (;;) {
         for (uint8_t i = 0; i < 4; i++) {
@@ -50,10 +51,8 @@ static void alarm_task(void *args) {
 }
 
 void app_alarm_start(app_time_t *time) {
-    xTaskCreate(alarm_task, "alarm", 4096, (void *) time, 0, time->alarm_task);
+    xTaskCreate(alarm_task, "alarm", 4096, (void *)time, 0, time->alarm_task);
     time->alarm_started = true;
 }
 
-void app_alarm_stop(app_time_t *time) {
-    time->alarm_started = false;
-}
+void app_alarm_stop(app_time_t *time) { time->alarm_started = false; }

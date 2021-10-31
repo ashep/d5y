@@ -8,7 +8,7 @@
 #ifndef CRONUS_FONT_8_1_H
 #define CRONUS_FONT_8_1_H
 
-#include "aespl_gfx_text.h"
+#include "aespl/gfx_text.h"
 
 static const uint8_t fnt[] =
         {

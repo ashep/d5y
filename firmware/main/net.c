@@ -5,28 +5,24 @@
  * @copyright MIT License
  */
 
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-
+#include "aespl/httpd.h"
+#include "aespl/service.h"
+#include "cJSON.h"
+#include "cronus/dtime.h"
+#include "cronus/network.h"
+#include "cronus/version.h"
+#include "cronus/weather.h"
+#include "esp_err.h"
+#include "esp_http_client.h"
+#include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
-#include "esp_err.h"
-#include "esp_log.h"
-#include "esp_http_client.h"
-
-#include "cJSON.h"
-
-#include "aespl_httpd.h"
-#include "aespl_service.h"
-
-#include "cronus/main.h"
-#include "cronus/network.h"
-#include "cronus/dtime.h"
-#include "cronus/weather.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
 #define APP_HTTP_BODY_MAX_LEN 2048
 
@@ -40,7 +36,8 @@ static esp_err_t httpd_handler_get_index(httpd_req_t *req) {
 }
 
 static esp_err_t httpd_handler_get_favicon(httpd_req_t *req) {
-    esp_err_t err = aespl_httpd_send_file(req, "/favicon", "image/x-icon", "gzip");
+    esp_err_t err =
+        aespl_httpd_send_file(req, "/favicon", "image/x-icon", "gzip");
     if (err != ESP_OK) {
         ESP_LOGE(APP_NAME, "failed to send favicon; err=%d", err);
     }
@@ -60,7 +57,8 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
         case HTTP_EVENT_ON_DATA:
             total_len += evt->data_len;
             if (total_len > APP_HTTP_BODY_MAX_LEN) {
-                ESP_LOGE(APP_NAME, "response is bigger than %d", APP_HTTP_BODY_MAX_LEN);
+                ESP_LOGE(APP_NAME, "response is bigger than %d",
+                         APP_HTTP_BODY_MAX_LEN);
                 return ESP_FAIL;
             }
             memset(evt->user_data + output_pos, 0, evt->data_len);
@@ -79,16 +77,17 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
-static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) {
+static esp_err_t fetch_data(app_net_t *net, const char *host,
+                            const char *path) {
     char data_buf[APP_HTTP_BODY_MAX_LEN] = {0};
 
     // Initialize an HTTP client
     esp_http_client_config_t cli_cfg = {
-            .host = host,
-            .path = path,
-            .timeout_ms = 30000,
-            .event_handler = http_event_handler,
-            .user_data = data_buf,
+        .host = host,
+        .path = path,
+        .timeout_ms = 30000,
+        .event_handler = http_event_handler,
+        .user_data = data_buf,
     };
     esp_http_client_handle_t cli = esp_http_client_init(&cli_cfg);
     if (!cli) {
@@ -136,7 +135,7 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
     }
 
     // Lock
-    if (xSemaphoreTake(net->mux, (TickType_t) 10) != pdTRUE) {
+    if (xSemaphoreTake(net->mux, (TickType_t)10) != pdTRUE) {
         cJSON_Delete(data);
         ESP_LOGE(APP_NAME, "error while locking");
         return ESP_FAIL;
@@ -151,9 +150,11 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
     net->time->month = cJSON_GetObjectItem(data, "month")->valueint;
     net->time->year = cJSON_GetObjectItem(data, "year")->valueint;
 
-    net->weather->update_ok = (bool) cJSON_GetObjectItem(data, "weather")->valueint;
+    net->weather->update_ok =
+        (bool)cJSON_GetObjectItem(data, "weather")->valueint;
     if (net->weather->update_ok) {
-        net->weather->temp = cJSON_GetObjectItem(data, "feels_like")->valuedouble;
+        net->weather->temp =
+            cJSON_GetObjectItem(data, "feels_like")->valuedouble;
     }
 
     // Free resources
@@ -169,7 +170,7 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
 }
 
 static void data_fetcher(void *args) {
-    app_net_t *net = (app_net_t *) args;
+    app_net_t *net = (app_net_t *)args;
     esp_err_t err;
     bool need_update = true;
     bool first_update = true;
@@ -187,10 +188,12 @@ static void data_fetcher(void *args) {
                 }
             }
 
-            err = fetch_data(net, APP_NET_REMOTE_API_HOST, APP_NET_REMOTE_API_PATH);
+            err = fetch_data(net, APP_NET_REMOTE_API_HOST,
+                             APP_NET_REMOTE_API_PATH);
             if (err == ESP_OK) {
                 // Don't abuse RTC's flash memory too much
-                if (first_update || (net->time->hour == 4 && net->time->minute <= 30)) {
+                if (first_update ||
+                    (net->time->hour == 4 && net->time->minute <= 30)) {
                     net->time->flush_to_rtc = true;
                 }
 
@@ -204,7 +207,8 @@ static void data_fetcher(void *args) {
                 ESP_LOGE(APP_NAME, "network update failed");
                 need_update = true;
             }
-        } else if (net->time->minute == net->update_delay || net->time->minute == 30 + net->update_delay) {
+        } else if (net->time->minute == net->update_delay ||
+                   net->time->minute == 30 + net->update_delay) {
             need_update = true;
         }
 
@@ -213,11 +217,12 @@ static void data_fetcher(void *args) {
 }
 
 // WiFi events handler
-static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev_data) {
-    app_net_t *net = (app_net_t *) arg;
+static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id,
+                    void *ev_data) {
+    app_net_t *net = (app_net_t *)arg;
 
     switch (ev_id) {
-        case WIFI_EVENT_STA_START: // WiFi station started
+        case WIFI_EVENT_STA_START:  // WiFi station started
             ESP_LOGI(APP_NAME, "WiFi started");
             esp_wifi_connect();
             break;
@@ -232,41 +237,53 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
             net->wifi_connected = false;
             break;
 
-        case WIFI_EVENT_AP_START: // the access point started
+        case WIFI_EVENT_AP_START:  // the access point started
             ESP_LOGI(APP_NAME, "WiFi access point started");
             ESP_ERROR_CHECK(aespl_httpd_start(&net->httpd, NULL));
             ESP_ERROR_CHECK(aespl_service_init(&net->httpd));
-            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/", httpd_handler_get_index, NULL));
-            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/favicon.ico", httpd_handler_get_favicon, NULL));
+            ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/",
+                                               httpd_handler_get_index, NULL));
+            ESP_ERROR_CHECK(
+                aespl_httpd_handle(&net->httpd, HTTP_GET, "/favicon.ico",
+                                   httpd_handler_get_favicon, NULL));
             break;
 
-        case WIFI_EVENT_AP_STACONNECTED:; // a station connected to the access point
-            wifi_event_ap_staconnected_t *d_ap_con = (wifi_event_ap_staconnected_t *) ev_data;
-            ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR, d_ap_con->aid, MAC2STR(d_ap_con->mac));
+        case WIFI_EVENT_AP_STACONNECTED:;  // a station connected to the access
+                                           // point
+            wifi_event_ap_staconnected_t *d_ap_con =
+                (wifi_event_ap_staconnected_t *)ev_data;
+            ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR,
+                     d_ap_con->aid, MAC2STR(d_ap_con->mac));
             break;
 
-        case WIFI_EVENT_AP_STADISCONNECTED:; // a station disconnected from the access point
-            wifi_event_ap_stadisconnected_t *d_ap_dis = (wifi_event_ap_stadisconnected_t *) ev_data;
-            ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, d_ap_dis->aid, MAC2STR(d_ap_dis->mac));
+        case WIFI_EVENT_AP_STADISCONNECTED:;  // a station disconnected from the
+                                              // access point
+            wifi_event_ap_stadisconnected_t *d_ap_dis =
+                (wifi_event_ap_stadisconnected_t *)ev_data;
+            ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR,
+                     d_ap_dis->aid, MAC2STR(d_ap_dis->mac));
             break;
 
-            default:
+        default:
             break;
     }
 }
 
 // IP events handler
-static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *event_data) {
-    app_net_t *net = (app_net_t *) arg;
+static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id,
+                  void *event_data) {
+    app_net_t *net = (app_net_t *)arg;
 
     if (ev_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
-        ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-        xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *) net, 0, NULL);
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+        ESP_LOGI(APP_NAME, "got IP address: %s",
+                 ip4addr_ntoa(&event->ip_info.ip));
+        xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *)net, 0, NULL);
     }
 }
 
-esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather) {
+esp_err_t app_net_init(app_net_t *net, app_time_t *time,
+                       app_weather_t *weather) {
     esp_err_t err;
     uint8_t mac[6];
 
@@ -301,29 +318,33 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
 
     // Update delay, in minutes
     for (uint8_t i = 0; i < 6; i++) {
-        net->update_delay = mac[i] >> 4; // can be from 0 to 15
-        if (net->update_delay != 0) { // out target is to have delay grater than 0
+        net->update_delay = mac[i] >> 4;  // can be from 0 to 15
+        if (net->update_delay !=
+            0) {  // out target is to have delay grater than 0
             break;
         }
     }
 
     // Register WiFi events handler
-    err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh, (void *) net);
+    err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_eh,
+                                     (void *)net);
     if (err != ESP_OK) {
         return err;
     }
 
     // Register IP events handler
-    err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, ip_eh, (void *) net);
+    err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, ip_eh,
+                                     (void *)net);
     if (err != ESP_OK) {
         return err;
     }
 
     // Access point configuration
     wifi_config_t ap_config = {
-            .ap = {
-                    .max_connection = APP_NET_AP_MAX_CONN,
-                    .authmode = WIFI_AUTH_WPA_WPA2_PSK,
+        .ap =
+            {
+                .max_connection = APP_NET_AP_MAX_CONN,
+                .authmode = WIFI_AUTH_WPA_WPA2_PSK,
             },
     };
 
@@ -331,14 +352,14 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     char hostname[32] = {0};
     strncpy(hostname, APP_NAME "_", 32);
     strncat(hostname, mac_s + 8, 4);
-    strncpy((char *) ap_config.ap.ssid, hostname, 32);
+    strncpy((char *)ap_config.ap.ssid, hostname, 32);
     ap_config.ap.ssid_len = strlen(hostname);
 
     // Access point password
     char password[9] = {0};
     strncpy(password, mac_s + 8, 4);
     strncat(password, mac_s + 8, 4);
-    strncpy((char *) ap_config.ap.password, password, 8);
+    strncpy((char *)ap_config.ap.password, password, 8);
 
     // Initialize access point
     err = esp_wifi_set_mode(WIFI_MODE_APSTA);
@@ -365,8 +386,10 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     }
 
     // Set device signature
-    sprintf(net->signature, "%s/%s:%02x/%s", APP_NAME, APP_VERSION, APP_HW_VERSION, mac_s);
+    sprintf(net->signature, "%s/%d.%d/%d.%d/%s", APP_NAME, APP_HW_VER_MAJ,
+            APP_HW_VER_MIN, APP_FW_VER_MAJ, APP_FW_VER_MIN, mac_s);
 
-    ESP_LOGI(APP_NAME, "network stack initialized; mac=%s, host=%s, pass=%s", mac_s, hostname, password);
+    ESP_LOGI(APP_NAME, "network stack initialized; mac=%s, host=%s, pass=%s",
+             mac_s, hostname, password);
     return ESP_OK;
 }

@@ -1,14 +1,12 @@
 #ifndef CRONUS_KEYBOARD_H
 #define CRONUS_KEYBOARD_H
 
-#include "freertos/timers.h"
-#include "semphr.h"
-
-#include "aespl_button.h"
-
-#include "cronus/mode.h"
+#include "aespl/button.h"
 #include "cronus/display.h"
+#include "cronus/mode.h"
 #include "cronus/weather.h"
+#include "freertos/semphr.h"
+#include "freertos/timers.h"
 
 #ifndef APP_BTN_A
 #define APP_BTN_A GPIO_NUM_0
@@ -44,7 +42,8 @@ typedef struct {
  * @param app Application
  * @return
  */
-app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_display_t *display, app_weather_t *weather,
-                                  nvs_handle_t nvs);
+app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time,
+                                  app_display_t *display,
+                                  app_weather_t *weather, nvs_handle_t nvs);
 
-#endif // CRONUS_KEYBOARD_H
+#endif  // CRONUS_KEYBOARD_H

@@ -1,7 +1,8 @@
 #ifndef CRONUS_FS_H
 #define CRONUS_FS_H
 
-#include "semphr.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #ifndef APP_FS_PARTITION_NAME
 #define APP_FS_PARTITION_NAME "storage"
@@ -16,4 +17,4 @@ typedef struct {
  */
 esp_err_t app_fs_init();
 
-#endif //CRONUS_FS_H
+#endif  // CRONUS_FS_H
