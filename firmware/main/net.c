@@ -190,7 +190,7 @@ static void data_fetcher(void *args) {
             err = fetch_data(net, APP_NET_REMOTE_API_HOST, APP_NET_REMOTE_API_PATH);
             if (err == ESP_OK) {
                 // Don't abuse RTC's flash memory too much
-                if (first_update || (net->time->hour == 0 && net->time->minute <= 30)) {
+                if (first_update || (net->time->hour == 4 && net->time->minute <= 30)) {
                     net->time->flush_to_rtc = true;
                 }
 
