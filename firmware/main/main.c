@@ -5,11 +5,8 @@
  * @copyright MIT License
  */
 
-#include "cronus/main.h"
-
 #include <string.h>
 
-#include "FreeRTOS.h"
 #include "cronus/alarm.h"
 #include "cronus/dtime.h"
 #include "cronus/fs.h"
@@ -18,7 +15,7 @@
 #include "esp_err.h"
 #include "esp_event.h"
 #include "esp_log.h"
-#include "i2c.h"
+#include "freertos/FreeRTOS.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 
