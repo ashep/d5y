@@ -1,4 +1,4 @@
-# Cronus v1.1 Enclosure GCode
+# Cronus v1 Enclosure GCode Parameters
 
 ## Parameters for sides
 
@@ -6,7 +6,7 @@
 - Stock thickness: 4 mm
 - Bit diameter: 1 mm
 - Depth per pass: 1 mm
-- Plunge rate: 100 mm/min
+- Plunge rate: 175 mm/min
 - Feed rate: 175 mm/min
 - RPM: 10000
 
