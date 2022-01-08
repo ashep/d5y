@@ -42,8 +42,6 @@ typedef struct {
  * @param app Application
  * @return
  */
-app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time,
-                                  app_display_t *display,
-                                  app_weather_t *weather, nvs_handle_t nvs);
+app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_display_t *display, app_weather_t *weather, nvs_handle_t nvs);
 
 #endif  // CRONUS_KEYBOARD_H

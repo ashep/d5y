@@ -142,7 +142,7 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
     net->time->second = cJSON_GetObjectItem(data, "second")->valueint;
     net->time->minute = cJSON_GetObjectItem(data, "minute")->valueint;
     net->time->hour = cJSON_GetObjectItem(data, "hour")->valueint;
-    net->time->dow = cJSON_GetObjectItem(data, "dow")->valueint - 1;
+    net->time->dow = cJSON_GetObjectItem(data, "dow")->valueint;
     net->time->day = cJSON_GetObjectItem(data, "day")->valueint;
     net->time->month = cJSON_GetObjectItem(data, "month")->valueint;
     net->time->year = cJSON_GetObjectItem(data, "year")->valueint;
@@ -167,45 +167,49 @@ static esp_err_t fetch_data(app_net_t *net, const char *host, const char *path) 
 static void data_fetcher(void *args) {
     app_net_t *net = (app_net_t *)args;
     esp_err_t err;
+    uint8_t err_cnt = 0;
     bool need_update = true;
     bool first_update = true;
 
     for (;;) {
-        if (!need_update && (net->time->minute == net->update_delay || net->time->minute == 30 + net->update_delay)) {
-            need_update = true;
-        }
-
         if (!need_update) {
-            continue;
-        }
-
-        if (!net->wifi_connected) {
-            ESP_LOGI(APP_NAME, "WiFi is not connected, trying to reconnect");
-
-            err = esp_wifi_connect();
-            if (err != ESP_OK) {
-                ESP_LOGE(APP_NAME, "failed to connect to WiFi");
-                vTaskDelay(pdMS_TO_TICKS(APP_SECOND * 5));
-                continue;
+            // Do update at least twice per hour
+            if (net->time->minute == net->update_delay || net->time->minute == 30 + net->update_delay) {
+                need_update = true;
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(APP_SECOND));
             }
+
+            continue;
         }
 
         err = fetch_data(net, APP_NET_REMOTE_API_HOST, APP_NET_REMOTE_API_PATH);
         if (err == ESP_OK) {
-            // Don't abuse RTC's flash memory too much
+            err_cnt = 0;
+
+            // Don't abuse RTC's flash memory too much, write time once per day
             if (first_update || (net->time->hour == 4 && net->time->minute <= 30)) {
                 net->time->flush_to_rtc = true;
             }
+
+            need_update = false;
 
             if (first_update) {
                 first_update = false;
             }
 
             ESP_LOGI(APP_NAME, "network update completed");
-            need_update = false;
         } else {
             ESP_LOGE(APP_NAME, "network update failed");
+
             need_update = true;
+            err_cnt++;
+
+            if (err_cnt > 3) {
+                esp_wifi_disconnect();
+                vTaskDelete(NULL);
+                return;  // this task will be restarted after reconnecting to WiFi
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(APP_MINUTE));
@@ -224,12 +228,11 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
         case WIFI_EVENT_STA_CONNECTED:
             ESP_LOGI(APP_NAME, "WiFi connected");
-            net->wifi_connected = true;
             break;
 
         case WIFI_EVENT_STA_DISCONNECTED:
             ESP_LOGI(APP_NAME, "WiFi disconnected");
-            net->wifi_connected = false;
+            esp_wifi_connect();
             break;
 
         case WIFI_EVENT_AP_START:  // the access point started
@@ -240,14 +243,12 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
             ESP_ERROR_CHECK(aespl_httpd_handle(&net->httpd, HTTP_GET, "/favicon.ico", httpd_handler_get_favicon, NULL));
             break;
 
-        case WIFI_EVENT_AP_STACONNECTED:;  // a station connected to the access
-                                           // point
+        case WIFI_EVENT_AP_STACONNECTED:;  // a station connected to the access point
             wifi_event_ap_staconnected_t *d_ap_con = (wifi_event_ap_staconnected_t *)ev_data;
             ESP_LOGI(APP_NAME, "WiFi station connected: %d, " MACSTR, d_ap_con->aid, MAC2STR(d_ap_con->mac));
             break;
 
-        case WIFI_EVENT_AP_STADISCONNECTED:;  // a station disconnected from the
-                                              // access point
+        case WIFI_EVENT_AP_STADISCONNECTED:;  // a station disconnected from the access point
             wifi_event_ap_stadisconnected_t *d_ap_dis = (wifi_event_ap_stadisconnected_t *)ev_data;
             ESP_LOGI(APP_NAME, "WiFi station disconnected: %d, " MACSTR, d_ap_dis->aid, MAC2STR(d_ap_dis->mac));
             break;
@@ -304,7 +305,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     // Update delay, in minutes
     for (uint8_t i = 0; i < 6; i++) {
         net->update_delay = mac[i] >> 4;  // can be from 0 to 15
-        if (net->update_delay != 0) {     // out target is to have delay grater than 0
+        if (net->update_delay != 0) {     // our target is to have delay grater than 0
             break;
         }
     }
@@ -323,11 +324,10 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
 
     // Access point configuration
     wifi_config_t ap_config = {
-        .ap =
-            {
-                .max_connection = APP_NET_AP_MAX_CONN,
-                .authmode = WIFI_AUTH_WPA_WPA2_PSK,
-            },
+        .ap = {
+            .max_connection = APP_NET_AP_MAX_CONN,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK,
+        },
     };
 
     // Access point name
@@ -368,10 +368,10 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
     }
 
     // Set device signature
-    sprintf(net->signature, "%s/%d.%d/%d.%d/%s", APP_NAME, APP_HW_VER_MAJ, APP_HW_VER_MIN, APP_FW_VER_MAJ,
-            APP_FW_VER_MIN, mac_s);
+    sprintf(net->signature, "%s/%d.%d/%d.%d/%s", APP_NAME, APP_HW_VER_MAJ, APP_HW_VER_MIN, APP_FW_VER_MAJ, APP_FW_VER_MIN, mac_s);
 
     ESP_LOGI(APP_NAME, "network stack initialized; mac=%s, host=%s, pass=%s, update_delay=%d",
              mac_s, hostname, password, net->update_delay);
+
     return ESP_OK;
 }

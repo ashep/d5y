@@ -24,8 +24,7 @@ static esp_err_t set_app_time_from_rtc(app_time_t *time) {
         return ESP_FAIL;
     }
 
-    esp_err_t err =
-        aespl_ds3231_get_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+    esp_err_t err = aespl_ds3231_get_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
     if (err == ESP_OK) {
         time->second = time->rtc->sec;
         time->minute = time->rtc->min;
@@ -64,8 +63,7 @@ static esp_err_t set_rtc_from_app_time(app_time_t *time) {
     time->rtc->alarm_1_min = time->alarm_minute;
     time->rtc->alarm_1_hour = time->alarm_hour;
 
-    esp_err_t err =
-        aespl_ds3231_set_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
+    esp_err_t err = aespl_ds3231_set_data(time->rtc, pdMS_TO_TICKS(APP_DS3231_TIMEOUT));
     if (err != ESP_OK) {
         ESP_LOGE(APP_NAME, "aespl_ds3231_set_data error: %d", err);
     }

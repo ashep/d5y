@@ -15,9 +15,11 @@ Working on this project I am pursuing following goals:
 - the circuit, PCB and the firmware should support several kinds of displays out of the box;
 - no fucking Arduino;
 
-## Displays
+## About displays
 
-On of the main ideas behind this project is to develop a single PCB and firmware which will be compatible with several kinds of displays. Currently only one display is supported, MAX7219-based single color 32x8 dot matrix display, which is widely popular among DIYers and can be easily purchased on [AliExpress](https://www.aliexpress.com/wholesale?SearchText=max7219+matrix) or any local reseller.
+One of the main ideas behind this project is to develop a single circuit and firmware which will be compatible with several kinds of
+displays. Currently only one display is supported, MAX7219-based single color 32x8 dot matrix, which is widely popular among DIYers and can
+be easily purchased on [AliExpress](https://www.aliexpress.com/wholesale?SearchText=max7219+matrix) or any local reseller.
 
 ## How to get source code
 
@@ -63,7 +65,7 @@ Coming soon.
 
 ## Changelog
 
-### v1.1 (2021-??-??)
+### v1.1 (2022-??-??)
 
 Schematic:
 

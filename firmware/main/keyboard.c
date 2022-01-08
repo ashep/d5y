@@ -32,8 +32,7 @@ static void switch_show_mode(app_keyboard_t *kb) {
     }
 
     // Don't show weather temperature if it wasn't received properly
-    if (*kb->app_mode == APP_MODE_SHOW_WEATHER_TEMP &&
-        !kb->weather->update_ok) {
+    if (*kb->app_mode == APP_MODE_SHOW_WEATHER_TEMP && !kb->weather->update_ok) {
         (*kb->app_mode)++;
     }
 
@@ -45,20 +44,16 @@ static void switch_show_mode(app_keyboard_t *kb) {
     // Adjust automatic show mode switcher
     switch (*kb->app_mode) {
         case APP_MODE_SHOW_TIME:
-            xTimerChangePeriod(kb->app_mode_timer,
-                               pdMS_TO_TICKS(APP_SHOW_TIME_DURATION), 0);
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_TIME_DURATION), 0);
             break;
         case APP_MODE_SHOW_DATE:
         case APP_MODE_SHOW_DOW:
-            xTimerChangePeriod(kb->app_mode_timer,
-                               pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
-            xTimerChangePeriod(kb->app_mode_timer,
-                               pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_DATE_DURATION), 0);
             break;
         case APP_MODE_SHOW_WEATHER_TEMP:
         case APP_MODE_SHOW_AMBIENT_TEMP:
-            xTimerChangePeriod(kb->app_mode_timer,
-                               pdMS_TO_TICKS(APP_SHOW_TEMP_DURATION), 0);
+            xTimerChangePeriod(kb->app_mode_timer, pdMS_TO_TICKS(APP_SHOW_TEMP_DURATION), 0);
             break;
         default:
             break;
@@ -273,9 +268,7 @@ static void show_mode_switcher(TimerHandle_t timer) {
     switch_show_mode((app_keyboard_t *)pvTimerGetTimerID(timer));
 }
 
-app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time,
-                                  app_display_t *display,
-                                  app_weather_t *weather, nvs_handle_t nvs) {
+app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time, app_display_t *display, app_weather_t *weather, nvs_handle_t nvs) {
     esp_err_t err;
 
     err = gpio_install_isr_service(0);
@@ -322,19 +315,13 @@ app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time,
     err = aespl_button_on_l_press(&kb->btn_a, btn_a_l_press, (void *)kb);
     if (err != ESP_OK) {
         free(kb);
-        ESP_LOGE(
-            APP_NAME,
-            "failed to init keyboard button 'A' long press handler; err=%d",
-            err);
+        ESP_LOGE(APP_NAME, "failed to init keyboard button 'A' long press handler; err=%d", err);
         return NULL;
     }
     err = aespl_button_on_l_press(&kb->btn_b, btn_b_l_press, (void *)kb);
     if (err != ESP_OK) {
         free(kb);
-        ESP_LOGE(
-            APP_NAME,
-            "failed to init keyboard button 'B' long press handler; err=%d",
-            err);
+        ESP_LOGE(APP_NAME, "failed to init keyboard button 'B' long press handler; err=%d", err);
         return NULL;
     }
 
@@ -342,24 +329,18 @@ app_keyboard_t *app_keyboard_init(app_mode_t *mode, app_time_t *time,
     err = aespl_button_on_release(&kb->btn_a, btn_a_release, (void *)kb);
     if (err != ESP_OK) {
         free(kb);
-        ESP_LOGE(APP_NAME,
-                 "failed to init keyboard button 'A' release handler; err=%d",
-                 err);
+        ESP_LOGE(APP_NAME, "failed to init keyboard button 'A' release handler; err=%d", err);
         return NULL;
     }
     err = aespl_button_on_release(&kb->btn_b, btn_b_release, (void *)kb);
     if (err != ESP_OK) {
         free(kb);
-        ESP_LOGE(APP_NAME,
-                 "failed to init keyboard button 'B' release handler; err=%d",
-                 err);
+        ESP_LOGE(APP_NAME, "failed to init keyboard button 'B' release handler; err=%d", err);
         return NULL;
     }
 
     // Setup time based automatic show mode switcher
-    kb->app_mode_timer =
-        xTimerCreate("mode_switch", pdMS_TO_TICKS(APP_SHOW_TIME_DURATION),
-                     pdTRUE, (void *)kb, show_mode_switcher);
+    kb->app_mode_timer = xTimerCreate("mode_switch", pdMS_TO_TICKS(APP_SHOW_TIME_DURATION), pdTRUE, (void *)kb, show_mode_switcher);
     if (kb->app_mode_timer == NULL) {
         free(kb);
         ESP_LOGE(APP_NAME, "failed to init automatic mode switcher");

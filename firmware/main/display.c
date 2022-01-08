@@ -65,8 +65,7 @@ static void draw_time(app_display_t *display) {
     aespl_gfx_set_px(buf_sep, 1, 5, 1);
 
     // Double separator bottom dot height in alarm mode
-    if (display->time->alarm_enabled ||
-        *display->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
+    if (display->time->alarm_enabled || *display->mode >= APP_MODE_SETTINGS_ALARM_HOUR) {
         aespl_gfx_set_px(buf_sep, 0, 1, 1);
         aespl_gfx_set_px(buf_sep, 1, 6, 1);
     }
@@ -90,15 +89,10 @@ static void draw_time(app_display_t *display) {
         aespl_gfx_clear_buf(buf_sep);
     }
 
-    // Merge buffers
-    aespl_gfx_merge(display->buf, buf_h, (aespl_gfx_point_t){0, 0},
-                    (aespl_gfx_point_t){0, 0});
-    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0},
-                    (aespl_gfx_point_t){0, 0});
-    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0},
-                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_h, (aespl_gfx_point_t){0, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0}, (aespl_gfx_point_t){0, 0});
 
-    // Cleanup
     aespl_gfx_free_buf(buf_h);
     aespl_gfx_free_buf(buf_m);
     aespl_gfx_free_buf(buf_sep);
@@ -137,20 +131,14 @@ static void draw_date(app_display_t *display) {
     }
 
     // Month blink in settings mode
-    if (*display->mode == APP_MODE_SETTINGS_DATE_MONTH &&
-        !display->sep_visible) {
+    if (*display->mode == APP_MODE_SETTINGS_DATE_MONTH && !display->sep_visible) {
         aespl_gfx_clear_buf(buf_m);
     }
 
-    // Merge buffers
-    aespl_gfx_merge(display->buf, buf_d, (aespl_gfx_point_t){0, 0},
-                    (aespl_gfx_point_t){0, 0});
-    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0},
-                    (aespl_gfx_point_t){0, 0});
-    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0},
-                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_d, (aespl_gfx_point_t){0, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_sep, (aespl_gfx_point_t){15, 0}, (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_m, (aespl_gfx_point_t){19, 0}, (aespl_gfx_point_t){0, 0});
 
-    // Cleanup
     aespl_gfx_free_buf(buf_d);
     aespl_gfx_free_buf(buf_m);
     aespl_gfx_free_buf(buf_sep);
@@ -161,9 +149,8 @@ static void draw_dow(app_display_t *display) {
         // In settings mode numbers are blinking, so just keep buffer clear
     } else {
         char s[8];
-        sprintf(s, "- %d -", display->time->dow + 1);
-        aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){6, 0},
-                       s, 1, 1);
+        sprintf(s, "- %d -", display->time->dow);
+        aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){6, 0}, s, 1, 1);
     }
 }
 
@@ -183,11 +170,8 @@ static void draw_year(app_display_t *display) {
         aespl_gfx_clear_buf(buf_y);
     }
 
-    // Merge buffers
-    aespl_gfx_merge(display->buf, buf_y, (aespl_gfx_point_t){2, 0},
-                    (aespl_gfx_point_t){0, 0});
+    aespl_gfx_merge(display->buf, buf_y, (aespl_gfx_point_t){2, 0}, (aespl_gfx_point_t){0, 0});
 
-    // Cleanup
     aespl_gfx_free_buf(buf_y);
 }
 
@@ -197,8 +181,7 @@ static void draw_year(app_display_t *display) {
 static void draw_brightness(app_display_t *display) {
     char s[6];
     sprintf(s, "$ %02d", display->max_brightness + 1);
-    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){4, 0}, s,
-                   1, 1);
+    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){4, 0}, s, 1, 1);
 }
 
 static void make_temperature_str(char sign, char *s, int temp) {
@@ -229,8 +212,7 @@ static void make_temperature_str(char sign, char *s, int temp) {
 static void draw_weather_temp(app_display_t *display) {
     char s[5];
     make_temperature_str('!', s, (int)round(display->weather->temp));
-    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){0, 0}, s,
-                   1, 1);
+    aespl_gfx_puts(display->buf, &font8_clock_2, (aespl_gfx_point_t){0, 0}, s, 1, 1);
 }
 
 /**
@@ -339,13 +321,11 @@ static void brightness_regulator(xTimerHandle timer) {
     display->max7219.intensity = display->brightness;
 }
 
-static aespl_gfx_anim_state_t splash_screen_animation(void *args,
-                                                      uint32_t frame_n) {
+static aespl_gfx_anim_state_t splash_screen_animation(void *args, uint32_t frame_n) {
     app_display_t *d = (app_display_t *)args;
 
     aespl_gfx_clear_buf(d->buf);
-    aespl_gfx_puts(d->buf, &font_1, (aespl_gfx_point_t){32 - frame_n, 0},
-                   d->splash_screen_text, 1, 1);
+    aespl_gfx_puts(d->buf, &font_1, (aespl_gfx_point_t){32 - frame_n, 0}, d->splash_screen_text, 1, 1);
     aespl_max7219_matrix_draw(&d->max7219_matrix, d->buf);
 
     if (frame_n < 70) {
@@ -426,9 +406,7 @@ static void init_display(app_display_t *display) {
         APP_HW_V1_DISPLAYS_Y, APP_HW_V1_DISPLAY_HORIZ_REVERSE));
 }
 
-app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
-                                         app_weather_t *weather,
-                                         nvs_handle_t nvs) {
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs) {
     int err;
     app_display_t *d = NULL;
 
@@ -466,8 +444,7 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
 
     // Splash screen
     if (APP_SPLASH_SCREEN_ENABLED) {
-        sprintf(d->splash_screen_text, "Cronus     v%d.%d", APP_FW_VER_MAJ,
-                APP_FW_VER_MIN);
+        sprintf(d->splash_screen_text, "Cronus     v%d.%d", APP_FW_VER_MAJ, APP_FW_VER_MIN);
         splash_screen(d);
     }
 
@@ -479,9 +456,8 @@ app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
         ESP_LOGE(APP_NAME, "adc_init() failed; err=%d", err);
         return NULL;
     }
-    d->brightness_timer =
-        xTimerCreate("brightness", pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT),
-                     pdTRUE, (void *)d, brightness_regulator);
+
+    d->brightness_timer = xTimerCreate("brightness", pdMS_TO_TICKS(APP_BRIGHTNESS_REG_TIMEOUT), pdTRUE, (void *)d, brightness_regulator);
     if (d->brightness_timer == NULL) {
         ESP_LOGE(APP_NAME, "failed to initialize brightness regulator timer");
         free(d);

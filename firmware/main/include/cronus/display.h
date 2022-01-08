@@ -48,7 +48,7 @@
 #if APP_HW_VER_MAJ == 1
 #define APP_HW_V1_DISPLAYS_X 4
 #define APP_HW_V1_DISPLAYS_Y 1
-#define APP_HW_V1_DISPLAY_HORIZ_REVERSE 1
+#define APP_HW_V1_DISPLAY_HORIZ_REVERSE 0
 #define APP_HW_V1_DISPLAY_PIN_DATA GPIO_NUM_12
 #define APP_HW_V1_DISPLAY_PIN_CLK GPIO_NUM_14
 #define APP_HW_V1_DISPLAY_PIN_CS GPIO_NUM_13
@@ -81,8 +81,6 @@ typedef struct {
  *
  * @return
  */
-app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time,
-                                         app_weather_t *weather,
-                                         nvs_handle_t nvs);
+app_display_t *app_display_hw_ver_1_init(app_mode_t *mode, app_time_t *time, app_weather_t *weather, nvs_handle_t nvs);
 
 #endif  // CRONUS_DISPLAY_H
