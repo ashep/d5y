@@ -207,7 +207,6 @@ static void data_fetcher(void *args) {
 
             if (err_cnt > 3) {
                 esp_wifi_disconnect();
-                vTaskDelete(NULL);
                 return;  // this task will be restarted after reconnecting to WiFi
             }
         }
@@ -232,6 +231,12 @@ static void wifi_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *ev
 
         case WIFI_EVENT_STA_DISCONNECTED:
             ESP_LOGI(APP_NAME, "WiFi disconnected");
+
+            if (net->fetcher_task != NULL) {
+                vTaskDelete(net->fetcher_task);
+                net->fetcher_task = NULL;
+            }
+
             esp_wifi_connect();
             break;
 
@@ -265,7 +270,15 @@ static void ip_eh(void *arg, esp_event_base_t ev_base, int32_t ev_id, void *even
     if (ev_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(APP_NAME, "got IP address: %s", ip4addr_ntoa(&event->ip_info.ip));
-        xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *)net, 0, NULL);
+        xTaskCreate(data_fetcher, "data_fetcher", 4096, (void *)net, 0, &net->fetcher_task);
+    }
+
+    if (ev_id == IP_EVENT_STA_LOST_IP) {
+        ESP_LOGI(APP_NAME, "lost IP address");
+        if (net->fetcher_task != NULL) {
+            vTaskDelete(net->fetcher_task);
+            net->fetcher_task = NULL;
+        }
     }
 }
 
@@ -288,6 +301,7 @@ esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather)
 
     net->time = time;
     net->weather = weather;
+    net->fetcher_task = NULL;
 
     // Initialize WiFi subsystem
     tcpip_adapter_init();

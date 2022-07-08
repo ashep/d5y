@@ -12,7 +12,7 @@
 #endif
 
 #ifndef APP_NET_REMOTE_API_HOST
-#define APP_NET_REMOTE_API_HOST "cronus.33v.xyz"
+#define APP_NET_REMOTE_API_HOST "cronus.d5y.xyz"
 #endif
 
 #ifndef APP_NET_REMOTE_API_PATH
@@ -34,6 +34,7 @@ typedef struct {
     aespl_httpd_t httpd;
     app_time_t *time;
     app_weather_t *weather;
+    TaskHandle_t fetcher_task;
 } app_net_t;
 
 esp_err_t app_net_init(app_net_t *net, app_time_t *time, app_weather_t *weather);
