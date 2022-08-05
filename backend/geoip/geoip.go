@@ -1,10 +1,12 @@
-// Author:  Alexander Shepetko
+// Author:  Oleksandr Shepetko
 // Email:   a@shepetko.com
 // License: MIT
 
 package geoip
 
 import (
+	"encoding/json"
+
 	"github.com/ashep/cronus/httpcli"
 )
 
@@ -15,15 +17,23 @@ type GeoIP struct {
 
 type Data struct {
 	City        string  `json:"city,omitempty"`
-	CountryCode string  `json:"country_code,omitempty"`
-	CountryName string  `json:"country_name,omitempty"`
-	Ip          string  `json:"ip,omitempty"`
-	Latitude    float64 `json:"latitude,omitempty"`
-	Longitude   float64 `json:"longitude,omitempty"`
-	MetroCode   float64 `json:"metro_code,omitempty"`
-	RegionCode  string  `json:"region_code,omitempty"`
-	TimeZone    string  `json:"time_zone,omitempty"`
-	ZipCode     string  `json:"zip_code,omitempty"`
+	CountryCode string  `json:"countryCode,omitempty"`
+	CountryName string  `json:"country,omitempty"`
+	IP          string  `json:"ip,omitempty"`
+	Latitude    float64 `json:"lat,omitempty"`
+	Longitude   float64 `json:"lon,omitempty"`
+	RegionCode  string  `json:"region,omitempty"`
+	RegionName  string  `json:"regionName,omitempty"`
+	TimeZone    string  `json:"timezone,omitempty"`
+}
+
+func (d *Data) String() string {
+	b, err := json.Marshal(d)
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(b)
 }
 
 func New() *GeoIP {
@@ -40,7 +50,7 @@ func (g *GeoIP) Get(addr string) (*Data, error) {
 	}
 
 	d = &Data{}
-	err := g.cli.GetJSON("https://freegeoip.app/json/"+addr, d)
+	err := g.cli.GetJSON("http://ip-api.com/json/"+addr, d)
 	if err != nil {
 		return nil, err
 	}

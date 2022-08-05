@@ -1,4 +1,4 @@
-// Author:  Alexander Shepetko
+// Author:  Oleksandr Shepetko
 // Email:   a@shepetko.com
 // License: MIT
 
@@ -26,31 +26,30 @@ type RootHandlerResponse struct {
 }
 
 func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
-	// Detect remote IP address
-	remoteAddr := ""
-	remoteAddr = r.Header.Get("cf-connecting-ip")
-	if remoteAddr == "" {
-		remoteAddr = r.Header.Get("x-forwarded-for")
-		if remoteAddr == "" {
-			remoteAddr = r.RemoteAddr
-			if remoteAddr == "" {
-				remoteAddr = r.RemoteAddr
-			}
-		}
+	rAddr := ""
+	rAddr = r.Header.Get("cf-connecting-ip")
+	if rAddr == "" {
+		rAddr = r.Header.Get("x-forwarded-for")
 	}
-	if remoteAddr == "" {
+	if rAddr == "" {
+		rAddr = r.RemoteAddr
+	}
+
+	if rAddr == "" {
 		log.Printf("failed to determine remote ip address")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Get location
-	geoData, err := s.geoIP.Get(remoteAddr)
+	geoData, err := s.geoIP.Get(rAddr)
 	if err != nil {
 		log.Printf("geoip error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("req: addr=%s; ua=%s; city=%s", rAddr, r.Header.Get("User-Agent"), geoData.City)
 
 	// Get localized time
 	tz, err := time.LoadLocation(geoData.TimeZone)
@@ -86,7 +85,6 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to get weather: %v", err)
 	}
 
-	// Marshal response
 	d, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("response marshal error: %v", err)
@@ -94,11 +92,11 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(d)
-	if err != nil {
+	if _, err = w.Write(d); err != nil {
 		log.Printf("response write error: %v", err)
 	}
+
+	log.Printf("rsp: addr=%s; data=%s", rAddr, d)
 }

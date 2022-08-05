@@ -1,4 +1,4 @@
-// Author:  Alexander Shepetko
+// Author:  Oleksandr Shepetko
 // Email:   a@shepetko.com
 // License: MIT
 
@@ -6,10 +6,11 @@ package service
 
 import (
 	"context"
-	"github.com/ashep/cronus/geoip"
-	"github.com/ashep/cronus/weather"
 	"log"
 	"net/http"
+
+	"github.com/ashep/cronus/geoip"
+	"github.com/ashep/cronus/weather"
 )
 
 type Service struct {

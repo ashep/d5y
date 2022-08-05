@@ -1,4 +1,4 @@
-// Author:  Alexander Shepetko
+// Author:  Oleksandr Shepetko
 // Email:   a@shepetko.com
 // License: MIT
 
