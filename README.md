@@ -65,7 +65,7 @@ Coming soon.
 
 ## Changelog
 
-### v1.1 (2022-??-??)
+### v1.1 (never released, since the fucking russian bastards started the war)
 
 Schematic:
 
