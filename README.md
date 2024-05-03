@@ -1,10 +1,6 @@
-# Cronus Digital Clock
+# Cronus: a Minimalistic Desktop Display Device
 
 ![Cronus MAX7219 32x8 matrix](./media/cronus-max7219-32x8-red.jpg)
-
-## Description
-
-**Cronus** is a mini desktop display device.
 
 ## Motivation
 
