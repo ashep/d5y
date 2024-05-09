@@ -1,4 +1,5 @@
 idf_component_register(
-        SRCS "main.c"
+        SRCS "cronus_bt.c"
         INCLUDE_DIRS "."
+        REQUIRES "bt"
 )
