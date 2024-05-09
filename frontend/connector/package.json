@@ -12,6 +12,7 @@
     "@fontsource/roboto": "^5.0.13",
     "@mui/icons-material": "^5.15.16",
     "@mui/material": "^5.15.16",
+    "@types/web-bluetooth": "^0.0.20",
     "i18next": "^23.11.3",
     "i18next-browser-languagedetector": "^7.2.1",
     "preact": "^10.20.0",
