@@ -1,10 +1,6 @@
-# Cronus Digital Clock
+# Cronus: a Minimalistic Desktop Display Device
 
 ![Cronus MAX7219 32x8 matrix](./media/cronus-max7219-32x8-red.jpg)
-
-## Description
-
-**Cronus** is an electronic clock able to show and automatically synchronize time, date and weather state.
 
 ## Motivation
 
@@ -31,41 +27,19 @@ cd ~/src && git clone --recurse-submodules https://github.com/ashep/cronus.git
 
 Coming soon.
 
-## How yo build enclosure
+## Enclosure
 
 Coming soon.
 
-## How to build and upload firmware
+## Firmware
 
-### Download and setup ESP8266 RTOS SDK and toolchain
-
-```shell
-cd ~/src && git clone https://github.com/espressif/ESP8266_RTOS_SDK.git && ~/src/ESP8266_RTOS_SDK/install.sh
-```
-
-### Build and flash firmware
-
-Replace `PORT` with your port device, e. g. `/dev/ttyUSB0`.
-
-```shell
-source ~/src/ESP8266_RTOS_SDK/export.sh && cd ~/src/cronus/firmware/ && idf.py -p PORT flash
-```
-
-### Flash SPIFFS image
-
-Replace `PORT` with your port device, e. g. `/dev/ttyUSB0`.
-
-```shell
-cd ~/src/cronus/firmware/ && ./spiffs.sh w PORT
-```
-
-### Backend
+## Backend
 
 Coming soon.
 
 ## Changelog
 
-### v1.1 (never released, since the fucking russian bastards started the war)
+### v1.1 (never released, since fucking russian bastards started the war)
 
 Schematic:
 
@@ -79,4 +53,4 @@ Firmware:
 
 ### v1.0 (2021-07-13)
 
-First unstable development version.
+First unstable ESP8266-based development version.
