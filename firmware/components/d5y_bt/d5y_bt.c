@@ -7,12 +7,11 @@
 #include "esp_bt_main.h"
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
-
 #include "freertos/semphr.h"
 
-#include "cronus_bt.h"
+#include "d5y_bt.h"
 
-#define LTAG "CRONUS_BT"
+#define LTAG "D5Y_BT"
 
 static char device_name[16];
 
@@ -26,19 +25,19 @@ typedef struct {
     uint16_t attr_handle;
 } cronus_bt_chrc_t;
 
-static cronus_bt_chrc_t chrcs[CRONUS_BT_CHRC_ID_MAX] = {
-    [CRONUS_BT_CHRC_ID_1] = {
+static cronus_bt_chrc_t chrcs[D5Y_BT_CHRC_ID_MAX] = {
+    [D5Y_BT_CHRC_ID_1] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = CRONUS_BT_CHRC_1_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = D5Y_BT_CHRC_1_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
         .conn_id = 0,
         .attr_handle = 0,
     },
-    [CRONUS_BT_CHRC_ID_2] = {
+    [D5Y_BT_CHRC_ID_2] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = CRONUS_BT_CHRC_2_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = D5Y_BT_CHRC_2_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
@@ -57,7 +56,7 @@ static esp_ble_adv_params_t advrt_params = {
 };
 
 static esp_gatt_srvc_id_t service_id = {
-    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = CRONUS_BT_SVC_UUID}}},
+    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = D5Y_BT_SVC_UUID}}},
     .is_primary = true,
 };
 
@@ -99,7 +98,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
             const uint8_t *addr = esp_bt_dev_get_address();
 
-            if (snprintf(device_name, 16, "%s-%x%x%x", CRONUS_BT_DEVICE_NAME_PREFIX, addr[0], addr[1], addr[2]) < 0) {
+            if (snprintf(device_name, 16, "%s-%x%x%x", D5Y_BT_DEVICE_NAME_PREFIX, addr[0], addr[1], addr[2]) < 0) {
                 ESP_LOGE(LTAG, "prepare device name failed: insufficient buffer");
                 return;
             }
@@ -127,7 +126,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                      param->read.handle, param->read.trans_id, param->read.need_rsp, param->read.is_long,
                      param->read.offset);
 
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].attr_handle != param->read.handle) {
                     continue;
                 }
@@ -157,7 +156,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
                      param->write.handle, param->write.need_rsp, param->write.trans_id, param->write.len);
 
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].attr_handle != param->write.handle) {
                     continue;
                 }
@@ -186,7 +185,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d",
                      param->create.status, param->create.service_handle);
 
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 esp_gatt_perm_t perm = 0;
                 esp_gatt_char_prop_t prop = 0;
 
@@ -226,7 +225,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             }
 
             bool known = false;
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].uuid.uuid.uuid16 == param->add_char.char_uuid.uuid.uuid16) {
                     chrcs[i].attr_handle = param->add_char.attr_handle;
                     known = true;
@@ -254,7 +253,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client connected: id=%d, role=%d",
                      param->connect.conn_id, param->connect.link_role);
 
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 chrcs[i].gatts_if = gatts_if;
                 chrcs[i].conn_id = param->connect.conn_id;
             }
@@ -265,7 +264,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client disconnect: id=%d, reason=%x",
                      param->disconnect.conn_id, param->disconnect.reason);
 
-            for (int i = 0; i < CRONUS_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
                 chrcs[i].gatts_if = 0;
                 chrcs[i].conn_id = 0;
             }
@@ -289,7 +288,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 }
 
 esp_err_t cronus_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
-    if (chrc_id >= CRONUS_BT_CHRC_ID_MAX) {
+    if (chrc_id >= D5Y_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -307,7 +306,7 @@ esp_err_t cronus_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t
 }
 
 esp_err_t cronus_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader_t reader) {
-    if (idx >= CRONUS_BT_CHRC_ID_MAX) {
+    if (idx >= D5Y_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -317,7 +316,7 @@ esp_err_t cronus_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader
 }
 
 esp_err_t cronus_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer_t writer) {
-    if (idx >= CRONUS_BT_CHRC_ID_MAX) {
+    if (idx >= D5Y_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 

@@ -8,9 +8,8 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
-#include "cronus_bt.h"
-#include "cronus_wifi.h"
-#include "cronus_cloud.h"
+#include "d5y_bt.h"
+#include "d5y_wifi.h"
 
 #define LTAG "CRONUS_MAIN"
 
@@ -27,6 +26,5 @@ void app_main(void) {
     ESP_LOGI(LTAG, "default event loop created");
 
     ESP_ERROR_CHECK(cronus_wifi_init());
-    ESP_ERROR_CHECK(cronus_cloud_init());
     ESP_ERROR_CHECK(cronus_bt_init()); // must be called last
 }

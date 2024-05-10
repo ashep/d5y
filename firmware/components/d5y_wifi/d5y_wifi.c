@@ -5,10 +5,10 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 
-#include "cronus_wifi.h"
-#include "cronus_bt.h"
+#include "d5y_wifi.h"
+#include "d5y_bt.h"
 
-#define LTAG "CRONUS_WIFI"
+#define LTAG "D5Y_WIFI"
 
 static SemaphoreHandle_t mux;
 
@@ -96,18 +96,18 @@ static esp_err_t on_bt_write(uint16_t len, uint16_t offset, const uint8_t *val) 
 
     esp_err_t err;
     switch (val[0]) {
-        case CRONUS_WIFI_OP_DISCONNECT:
+        case D5Y_WIFI_OP_DISCONNECT:
             if ((err = esp_wifi_disconnect()) != ESP_OK) {
                 ESP_LOGE(LTAG, "%s: esp_wifi_disconnect: %s", __func__, esp_err_to_name(err));
             }
             break;
-        case CRONUS_WIFI_OP_SCAN:
+        case D5Y_WIFI_OP_SCAN:
             if ((err = esp_wifi_scan_start(NULL, 0)) != ESP_OK) {
                 ESP_LOGE(LTAG, "%s: esp_wifi_scan_start: %s", __func__, esp_err_to_name(err));
             }
             break;
-        case CRONUS_WIFI_OP_CONNECT:
-            update_wifi_info_state(CRONUS_WIFI_ST_CONNECTING, CRONUS_WIFI_ERR_NONE);
+        case D5Y_WIFI_OP_CONNECT:
+            update_wifi_info_state(D5Y_WIFI_ST_CONNECTING, D5Y_WIFI_ERR_NONE);
             ESP_LOGW(LTAG, "wifi connect request");
             // TODO: implement
             cronus_wifi_connect((const char *) &val[1], (const char *) &val[33]);
@@ -122,18 +122,18 @@ static esp_err_t on_bt_write(uint16_t len, uint16_t offset, const uint8_t *val) 
 
 static void on_sta_connect(wifi_event_sta_connected_t *ev) {
     ESP_LOGI(LTAG, "sta connected: ssid=%s, auth_mode=%d", ev->ssid, ev->authmode);
-    update_wifi_info_state(CRONUS_WIFI_ST_CONNECTED, CRONUS_WIFI_ERR_NONE);
+    update_wifi_info_state(D5Y_WIFI_ST_CONNECTED, D5Y_WIFI_ERR_NONE);
     update_wifi_info_connected_ssid(ev->ssid);
 }
 
 static void on_sta_disconnect(wifi_event_sta_disconnected_t *ev) {
     ESP_LOGE(LTAG, "sta disconnected: reason=%d", ev->reason);
-    enum cronus_wifi_err_reason rsn = CRONUS_WIFI_ERR_NONE;
+    enum cronus_wifi_err_reason rsn = D5Y_WIFI_ERR_NONE;
     if (ev->reason != WIFI_REASON_UNSPECIFIED) {
-        rsn = CRONUS_WIFI_ERR_UNKNOWN; // TODO: make error info more meaningful
+        rsn = D5Y_WIFI_ERR_UNKNOWN; // TODO: make error info more meaningful
     }
 
-    update_wifi_info_state(CRONUS_WIFI_ST_DISCONNECTED, rsn);
+    update_wifi_info_state(D5Y_WIFI_ST_DISCONNECTED, rsn);
 }
 
 static void on_scan_done(wifi_event_sta_scan_done_t *data) {
@@ -255,8 +255,8 @@ esp_err_t cronus_wifi_init() {
         return ESP_ERR_NO_MEM;
     }
 
-    cronus_bt_register_chrc_reader(CRONUS_BT_CHRC_ID_1, on_bt_read);
-    cronus_bt_register_chrc_writer(CRONUS_BT_CHRC_ID_1, on_bt_write);
+    cronus_bt_register_chrc_reader(D5Y_BT_CHRC_ID_1, on_bt_read);
+    cronus_bt_register_chrc_writer(D5Y_BT_CHRC_ID_1, on_bt_write);
 
     return ESP_OK;
 }
