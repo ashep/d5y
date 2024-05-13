@@ -13,7 +13,7 @@ export enum ChcUUID {
     WIFI = 0xff01,
 }
 
-const cronusBTServiceUUID = 0xffff;
+const btServiceUUID = 0xffff;
 
 interface Props {
     onStatusChange?: (s: ConnStatus) => void;
@@ -114,14 +114,14 @@ export class Connection extends React.Component<Props, State> {
         try {
             this.btDev = await navigator.bluetooth.requestDevice({
                 filters: [
-                    {services: [cronusBTServiceUUID]},
-                    {namePrefix: "Cronus"}
+                    {services: [btServiceUUID]},
+                    {namePrefix: "D5Y"}
                 ],
                 optionalServices: [],
             });
 
             this.btSrv = await this.btDev.gatt?.connect();
-            this.btSvc = await this.btSrv?.getPrimaryService(cronusBTServiceUUID);
+            this.btSvc = await this.btSrv?.getPrimaryService(btServiceUUID);
             this.btChrcs[ChcUUID.WIFI] = await this.btSvc?.getCharacteristic(ChcUUID.WIFI);
 
             this.setConnStatus(ConnStatus.CONNECTED);

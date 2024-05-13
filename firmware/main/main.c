@@ -1,30 +1,101 @@
-#include <stdio.h>
-
-#include "string.h"
-
 #include "esp_log.h"
 #include "esp_event.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
 
-#include "d5y_bt.h"
-#include "d5y_wifi.h"
+#include "dy/error.h"
+#include "dy/bt.h"
+#include "dy/wifi.h"
 
-#define LTAG "CRONUS_MAIN"
+#include "main.h"
 
-void app_main(void) {
-    esp_err_t err;
+static dy_err_t init_nvs() {
+    esp_err_t esp_err;
 
-    err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
+    esp_err = nvs_flash_init();
+    if (esp_err == ESP_ERR_NVS_NO_FREE_PAGES || esp_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        if ((esp_err == nvs_flash_erase()) != ESP_OK) {
+            return dy_error(DY_ERR_OP_FAILED, "nvs_flash_erase failed: %s", esp_err_to_name(esp_err));
+        }
+
+        if ((esp_err == nvs_flash_init()) != ESP_OK) {
+            return dy_error(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
+        }
+    } else if (esp_err != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
     }
 
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_LOGI(LTAG, "default event loop created");
+    return dy_ok();
+}
 
-    ESP_ERROR_CHECK(cronus_wifi_init());
-    ESP_ERROR_CHECK(cronus_bt_init()); // must be called last
+static dy_err_t init_max7219() {
+    dy_err_t err;
+
+    dy_max7219_config_t *cfg = malloc(sizeof(dy_max7219_config_t));
+    if (cfg == NULL) {
+        return dy_error(DY_ERR_NO_MEM, "dy_max7219_config_t malloc failed");
+    }
+
+    err = dy_max7219_init(
+        cfg,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_PIN_CS,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_PIN_CLK,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_PIN_DATA,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_NX,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_NY,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_RX,
+        CONFIG_DY_DISPLAY_DRIVER_MAX7219_RY);
+    if (err.code != DY_OK) {
+        return err;
+    }
+
+    if ((err = dy_display_init_driver_max7219(CONFIG_DY_DISPLAY_DRIVER_MAX7219_ID, cfg)).code != DY_OK) {
+        return err;
+    }
+
+    ESP_LOGI(LTAG, "MAX7219 display driver initialized; cs=%d; clk=%d; data=%d; nx=%d; ny=%d; rx=%d; ry=%d",
+             cfg->pin_cs, cfg->pin_clk, cfg->pin_data, cfg->nx, cfg->ny, cfg->rx, cfg->ry
+    );
+
+    return dy_ok();
+}
+
+dy_err_t init_display() {
+#ifdef CONFIG_DY_DISPLAY_DRIVER_MAX7219_ENABLED
+    return init_max7219();
+#else
+    return DY_ERR_INVALID_ARG;
+#endif
+}
+
+void app_main(void) {
+    esp_err_t esp_err;
+    dy_err_t err;
+
+    if ((err = init_nvs()).code != DY_OK) {
+        ESP_LOGE(LTAG, "init_nvs: %s", err.desc);
+        abort();
+    }
+
+    if ((esp_err = esp_event_loop_create_default()) != ESP_OK) {
+        ESP_LOGE(LTAG, "esp_event_loop_create_default: %s", err.desc);
+        abort();
+    }
+
+    if ((err = init_display()).code != DY_OK) {
+        ESP_LOGE(LTAG, "init_display: %s", err.desc);
+        abort();
+    }
+
+    if ((err = dy_wifi_init()).code != DY_OK) {
+        ESP_LOGE(LTAG, "dy_wifi_init: %s", err.desc);
+        abort();
+    }
+
+    // Must be called last
+    if ((err = dy_bt_init()).code != DY_OK) {
+        ESP_LOGE(LTAG, "dy_bt_init: %s", err.desc);
+        abort();
+    }
 }

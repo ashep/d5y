@@ -1,0 +1,20 @@
+#ifndef MAIN_H
+#define MAIN_H
+
+#include "dy/display.h"
+
+#define LTAG "DY_MAIN"
+
+#ifdef CONFIG_DY_DISPLAY_DRIVER_MAX7219_ENABLED
+
+#ifndef CONFIG_DY_DISPLAY_DRIVER_MAX7219_RX
+#define CONFIG_DY_DISPLAY_DRIVER_MAX7219_RX 0
+#endif
+
+#ifndef CONFIG_DY_DISPLAY_DRIVER_MAX7219_RY
+#define CONFIG_DY_DISPLAY_DRIVER_MAX7219_RY 0
+#endif
+
+#endif
+
+#endif //MAIN_H

@@ -5,10 +5,10 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 
-#include "d5y_wifi.h"
-#include "d5y_bt.h"
+#include "dy/bt.h"
+#include "dy/wifi.h"
 
-#define LTAG "D5Y_WIFI"
+#define LTAG "DY_WIFI"
 
 static SemaphoreHandle_t mux;
 
@@ -23,7 +23,7 @@ wifi_ap_record_t wifi_scan_result[5];
 // byte 161-192: scanned SSID 5
 static uint8_t wifi_info[193] = {};
 
-static esp_err_t update_wifi_info_state(enum cronus_wifi_state st, enum cronus_wifi_err_reason er) {
+static esp_err_t update_wifi_info_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         ESP_LOGE(LTAG, "semaphore take failed");
         return ESP_ERR_INVALID_STATE;
@@ -96,18 +96,18 @@ static esp_err_t on_bt_write(uint16_t len, uint16_t offset, const uint8_t *val) 
 
     esp_err_t err;
     switch (val[0]) {
-        case D5Y_WIFI_OP_DISCONNECT:
+        case DY_WIFI_OP_DISCONNECT:
             if ((err = esp_wifi_disconnect()) != ESP_OK) {
                 ESP_LOGE(LTAG, "%s: esp_wifi_disconnect: %s", __func__, esp_err_to_name(err));
             }
             break;
-        case D5Y_WIFI_OP_SCAN:
+        case DY_WIFI_OP_SCAN:
             if ((err = esp_wifi_scan_start(NULL, 0)) != ESP_OK) {
                 ESP_LOGE(LTAG, "%s: esp_wifi_scan_start: %s", __func__, esp_err_to_name(err));
             }
             break;
-        case D5Y_WIFI_OP_CONNECT:
-            update_wifi_info_state(D5Y_WIFI_ST_CONNECTING, D5Y_WIFI_ERR_NONE);
+        case DY_WIFI_OP_CONNECT:
+            update_wifi_info_state(DY_WIFI_ST_CONNECTING, DY_WIFI_ERR_NONE);
             ESP_LOGW(LTAG, "wifi connect request");
             // TODO: implement
             cronus_wifi_connect((const char *) &val[1], (const char *) &val[33]);
@@ -122,18 +122,18 @@ static esp_err_t on_bt_write(uint16_t len, uint16_t offset, const uint8_t *val) 
 
 static void on_sta_connect(wifi_event_sta_connected_t *ev) {
     ESP_LOGI(LTAG, "sta connected: ssid=%s, auth_mode=%d", ev->ssid, ev->authmode);
-    update_wifi_info_state(D5Y_WIFI_ST_CONNECTED, D5Y_WIFI_ERR_NONE);
+    update_wifi_info_state(DY_WIFI_ST_CONNECTED, DY_WIFI_ERR_NONE);
     update_wifi_info_connected_ssid(ev->ssid);
 }
 
 static void on_sta_disconnect(wifi_event_sta_disconnected_t *ev) {
     ESP_LOGE(LTAG, "sta disconnected: reason=%d", ev->reason);
-    enum cronus_wifi_err_reason rsn = D5Y_WIFI_ERR_NONE;
+    enum dy_wifi_err_reason rsn = DY_WIFI_ERR_NONE;
     if (ev->reason != WIFI_REASON_UNSPECIFIED) {
-        rsn = D5Y_WIFI_ERR_UNKNOWN; // TODO: make error info more meaningful
+        rsn = DY_WIFI_ERR_UNKNOWN; // TODO: make error info more meaningful
     }
 
-    update_wifi_info_state(D5Y_WIFI_ST_DISCONNECTED, rsn);
+    update_wifi_info_state(DY_WIFI_ST_DISCONNECTED, rsn);
 }
 
 static void on_scan_done(wifi_event_sta_scan_done_t *data) {
@@ -161,7 +161,6 @@ static void on_scan_done(wifi_event_sta_scan_done_t *data) {
 
     xSemaphoreGive(mux);
 }
-
 
 static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *data) {
     switch (event_id) {
@@ -207,56 +206,46 @@ static void ip_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_
     }
 }
 
-esp_err_t cronus_wifi_init() {
-    esp_err_t err;
+dy_err_t dy_wifi_init() {
+    esp_err_t esp_err;
 
-    err = esp_netif_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_netif_init failed: %s", esp_err_to_name(err));
-        return err;
+    if ((esp_err = esp_netif_init()) != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_netif_init failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_netif_create_default_wifi_sta();
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    err = esp_wifi_init(&cfg);
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_wifi_init failed: %s", esp_err_to_name(err));
-        return err;
+
+    if ((esp_err = esp_wifi_init(&cfg)) != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_init failed: %s", esp_err_to_name(esp_err));
     }
 
-    err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ev_handler, NULL);
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_event_handler_register (WIFI_EVENT) failed: %s", esp_err_to_name(err));
-        return err;
+    esp_err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ev_handler, NULL);
+    if (esp_err != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_event_handler_register (WIFI) failed: %s", esp_err_to_name(esp_err));
     }
 
-    err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &ip_ev_handler, NULL);
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_event_handler_register (IP_EVENT) failed: %s", esp_err_to_name(err));
-        return err;
+    esp_err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &ip_ev_handler, NULL);
+    if (esp_err != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
     }
 
-    err = esp_wifi_set_mode(WIFI_MODE_STA);
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_wifi_set_mode failed: %s", esp_err_to_name(err));
-        return err;
+
+    if ((esp_err = esp_wifi_set_mode(WIFI_MODE_STA)) != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_set_mode failed: %s", esp_err_to_name(esp_err));
     }
 
-    err = esp_wifi_start();
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_wifi_start failed: %s", esp_err_to_name(err));
-        return err;
+    if ((esp_err = esp_wifi_start()) != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_start failed: %s", esp_err_to_name(esp_err));
     }
 
     mux = xSemaphoreCreateMutex();
     if (mux == NULL) {
-        ESP_LOGE(LTAG, "create mutex failed");
-        return ESP_ERR_NO_MEM;
+        return dy_error(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
     }
 
-    cronus_bt_register_chrc_reader(D5Y_BT_CHRC_ID_1, on_bt_read);
-    cronus_bt_register_chrc_writer(D5Y_BT_CHRC_ID_1, on_bt_write);
+    dy_bt_register_chrc_reader(DY_BT_CHRC_ID_1, on_bt_read);
+    dy_bt_register_chrc_writer(DY_BT_CHRC_ID_1, on_bt_write);
 
-    return ESP_OK;
+    return dy_ok();
 }

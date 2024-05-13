@@ -9,9 +9,9 @@
 #include "esp_gatts_api.h"
 #include "freertos/semphr.h"
 
-#include "d5y_bt.h"
+#include "dy/bt.h"
 
-#define LTAG "D5Y_BT"
+#define LTAG "DY_BT"
 
 static char device_name[16];
 
@@ -23,21 +23,21 @@ typedef struct {
     esp_gatt_if_t gatts_if;
     uint16_t conn_id;
     uint16_t attr_handle;
-} cronus_bt_chrc_t;
+} dy_bt_chrc_t;
 
-static cronus_bt_chrc_t chrcs[D5Y_BT_CHRC_ID_MAX] = {
-    [D5Y_BT_CHRC_ID_1] = {
+static dy_bt_chrc_t chrcs[DY_BT_CHRC_ID_MAX] = {
+    [DY_BT_CHRC_ID_1] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = D5Y_BT_CHRC_1_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_CHRC_1_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
         .conn_id = 0,
         .attr_handle = 0,
     },
-    [D5Y_BT_CHRC_ID_2] = {
+    [DY_BT_CHRC_ID_2] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = D5Y_BT_CHRC_2_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_CHRC_2_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
@@ -56,7 +56,7 @@ static esp_ble_adv_params_t advrt_params = {
 };
 
 static esp_gatt_srvc_id_t service_id = {
-    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = D5Y_BT_SVC_UUID}}},
+    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = DY_BT_SVC_UUID}}},
     .is_primary = true,
 };
 
@@ -98,7 +98,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
             const uint8_t *addr = esp_bt_dev_get_address();
 
-            if (snprintf(device_name, 16, "%s-%x%x%x", D5Y_BT_DEVICE_NAME_PREFIX, addr[0], addr[1], addr[2]) < 0) {
+            if (snprintf(device_name, 16, "%s-%x%x%x", DY_BT_DEVICE_NAME_PREFIX, addr[0], addr[1], addr[2]) < 0) {
                 ESP_LOGE(LTAG, "prepare device name failed: insufficient buffer");
                 return;
             }
@@ -126,7 +126,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                      param->read.handle, param->read.trans_id, param->read.need_rsp, param->read.is_long,
                      param->read.offset);
 
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].attr_handle != param->read.handle) {
                     continue;
                 }
@@ -156,7 +156,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
                      param->write.handle, param->write.need_rsp, param->write.trans_id, param->write.len);
 
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].attr_handle != param->write.handle) {
                     continue;
                 }
@@ -185,7 +185,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d",
                      param->create.status, param->create.service_handle);
 
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 esp_gatt_perm_t perm = 0;
                 esp_gatt_char_prop_t prop = 0;
 
@@ -225,7 +225,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             }
 
             bool known = false;
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 if (chrcs[i].uuid.uuid.uuid16 == param->add_char.char_uuid.uuid.uuid16) {
                     chrcs[i].attr_handle = param->add_char.attr_handle;
                     known = true;
@@ -253,7 +253,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client connected: id=%d, role=%d",
                      param->connect.conn_id, param->connect.link_role);
 
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 chrcs[i].gatts_if = gatts_if;
                 chrcs[i].conn_id = param->connect.conn_id;
             }
@@ -264,7 +264,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client disconnect: id=%d, reason=%x",
                      param->disconnect.conn_id, param->disconnect.reason);
 
-            for (int i = 0; i < D5Y_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
                 chrcs[i].gatts_if = 0;
                 chrcs[i].conn_id = 0;
             }
@@ -287,12 +287,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     }
 }
 
-esp_err_t cronus_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
-    if (chrc_id >= D5Y_BT_CHRC_ID_MAX) {
+esp_err_t dy_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
+    if (chrc_id >= DY_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    cronus_bt_chrc_t chrc = chrcs[chrc_id];
+    dy_bt_chrc_t chrc = chrcs[chrc_id];
     if (chrc.attr_handle == 0) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -305,8 +305,8 @@ esp_err_t cronus_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t
     return ESP_OK;
 }
 
-esp_err_t cronus_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader_t reader) {
-    if (idx >= D5Y_BT_CHRC_ID_MAX) {
+esp_err_t dy_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader_t reader) {
+    if (idx >= DY_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -315,8 +315,8 @@ esp_err_t cronus_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader
     return ESP_OK;
 }
 
-esp_err_t cronus_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer_t writer) {
-    if (idx >= D5Y_BT_CHRC_ID_MAX) {
+esp_err_t dy_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer_t writer) {
+    if (idx >= DY_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -325,49 +325,44 @@ esp_err_t cronus_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer
     return ESP_OK;
 }
 
-esp_err_t cronus_bt_init() {
+dy_err_t dy_bt_init() {
     esp_err_t err;
 
     // We don't need classic mode, so release memory it occupies
-    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+    if((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
+        return dy_error(DY_ERR_OP_FAILED, "esp_bt_controller_mem_release failed: %s", esp_err_to_name(err));
+    }
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     bt_cfg.mode = ESP_BT_MODE_BLE;
     if ((err = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
-        ESP_LOGE(LTAG, "initialize controller failed: %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_bt_controller_init failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_bt_controller_enable(ESP_BT_MODE_BLE)) != ESP_OK) {
-        ESP_LOGE(LTAG, "enable controller failed: %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_bt_controller_enable failed: %s", esp_err_to_name(err));
     }
 
     esp_bluedroid_config_t bluedroid_cfg = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
     if ((err = esp_bluedroid_init_with_cfg(&bluedroid_cfg)) != ESP_OK) {
-        ESP_LOGE(LTAG, "initialize bluedroid failed: %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_bluedroid_init_with_cfg failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_bluedroid_enable()) != ESP_OK) {
-        ESP_LOGE(LTAG, "enable bluedroid failed: %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_bluedroid_enable failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK) {
-        ESP_LOGE(LTAG, "gatts callback register error, error code = %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_ble_gatts_register_callback failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK) {
-        ESP_LOGE(LTAG, "gap register error, error code = %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_ble_gap_register_callback failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gatts_app_register(0)) != ESP_OK) {
-        ESP_LOGE(LTAG, "gatts app register error, error code = %s", esp_err_to_name(err));
-        return err;
+        return dy_error(DY_ERR_OP_FAILED, "esp_ble_gatts_app_register failed: %s", esp_err_to_name(err));
     }
 
-    return ESP_OK;
+    return dy_ok();
 }
