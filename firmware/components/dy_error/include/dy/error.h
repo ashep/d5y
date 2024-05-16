@@ -23,6 +23,9 @@ typedef enum {
     DY_ERR_INVALID_STATE,
     DY_ERR_INVALID_SIZE,
     DY_ERR_INVALID_VERSION,
+
+    DY_ERR_GPIO_SET,
+    DY_ERR_GPIO_GET,
 } dy_err_code_t;
 
 /**
@@ -34,9 +37,15 @@ typedef struct {
 } dy_err_t;
 
 /**
- * Formats a verbose error.
+ * Creates an error.
  */
 dy_err_t dy_error(dy_err_code_t code, const char *fmt, ...);
+
+
+/**
+ * Formats error as a string.
+ */
+char *dy_error_str(dy_err_t err);
 
 /**
  * Make an DY_OK error.
@@ -47,10 +56,5 @@ dy_err_t dy_ok();
  * Get human readable error name.
  */
 char *dy_err_desc(dy_err_code_t e);
-
-/**
- * Convert an ESP error to a corresponding D5Y one.
- */
-dy_err_code_t esp_to_dy_err(esp_err_t e);
 
 #endif // DY_ERROR_H

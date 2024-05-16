@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-#include "dy/gfx/buffer.h"
 #include "dy/gfx/geometry.h"
 
 void dy_gfx_line(dy_gfx_buf_t *buf, const dy_gfx_line_t *line, uint32_t color) {

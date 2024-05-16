@@ -4,9 +4,8 @@
 #include <string.h>
 
 #include "dy/error.h"
-#include "dy/gfx/buffer.h"
-#include "dy/gfx/geometry.h"
-#include "dy/gfx/color.h"
+#include "dy/gfx/gfx.h"
+#include "dy/gfx/gfx.h"
 
 void print_bin(uint32_t v, uint8_t width) {
     for (uint8_t i = width; i > 0; i--) {
@@ -14,7 +13,7 @@ void print_bin(uint32_t v, uint8_t width) {
     }
 }
 
-dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_c_mode_t c_mode) {
+dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode) {
     dy_gfx_buf_t *buf = malloc(sizeof(dy_gfx_buf_t));
     if (!buf) {
         return NULL;
@@ -31,13 +30,13 @@ dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_c_mode_t c
 
     // Pixels per row
     switch (c_mode) {
-        case DY_GFX_C_MODE_MONO:
+        case DY_GFX_COLOR_MONO:
             buf->ppw = sizeof(**buf->content) * 8;  // 8 pixels per word
             break;
-        case DY_GFX_C_MODE_RGB565:
+        case DY_GFX_COLOR_RGB565:
             buf->ppw = sizeof(**buf->content) * 8 / 16;  // 2 pixels per word
             break;
-        case DY_GFX_C_MODE_ARGB888:
+        case DY_GFX_COLOR_ARGB888:
             buf->ppw = 1;  // 1 pixel per word
             break;
     }
@@ -71,7 +70,7 @@ void dy_gfx_free_buf(dy_gfx_buf_t *buf) {
     free(buf);
 }
 
-dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height, dy_gfx_c_mode_t c_mode) {
+dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode) {
     dy_gfx_buf_array_t *buf_arr = malloc(sizeof(dy_gfx_buf_array_t));
     if (!buf_arr) {
         return NULL;
@@ -146,7 +145,7 @@ void dy_gfx_set_px(dy_gfx_buf_t *buf, int16_t x, int16_t y, uint32_t color) {
     uint16_t word_n = buf->wpr - 1 - x / buf->ppw;
 
     switch (buf->c_mode) {
-        case DY_GFX_C_MODE_MONO:
+        case DY_GFX_COLOR_MONO:
             if (color == 0) {
                 buf->content[y][word_n] &= ~(1 << (word_bits - x - 1 % word_bits));
             } else {
@@ -154,11 +153,11 @@ void dy_gfx_set_px(dy_gfx_buf_t *buf, int16_t x, int16_t y, uint32_t color) {
             }
             break;
 
-        case DY_GFX_C_MODE_RGB565:
+        case DY_GFX_COLOR_RGB565:
             buf->content[y][word_n] |= color << ((x % 2) ? 0 : 16);
             break;
 
-        case DY_GFX_C_MODE_ARGB888:
+        case DY_GFX_COLOR_ARGB888:
             buf->content[y][word_n] = color;
             break;
     }
@@ -175,13 +174,13 @@ uint32_t dy_gfx_get_px(const dy_gfx_buf_t *buf, int16_t x, int16_t y) {
     uint32_t w = buf->content[y][word_n];
 
     switch (buf->c_mode) {
-        case DY_GFX_C_MODE_MONO:
+        case DY_GFX_COLOR_MONO:
             return 1 & (w >> (word_bits - x - 1 % word_bits));
 
-        case DY_GFX_C_MODE_RGB565:
+        case DY_GFX_COLOR_RGB565:
             return 0xffff & (w >> ((x % 2) ? 0 : 16));
 
-        case DY_GFX_C_MODE_ARGB888:
+        case DY_GFX_COLOR_ARGB888:
             return w;
     }
 

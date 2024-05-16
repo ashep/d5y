@@ -7,8 +7,7 @@
 #define DY_GFX_TEXT_H
 
 #include <stdio.h>
-
-#include "dy/gfx/buffer.h"
+#include "dy/gfx/gfx.h"
 
 /**
  * Font widths.
@@ -24,7 +23,7 @@ typedef enum {
 typedef struct {
     uint8_t ascii_offset;        // char code offset relative to ASCII table
     uint8_t length;              // number of covered ASCII codes staring from ascii_offset
-    dy_gfx_font_width_t width;  // number of bits per row
+    dy_gfx_font_width_t width;   // number of bits per row
     uint8_t height;              // number of rows per character
     union {
         const uint8_t *c8;       // pointer to 1-byte content
@@ -63,7 +62,7 @@ int16_t dy_gfx_str_width(const dy_gfx_font_t *font, const char *str,
  * @brief Creates a graphics buffer and put a string into it.
  */
 dy_gfx_buf_t *dy_gfx_make_str_buf(
-    dy_gfx_c_mode_t c_mode,
+    dy_gfx_color_mode_t c_mode,
     const dy_gfx_font_t *font,
     const char *str,
     uint32_t color,
