@@ -1,5 +1,4 @@
 #include "dy/gfx/text.h"
-#include "dy/gfx/geometry.h"
 
 int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, uint8_t ch, uint32_t color) {
     int8_t ch_width = 0;
@@ -109,7 +108,7 @@ int16_t dy_gfx_str_width(const dy_gfx_font_t *font, const char *str, uint8_t spa
 }
 
 dy_gfx_buf_t *dy_gfx_make_str_buf(
-    dy_gfx_c_mode_t c_mode,
+    dy_gfx_color_mode_t c_mode,
     const dy_gfx_font_t *font,
     const char *str, uint32_t color,
     uint8_t space

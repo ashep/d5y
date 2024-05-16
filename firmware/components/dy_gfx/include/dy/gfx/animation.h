@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "dy/gfx/buffer.h"
+#include "dy/gfx/gfx.h"
 
 /**
  * Animation state commands.

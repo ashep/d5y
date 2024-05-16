@@ -3,14 +3,28 @@
  * License: MIT
  */
 
-#ifndef DY_GFX_BUFFER_H
-#define DY_GFX_BUFFER_H
+#ifndef DY_GFX_H
+#define DY_GFX_H
 
 #include <stdint.h>
-
 #include "dy/error.h"
-#include "dy/gfx/color.h"
-#include "dy/gfx/geometry.h"
+
+/**
+ * Color modes.
+ */
+typedef enum {
+    DY_GFX_COLOR_MONO,
+    DY_GFX_COLOR_RGB565,
+    DY_GFX_COLOR_ARGB888,
+} dy_gfx_color_mode_t;
+
+/**
+ * Point.
+ */
+typedef struct {
+    int32_t x;
+    int32_t y;
+} dy_gfx_point_t;
 
 /**
  * Buffer.
@@ -18,7 +32,7 @@
 typedef struct {
     uint16_t width;
     uint16_t height;
-    dy_gfx_c_mode_t c_mode;
+    dy_gfx_color_mode_t c_mode;
     uint8_t ppw;             // pixels per word
     uint8_t wpr;             // words per row
     uint32_t **content;
@@ -29,14 +43,19 @@ typedef struct {
  */
 typedef struct {
     uint16_t length;         // number of buffers
-    dy_gfx_c_mode_t c_mode;  // color mode
+    dy_gfx_color_mode_t c_mode;  // color mode
     dy_gfx_buf_t **buffers;  // buffers
 } dy_gfx_buf_array_t;
 
 /**
+ * Makes an RGB565 value from separate R, G and B values.
+ */
+uint16_t dy_gfx_make_rgb565(uint8_t r, uint8_t g, uint8_t b);
+
+/**
  * Initializes a buffer.
  */
-dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_c_mode_t c_mode);
+dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode);
 
 /**
  * Frees resources allocated by `dy_gfx_make_buf()`.
@@ -46,7 +65,7 @@ void dy_gfx_free_buf(dy_gfx_buf_t *buf);
 /**
  * Creates an array of buffers.
  */
-dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height, dy_gfx_c_mode_t c_mode);
+dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode);
 
 /**
  * Frees resources allocated by `dy_gfx_make_buf_array()`.
@@ -93,4 +112,4 @@ dy_gfx_buf_array_t *dy_gfx_split(const dy_gfx_buf_t *src, uint8_t chunk_w, uint8
  */
 dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos);
 
-#endif // DY_GFX_BUFFER_H
+#endif // DY_GFX_H

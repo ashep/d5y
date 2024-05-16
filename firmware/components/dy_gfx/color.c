@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "dy/gfx/color.h"
+#include "dy/gfx/gfx.h"
 
 uint16_t dy_gfx_make_rgb565(uint8_t r, uint8_t g, uint8_t b) {
     uint16_t res;

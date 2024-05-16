@@ -49,37 +49,31 @@ dy_err_t dy_max7219_init(
         return dy_error(err, "dy_max7219_clear failed");
     }
 
-    return dy_error(DY_OK, "");
+    return dy_ok();
 }
 
 dy_err_code_t dy_max7219_latch(const dy_max7219_config_t *cfg) {
-    esp_err_t err;
-
-    err = gpio_set_level(cfg->pin_cs, 1);
-    if (err != ESP_OK) {
-        return esp_to_dy_err(err);
+    if (gpio_set_level(cfg->pin_cs, 1) != ESP_OK) {
+        return DY_ERR_GPIO_SET;
     }
 
-    err = gpio_set_level(cfg->pin_cs, 0);
-    if (err != ESP_OK) {
-        return esp_to_dy_err(err);
+    if (gpio_set_level(cfg->pin_cs, 0) != ESP_OK) {
+        return DY_ERR_GPIO_SET;
     }
 
     return DY_OK;
 }
 
 dy_err_code_t dy_max7219_send(const dy_max7219_config_t *cfg, dy_max7219_addr_t addr, uint8_t data) {
-    esp_err_t esp_err;
-
     // Setup pins
-    if ((esp_err = gpio_set_level(cfg->pin_cs, 0)) != ESP_OK) {
-        return esp_to_dy_err(esp_err);
+    if (gpio_set_level(cfg->pin_cs, 0) != ESP_OK) {
+        return DY_ERR_GPIO_SET;
     }
-    if ((esp_err = gpio_set_level(cfg->pin_clk, 0)) != ESP_OK) {
-        return esp_to_dy_err(esp_err);
+    if (gpio_set_level(cfg->pin_clk, 0) != ESP_OK) {
+        return DY_ERR_GPIO_SET;
     }
-    if ((esp_err = gpio_set_level(cfg->pin_data, 0)) != ESP_OK) {
-        return esp_to_dy_err(esp_err);
+    if (gpio_set_level(cfg->pin_data, 0) != ESP_OK) {
+        return DY_ERR_GPIO_SET;
     }
 
     // 0-7:   data
@@ -89,18 +83,18 @@ dy_err_code_t dy_max7219_send(const dy_max7219_config_t *cfg, dy_max7219_addr_t 
 
     // MSB goes first
     for (int8_t i = 15; i >= 0; i--) {
-        if ((esp_err = gpio_set_level(cfg->pin_data, 1 & frame >> i)) != ESP_OK) {
-            return esp_to_dy_err(esp_err);
+        if (gpio_set_level(cfg->pin_data, 1 & frame >> i) != ESP_OK) {
+            return DY_ERR_GPIO_SET;
         }
 
         // Load data on rising edge
-        if ((esp_err = gpio_set_level(cfg->pin_clk, 1)) != ESP_OK) {
-            return esp_to_dy_err(esp_err);
+        if (gpio_set_level(cfg->pin_clk, 1) != ESP_OK) {
+            return DY_ERR_GPIO_SET;
         }
 
         // Prepare for the next load cycle
-        if ((esp_err = gpio_set_level(cfg->pin_clk, 0)) != ESP_OK) {
-            return esp_to_dy_err(esp_err);
+        if (gpio_set_level(cfg->pin_clk, 0) != ESP_OK) {
+            return DY_ERR_GPIO_SET;
         }
     }
 
@@ -111,8 +105,7 @@ dy_err_code_t dy_max7219_send_all(const dy_max7219_config_t *cfg, dy_max7219_add
     dy_err_code_t err;
 
     for (uint8_t i = 0; i < cfg->nx * cfg->ny; i++) {
-        err = dy_max7219_send(cfg, addr, data);
-        if (err != DY_OK) {
+        if ((err = dy_max7219_send(cfg, addr, data)) != DY_OK) {
             return err;
         }
     }
@@ -153,9 +146,9 @@ dy_err_code_t dy_max7219_refresh(const dy_max7219_config_t *cfg) {
 
 dy_err_code_t dy_max7219_clear(const dy_max7219_config_t *cfg) {
     esp_err_t err;
+
     for (int i = DY_MAX7219_ADDR_DIGIT_0; i <= DY_MAX7219_ADDR_DIGIT_7; i++) {
-        err = dy_max7219_send_all(cfg, i, 0);
-        if (err != DY_OK) {
+        if ((err = dy_max7219_send_all(cfg, i, 0)) != DY_OK) {
             return err;
         }
     }

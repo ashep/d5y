@@ -50,7 +50,8 @@ static dy_err_t init_max7219() {
         return err;
     }
 
-    if ((err = dy_display_init_driver_max7219(CONFIG_DY_DISPLAY_DRIVER_MAX7219_ID, cfg)).code != DY_OK) {
+    err = dy_display_init_driver_max7219(CONFIG_DY_DISPLAY_DRIVER_MAX7219_ID, cfg);
+    if (err.code != DY_OK) {
         return err;
     }
 
@@ -73,29 +74,34 @@ void app_main(void) {
     esp_err_t esp_err;
     dy_err_t err;
 
-    if ((err = init_nvs()).code != DY_OK) {
-        ESP_LOGE(LTAG, "init_nvs: %s", err.desc);
+    err = init_nvs();
+    if (err.code != DY_OK) {
+        ESP_LOGE(LTAG, "init_nvs: %s", dy_error_str(err));
         abort();
     }
 
-    if ((esp_err = esp_event_loop_create_default()) != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_event_loop_create_default: %s", err.desc);
+    esp_err = esp_event_loop_create_default();
+    if (esp_err != ESP_OK) {
+        ESP_LOGE(LTAG, "esp_event_loop_create_default: %s", dy_error_str(err));
         abort();
     }
 
-    if ((err = init_display()).code != DY_OK) {
-        ESP_LOGE(LTAG, "init_display: %s", err.desc);
+    err = init_display();
+    if (err.code != DY_OK) {
+        ESP_LOGE(LTAG, "init_display: %s", dy_error_str(err));
         abort();
     }
 
-    if ((err = dy_wifi_init()).code != DY_OK) {
-        ESP_LOGE(LTAG, "dy_wifi_init: %s", err.desc);
+    err = dy_wifi_init();
+    if (err.code != DY_OK) {
+        ESP_LOGE(LTAG, "dy_wifi_init: %s", dy_error_str(err));
         abort();
     }
 
     // Must be called last
-    if ((err = dy_bt_init()).code != DY_OK) {
-        ESP_LOGE(LTAG, "dy_bt_init: %s", err.desc);
+    err = dy_bt_init();
+    if (err.code != DY_OK) {
+        ESP_LOGE(LTAG, "dy_bt_init: %s", dy_error_str(err));
         abort();
     }
 }
