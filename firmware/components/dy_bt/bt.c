@@ -18,8 +18,8 @@ static char device_name[16];
 typedef struct {
     SemaphoreHandle_t mux;
     esp_bt_uuid_t uuid;
-    cronus_bt_chrc_chrc_reader_t read;
-    cronus_bt_chrc_chrc_writer_t write;
+    dy_bt_chrc_chrc_reader_t read;
+    dy_bt_chrc_chrc_writer_t write;
     esp_gatt_if_t gatts_if;
     uint16_t conn_id;
     uint16_t attr_handle;
@@ -287,7 +287,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     }
 }
 
-esp_err_t dy_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
+esp_err_t dy_bt_notify(enum dy_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
     if (chrc_id >= DY_BT_CHRC_ID_MAX) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -305,31 +305,31 @@ esp_err_t dy_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *va
     return ESP_OK;
 }
 
-esp_err_t dy_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader_t reader) {
-    if (idx >= DY_BT_CHRC_ID_MAX) {
-        return ESP_ERR_INVALID_ARG;
+dy_err_t dy_bt_register_chrc_reader(uint8_t id, dy_bt_chrc_chrc_reader_t reader) {
+    if (id >= DY_BT_CHRC_ID_MAX) {
+        return dy_error(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_ID_MAX - 1);
     }
 
-    chrcs[idx].read = reader;
+    chrcs[id].read = reader;
 
-    return ESP_OK;
+    return dy_ok();
 }
 
-esp_err_t dy_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer_t writer) {
-    if (idx >= DY_BT_CHRC_ID_MAX) {
-        return ESP_ERR_INVALID_ARG;
+dy_err_t dy_bt_register_chrc_writer(uint8_t id, dy_bt_chrc_chrc_writer_t writer) {
+    if (id >= DY_BT_CHRC_ID_MAX) {
+        return dy_error(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_ID_MAX - 1);
     }
 
-    chrcs[idx].write = writer;
+    chrcs[id].write = writer;
 
-    return ESP_OK;
+    return dy_ok();
 }
 
 dy_err_t dy_bt_init() {
     esp_err_t err;
 
     // We don't need classic mode, so release memory it occupies
-    if((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
+    if ((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
         return dy_error(DY_ERR_OP_FAILED, "esp_bt_controller_mem_release failed: %s", esp_err_to_name(err));
     }
 

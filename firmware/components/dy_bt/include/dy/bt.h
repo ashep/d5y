@@ -11,19 +11,19 @@
 
 #define DY_BT_DEVICE_NAME_PREFIX "D5Y"
 
-enum cronus_bt_chrc_id {
+enum dy_bt_chrc_id {
     DY_BT_CHRC_ID_1,
     DY_BT_CHRC_ID_2,
     DY_BT_CHRC_ID_MAX,
 };
 
-typedef void (*cronus_bt_chrc_chrc_reader_t)(uint16_t *len, uint8_t **val);
+typedef void (*dy_bt_chrc_chrc_reader_t)(uint16_t *len, uint8_t **val);
 
-typedef esp_err_t (*cronus_bt_chrc_chrc_writer_t)(uint16_t len, uint16_t offset, const uint8_t *val);
+typedef esp_err_t (*dy_bt_chrc_chrc_writer_t)(uint16_t len, uint16_t offset, const uint8_t *val);
 
-esp_err_t dy_bt_register_chrc_reader(uint8_t idx, cronus_bt_chrc_chrc_reader_t reader);
-esp_err_t dy_bt_register_chrc_writer(uint8_t idx, cronus_bt_chrc_chrc_writer_t writer);
-esp_err_t dy_bt_notify(enum cronus_bt_chrc_id chrc_id, uint16_t len, uint8_t *val);
+dy_err_t dy_bt_register_chrc_reader(uint8_t id, dy_bt_chrc_chrc_reader_t reader);
+dy_err_t dy_bt_register_chrc_writer(uint8_t id, dy_bt_chrc_chrc_writer_t writer);
+esp_err_t dy_bt_notify(enum dy_bt_chrc_id chrc_id, uint16_t len, uint8_t *val);
 dy_err_t dy_bt_init();
 
 #endif // DY_BT_H
