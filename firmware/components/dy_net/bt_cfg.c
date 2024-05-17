@@ -9,7 +9,7 @@
 #include "dy/wifi.h"
 #include "dy/bt.h"
 
-#define LTAG "DY_WIFI"
+#define LTAG "DY_NET"
 
 extern void wifi_set_config_and_connect(const char *ssid, const char *password);
 extern void wifi_clear_config_and_disconnect();
@@ -87,18 +87,18 @@ esp_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
 
     esp_err_t err;
     switch (val[0]) {
-        case DY_WIFI_OP_DISCONNECT:
+        case DY_NET_OP_DISCONNECT:
             wifi_clear_config_and_disconnect();
             break;
 
-        case DY_WIFI_OP_SCAN:
+        case DY_NET_OP_SCAN:
             if ((err = esp_wifi_scan_start(NULL, 0)) != ESP_OK) {
                 ESP_LOGE(LTAG, "%s: esp_wifi_scan_start: %s", __func__, esp_err_to_name(err));
             }
             break;
 
-        case DY_WIFI_OP_CONNECT:
-            bt_cfg_set_wifi_state(DY_WIFI_ST_CONNECTING, DY_WIFI_ERR_NONE);
+        case DY_NET_OP_CONNECT:
+            bt_cfg_set_wifi_state(DY_NET_ST_CONNECTING, DY_NET_ERR_NONE);
             ESP_LOGW(LTAG, "wifi connect request");
             wifi_set_config_and_connect((const char *) &val[1], (const char *) &val[33]);
             break;
@@ -111,22 +111,22 @@ esp_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
     return ESP_OK;
 }
 
-dy_err_t setup_bt_cfg() {
+dy_err_t init_bt_cfg() {
     dy_err_t err;
 
     mux = xSemaphoreCreateMutex();
     if (mux == NULL) {
-        return dy_error(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
+        return dy_err(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
     }
 
     err = dy_bt_register_chrc_reader(DY_BT_CHRC_ID_1, on_bt_chrc_read);
     if (dy_nok(err)) {
-        return dy_error_prefix("dy_bt_register_chrc_reader failed", err);
+        return dy_err_pfx("dy_bt_register_chrc_reader failed", err);
     }
 
     err = dy_bt_register_chrc_writer(DY_BT_CHRC_ID_1, on_bt_chrc_write);
     if (err.code != DY_OK) {
-        return dy_error_prefix("dy_bt_register_chrc_writer failed", err);
+        return dy_err_pfx("dy_bt_register_chrc_writer failed", err);
     }
 
     return dy_ok();

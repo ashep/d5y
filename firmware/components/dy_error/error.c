@@ -4,7 +4,7 @@
 #include "esp_log.h"
 #include "dy/error.h"
 
-dy_err_t dy_error(dy_err_code_t code, const char *fmt, ...) {
+dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...) {
     char buf[DY_ERROR_DESC_MAX_LEN] = {0};
 
     va_list args;
@@ -15,7 +15,7 @@ dy_err_t dy_error(dy_err_code_t code, const char *fmt, ...) {
     return (dy_err_t) {code, buf};
 }
 
-char *dy_error_str(dy_err_t err) {
+char *dy_err_str(dy_err_t err) {
     static char buf[DY_ERROR_DESC_MAX_LEN + 16] = {0};
     snprintf(buf, sizeof(buf), "%s: %s", dy_err_desc(err.code), err.desc);
     return buf;
@@ -29,8 +29,8 @@ bool dy_nok(dy_err_t err) {
     return err.code != DY_OK;
 }
 
-dy_err_t dy_error_prefix(char *prefix, dy_err_t err) {
-    return dy_error(err.code, "%s: %s", prefix, err.desc);
+dy_err_t dy_err_pfx(char *prefix, dy_err_t err) {
+    return dy_err(err.code, "%s: %s", prefix, err.desc);
 }
 
 char *dy_err_desc(dy_err_code_t e) {

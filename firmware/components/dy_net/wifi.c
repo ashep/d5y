@@ -5,11 +5,15 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 
+#include "freertos/FreeRTOS.h"
+
 #include "dy/wifi.h"
 
-#define LTAG "DY_WIFI"
+#define LTAG "DY_NET"
+#define WATCHDOG_PERIOD 10000
+#define WATCHDOG_STACK_SIZE 4096
 
-extern dy_err_t setup_bt_cfg();
+extern dy_err_t init_bt_cfg();
 
 extern void bt_cfg_set_wifi_state(enum dy_wifi_state st, enum dy_wifi_err_reason er);
 
@@ -23,7 +27,10 @@ extern esp_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *
 
 extern void ip_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
+static SemaphoreHandle_t mux;
 static wifi_ap_record_t scan_result[5];
+static bool sta_configured = false;
+static bool sta_connected = false;
 
 void wifi_set_config_and_connect(const char *ssid, const char *password) {
     esp_err_t err;
@@ -38,8 +45,7 @@ void wifi_set_config_and_connect(const char *ssid, const char *password) {
         return;
     }
 
-    err = esp_wifi_connect();
-    if (err != ESP_OK) {
+    if ((err = esp_wifi_connect()) != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_connect failed: %s", __func__, esp_err_to_name(err));
         return;
     }
@@ -59,6 +65,8 @@ void wifi_clear_config_and_disconnect() {
     if (err != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_disconnect failed: %s", __func__, esp_err_to_name(err));
     }
+
+    sta_configured = false;
 }
 
 static void on_scan_done(wifi_event_sta_scan_done_t *data) {
@@ -74,38 +82,54 @@ static void on_scan_done(wifi_event_sta_scan_done_t *data) {
     bt_cfg_set_ssid_list(scan_result, len);
 }
 
+static void on_sta_connect(wifi_event_sta_connected_t *ev) {
+    ESP_LOGI(LTAG, "sta connected: ssid=%s, auth_mode=%d", ev->ssid, ev->authmode);
+
+    if (xSemaphoreTake(mux, (TickType_t) 10) != pdTRUE) {
+        ESP_LOGE(LTAG, "%s: xSemaphoreTake failed", __func__ );
+        return;
+    }
+
+    bt_cfg_set_wifi_state(DY_NET_ST_CONNECTED, DY_NET_ERR_NONE);
+    bt_cfg_set_connected_ssid(ev->ssid);
+
+    sta_configured = true;
+    sta_connected = true;
+
+    xSemaphoreGive(mux);
+}
+
+static void on_sta_disconnect(wifi_event_sta_disconnected_t *ev) {
+    ESP_LOGE(LTAG, "sta disconnected: reason=%d", ev->reason);
+
+    if (xSemaphoreTake(mux, (TickType_t) 10) != pdTRUE) {
+        ESP_LOGE(LTAG, "%s: xSemaphoreTake failed", __func__ );
+        return;
+    }
+
+    enum dy_wifi_err_reason rsn = DY_NET_ERR_NONE;
+    if (ev->reason != WIFI_REASON_UNSPECIFIED) {
+        rsn = DY_NET_ERR_UNKNOWN; // TODO: describe error
+    }
+
+    sta_connected = false;
+    bt_cfg_set_wifi_state(DY_NET_ST_DISCONNECTED, rsn);
+
+    xSemaphoreGive(mux);
+}
+
 static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *data) {
-    wifi_event_sta_connected_t *ev_connect;
-    wifi_event_sta_disconnected_t *ev_disconnect;
-
     switch (event_id) {
-        case WIFI_EVENT_WIFI_READY:
-            ESP_LOGI(LTAG, "%s: WIFI_EVENT_WIFI_READY", __func__);
-            break;
-
         case WIFI_EVENT_SCAN_DONE:
             on_scan_done((wifi_event_sta_scan_done_t *) data);
             break;
 
-        case WIFI_EVENT_STA_START:
-            ESP_LOGI(LTAG, "%s: WIFI_EVENT_STA_START", __func__);
-            break;
-
         case WIFI_EVENT_STA_CONNECTED:
-            ev_connect = (wifi_event_sta_connected_t *) data;
-            ESP_LOGI(LTAG, "sta connected: ssid=%s, auth_mode=%d", ev_connect->ssid, ev_connect->authmode);
-            bt_cfg_set_wifi_state(DY_WIFI_ST_CONNECTED, DY_WIFI_ERR_NONE);
-            bt_cfg_set_connected_ssid(ev_connect->ssid);
+            on_sta_connect((wifi_event_sta_connected_t *) data);
             break;
 
         case WIFI_EVENT_STA_DISCONNECTED:
-            ev_disconnect = (wifi_event_sta_disconnected_t *) data;
-            ESP_LOGE(LTAG, "sta disconnected: reason=%d", ev_disconnect->reason);
-            enum dy_wifi_err_reason rsn = DY_WIFI_ERR_NONE;
-            if (ev_disconnect->reason != WIFI_REASON_UNSPECIFIED) {
-                rsn = DY_WIFI_ERR_UNKNOWN; // TODO: make error info more meaningful
-            }
-            bt_cfg_set_wifi_state(DY_WIFI_ST_DISCONNECTED, rsn);
+            on_sta_disconnect((wifi_event_sta_disconnected_t *) data);
             break;
 
         default:
@@ -114,46 +138,71 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
     }
 }
 
-dy_err_t dy_wifi_init() {
+static void watchdog(void *args) {
+    esp_err_t err;
+
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(WATCHDOG_PERIOD));
+
+        if (!sta_configured || sta_connected) {
+            continue;
+        }
+
+        ESP_LOGI(LTAG, "%s: reconnecting...", __func__ );
+        if ((err = esp_wifi_connect()) != ESP_OK) {
+            ESP_LOGW(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(err));
+        }
+    }
+}
+
+dy_err_t dy_net_init() {
     dy_err_t err;
     esp_err_t esp_err;
 
+    mux = xSemaphoreCreateMutex();
+    if (mux == NULL) {
+        return dy_err(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
+    }
+
     if ((esp_err = esp_netif_init()) != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_netif_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_netif_init failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_netif_create_default_wifi_sta();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
     if ((esp_err = esp_wifi_init(&cfg)) != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_init failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ev_handler, NULL);
     if (esp_err != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_event_handler_register (WIFI) failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_event_handler_register (WIFI) failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &ip_ev_handler, NULL);
     if (esp_err != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
     }
 
     if ((esp_err = esp_wifi_set_mode(WIFI_MODE_STA)) != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_set_mode failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_set_mode failed: %s", esp_err_to_name(esp_err));
     }
 
     if ((esp_err = esp_wifi_start()) != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "esp_wifi_start failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_start failed: %s", esp_err_to_name(esp_err));
     }
 
-    if (dy_nok(err = setup_bt_cfg())) {
+    if (dy_nok(err = init_bt_cfg())) {
         return err;
     }
 
+    // Initial attempt to connect since at start we have no idea whether connection is configured
     if ((esp_err = esp_wifi_connect()) != ESP_OK) {
         ESP_LOGW(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(esp_err));
     }
+
+    xTaskCreate(watchdog, "watchdog", WATCHDOG_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
     return dy_ok();
 }

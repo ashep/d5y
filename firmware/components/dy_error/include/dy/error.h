@@ -40,13 +40,13 @@ typedef struct {
 /**
  * Creates an error.
  */
-dy_err_t dy_error(dy_err_code_t code, const char *fmt, ...);
+dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...);
 
 
 /**
  * Formats error as a string.
  */
-char *dy_error_str(dy_err_t err);
+char *dy_err_str(dy_err_t err);
 
 /**
  * Make an DY_OK error.
@@ -61,7 +61,7 @@ bool dy_nok(dy_err_t err);
 /**
  * Creates a new error from another one prefixed by a string.
  */
-dy_err_t dy_error_prefix(char *prefix, dy_err_t err);
+dy_err_t dy_err_pfx(char *prefix, dy_err_t err);
 
 /**
  * Get human readable error name.

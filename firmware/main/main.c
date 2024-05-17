@@ -16,14 +16,14 @@ static dy_err_t init_nvs() {
     esp_err = nvs_flash_init();
     if (esp_err == ESP_ERR_NVS_NO_FREE_PAGES || esp_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         if ((esp_err == nvs_flash_erase()) != ESP_OK) {
-            return dy_error(DY_ERR_OP_FAILED, "nvs_flash_erase failed: %s", esp_err_to_name(esp_err));
+            return dy_err(DY_ERR_OP_FAILED, "nvs_flash_erase failed: %s", esp_err_to_name(esp_err));
         }
 
         if ((esp_err == nvs_flash_init()) != ESP_OK) {
-            return dy_error(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
+            return dy_err(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
         }
     } else if (esp_err != ESP_OK) {
-        return dy_error(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
     }
 
     return dy_ok();
@@ -34,7 +34,7 @@ static dy_err_t init_max7219() {
 
     dy_max7219_config_t *cfg = malloc(sizeof(dy_max7219_config_t));
     if (cfg == NULL) {
-        return dy_error(DY_ERR_NO_MEM, "dy_max7219_config_t malloc failed");
+        return dy_err(DY_ERR_NO_MEM, "dy_max7219_config_t malloc failed");
     }
 
     err = dy_max7219_init(
@@ -74,34 +74,30 @@ void app_main(void) {
     esp_err_t esp_err;
     dy_err_t err;
 
-    err = init_nvs();
-    if (err.code != DY_OK) {
-        ESP_LOGE(LTAG, "init_nvs: %s", dy_error_str(err));
+    if (dy_nok(err = init_nvs())) {
+        ESP_LOGE(LTAG, "init_nvs: %s", dy_err_str(err));
         abort();
     }
 
     esp_err = esp_event_loop_create_default();
     if (esp_err != ESP_OK) {
-        ESP_LOGE(LTAG, "esp_event_loop_create_default: %s", dy_error_str(err));
+        ESP_LOGE(LTAG, "esp_event_loop_create_default: %s", dy_err_str(err));
         abort();
     }
 
-    err = init_display();
-    if (err.code != DY_OK) {
-        ESP_LOGE(LTAG, "init_display: %s", dy_error_str(err));
+    if (dy_nok(err = init_display())) {
+        ESP_LOGE(LTAG, "init_display: %s", dy_err_str(err));
         abort();
     }
 
-    err = dy_wifi_init();
-    if (err.code != DY_OK) {
-        ESP_LOGE(LTAG, "dy_wifi_init: %s", dy_error_str(err));
+    if (dy_nok(err = dy_net_init())) {
+        ESP_LOGE(LTAG, "dy_net_init: %s", dy_err_str(err));
         abort();
     }
 
     // Must be called last
-    err = dy_bt_init();
-    if (err.code != DY_OK) {
-        ESP_LOGE(LTAG, "dy_bt_init: %s", dy_error_str(err));
+    if (dy_nok(err = dy_bt_init())) {
+        ESP_LOGE(LTAG, "dy_bt_init: %s", dy_err_str(err));
         abort();
     }
 }
