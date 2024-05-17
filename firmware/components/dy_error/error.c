@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
-#include "esp_err.h"
+#include <stdbool.h>
 #include "esp_log.h"
 #include "dy/error.h"
 
@@ -23,6 +23,14 @@ char *dy_error_str(dy_err_t err) {
 
 dy_err_t dy_ok() {
     return (dy_err_t) {DY_OK, NULL};
+}
+
+bool dy_nok(dy_err_t err) {
+    return err.code != DY_OK;
+}
+
+dy_err_t dy_error_prefix(char *prefix, dy_err_t err) {
+    return dy_error(err.code, "%s: %s", prefix, err.desc);
 }
 
 char *dy_err_desc(dy_err_code_t e) {

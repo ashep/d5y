@@ -6,6 +6,7 @@
 #ifndef DY_ERROR_H
 #define DY_ERROR_H
 
+#include <stdbool.h>
 #include "esp_err.h"
 
 #define DY_ERROR_DESC_MAX_LEN 128
@@ -51,6 +52,16 @@ char *dy_error_str(dy_err_t err);
  * Make an DY_OK error.
  */
 dy_err_t dy_ok();
+
+/**
+ * Checks whether err is not DY_OK.
+ */
+bool dy_nok(dy_err_t err);
+
+/**
+ * Creates a new error from another one prefixed by a string.
+ */
+dy_err_t dy_error_prefix(char *prefix, dy_err_t err);
 
 /**
  * Get human readable error name.

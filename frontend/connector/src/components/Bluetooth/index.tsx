@@ -115,9 +115,8 @@ export class Connection extends React.Component<Props, State> {
             this.btDev = await navigator.bluetooth.requestDevice({
                 filters: [
                     {services: [btServiceUUID]},
-                    {namePrefix: "D5Y"}
+                    {namePrefix: "D5Y"},
                 ],
-                optionalServices: [],
             });
 
             this.btSrv = await this.btDev.gatt?.connect();
