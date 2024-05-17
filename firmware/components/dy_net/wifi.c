@@ -4,6 +4,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
+#include "esp_netif_sntp.h"
 
 #include "freertos/FreeRTOS.h"
 
@@ -199,10 +200,15 @@ dy_err_t dy_net_init() {
 
     // Initial attempt to connect since at start we have no idea whether connection is configured
     if ((esp_err = esp_wifi_connect()) != ESP_OK) {
-        ESP_LOGW(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(esp_err));
+        ESP_LOGE(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(esp_err));
     }
 
     xTaskCreate(watchdog, "watchdog", WATCHDOG_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+
+    esp_sntp_config_t sntp_cfg = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    if ((esp_err = esp_netif_sntp_init(&sntp_cfg)) != ESP_OK) {
+        ESP_LOGE(LTAG, "%s: esp_netif_sntp_init: %s", __func__, esp_err_to_name(esp_err));
+    }
 
     return dy_ok();
 }
