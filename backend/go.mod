@@ -1,3 +1,3 @@
-module github.com/ashep/cronus
+module github.com/ashep/d5y
 
-go 1.16
+go 1.22

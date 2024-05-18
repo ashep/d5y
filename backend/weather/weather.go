@@ -7,7 +7,7 @@ package weather
 import (
 	"fmt"
 
-	"github.com/ashep/cronus/httpcli"
+	"github.com/ashep/d5y/httpcli"
 )
 
 type Weather struct {

@@ -7,7 +7,7 @@ package geoip
 import (
 	"encoding/json"
 
-	"github.com/ashep/cronus/httpcli"
+	"github.com/ashep/d5y/httpcli"
 )
 
 type GeoIP struct {

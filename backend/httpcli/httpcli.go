@@ -33,12 +33,12 @@ func (c *Client) GetJSON(u string, dest interface{}) error {
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.New("failed to read response: " + err.Error())
+		return errors.New("failed to read the response: " + err.Error())
 	}
 
 	err = json.Unmarshal(bytes, dest)
 	if err != nil {
-		return errors.New("failed to unmarshal response: " + err.Error())
+		return errors.New("failed to unmarshal the response: " + err.Error())
 	}
 
 	return nil

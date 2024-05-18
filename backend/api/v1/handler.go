@@ -1,17 +1,16 @@
-// Author:  Oleksandr Shepetko
-// Email:   a@shepetko.com
-// License: MIT
-
-package service
+package v1
 
 import (
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/ashep/d5y/geoip"
+	"github.com/ashep/d5y/weather"
 )
 
-type RootHandlerResponse struct {
+type Response struct {
 	Second int `json:"second"`
 	Minute int `json:"minute"`
 	Hour   int `json:"hour"`
@@ -25,12 +24,24 @@ type RootHandlerResponse struct {
 	FeelsLike float64 `json:"feels_like"`
 }
 
-func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
-	rAddr := ""
-	rAddr = r.Header.Get("cf-connecting-ip")
+type Handler struct {
+	geoIP   *geoip.GeoIP
+	weather *weather.Weather
+}
+
+func New(gi *geoip.GeoIP, wth *weather.Weather) *Handler {
+	return &Handler{
+		geoIP:   gi,
+		weather: wth,
+	}
+}
+
+func (h *Handler) HandleRoot(w http.ResponseWriter, r *http.Request) {
+	rAddr := r.Header.Get("cf-connecting-ip")
 	if rAddr == "" {
 		rAddr = r.Header.Get("x-forwarded-for")
 	}
+
 	if rAddr == "" {
 		rAddr = r.RemoteAddr
 	}
@@ -41,17 +52,15 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get location
-	geoData, err := s.geoIP.Get(rAddr)
+	geoData, err := h.geoIP.Get(rAddr)
 	if err != nil {
 		log.Printf("geoip error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("req: addr=%s; ua=%s; city=%s", rAddr, r.Header.Get("User-Agent"), geoData.City)
+	log.Printf("req: addr=%s; city=%s; ua=%s;", rAddr, geoData.City, r.Header.Get("User-Agent"))
 
-	// Get localized time
 	tz, err := time.LoadLocation(geoData.TimeZone)
 	if err != nil {
 		log.Printf("failed to determine time zone: %v", err)
@@ -64,8 +73,7 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 		dow = 7
 	}
 
-	// Prepare response
-	resp := RootHandlerResponse{
+	resp := Response{
 		Second: t.Second(),
 		Minute: t.Minute(),
 		Hour:   t.Hour(),
@@ -76,7 +84,7 @@ func (s *Service) RootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add weather data
-	weatherData, err := s.weather.Get(geoData.Latitude, geoData.Longitude)
+	weatherData, err := h.weather.Get(geoData.Latitude, geoData.Longitude)
 	if err == nil {
 		resp.Weather = true
 		resp.Temp = weatherData.Temp

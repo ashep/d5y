@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ashep/cronus/service"
+	"github.com/ashep/d5y/api"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 		panic("WEATHER_API_KEY environment variable is not set")
 	}
 
-	s := service.New(":9000", wAPIKey)
+	s := api.New(":9000", wAPIKey)
 	s.Run()
 
 	sigCh := make(chan os.Signal, 1)
