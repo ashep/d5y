@@ -1,7 +1,3 @@
-// Author:  Oleksandr Shepetko
-// Email:   a@shepetko.com
-// License: MIT
-
 package main
 
 import (

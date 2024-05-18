@@ -10,64 +10,65 @@ import (
 	"github.com/ashep/d5y/httpcli"
 )
 
-type Weather struct {
-	cli    *httpcli.Client
+type Client struct {
+	c      *httpcli.Client
 	apiKey string
-	units  string
 }
 
-type Data struct {
+type DataItem struct {
+	Title     string  `json:"title"`
 	Temp      float64 `json:"temp"`
 	FeelsLike float64 `json:"feels_like"`
 	Pressure  float64 `json:"pressure"`
 	Humidity  float64 `json:"humidity"`
+	IconURL   string  `json:"icon"`
 }
 
-type OWMapResponse struct {
-	Main    OWMapResponseMain      `json:"main"`
-	Weather []OWMapResponseWeather `json:"weather"`
+type Data map[string]DataItem
+
+type wAPIRespCondition struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
+	Icon string `json:"icon"`
 }
 
-type OWMapResponseMain struct {
-	Temp      float64 `json:"temp"`
-	FeelsLike float64 `json:"feels_like"`
-	TempMin   float64 `json:"temp_min"`
-	TempMax   float64 `json:"temp_max"`
-	Pressure  float64 `json:"pressure"`
-	Humidity  float64 `json:"humidity"`
+type wAPIRespCurrent struct {
+	Temp      float64           `json:"temp_c"`
+	FeelsLike float64           `json:"feelslike_c"`
+	Pressure  float64           `json:"pressure_mb"`
+	Humidity  float64           `json:"humidity"`
+	Condition wAPIRespCondition `json:"condition"`
 }
 
-type OWMapResponseWeather struct {
-	Id          int    `json:"id"`
-	Main        string `json:"main"`
-	Description string `json:"description"`
-	Icon        string `json:"icon"`
+type wAPIResp struct {
+	Current wAPIRespCurrent `json:"current"`
 }
 
-func New(apiKey string) *Weather {
-	return &Weather{
-		cli:    httpcli.New(),
+func New(apiKey string) *Client {
+	return &Client{
+		c:      httpcli.New(),
 		apiKey: apiKey,
-		units:  "metric",
 	}
 }
 
-func (w *Weather) Get(lat, lon float64) (*Data, error) {
-	apiURL := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?units=%s&lat=%f&lon=%f&appid=%s",
-		w.units, lat, lon, w.apiKey)
+func (c *Client) GetForIPAddr(addr string) (Data, error) {
+	apiURL := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", c.apiKey, addr)
+	owRes := &wAPIResp{}
 
-	resp := &OWMapResponse{}
-	err := w.cli.GetJSON(apiURL, resp)
+	err := c.c.GetJSON(apiURL, owRes)
 	if err != nil {
 		return nil, err
 	}
 
-	d := &Data{
-		Temp:      resp.Main.Temp,
-		FeelsLike: resp.Main.FeelsLike,
-		Pressure:  resp.Main.Pressure,
-		Humidity:  resp.Main.Humidity,
+	res := make(Data)
+	res["current"] = DataItem{
+		Title:     owRes.Current.Condition.Text,
+		IconURL:   owRes.Current.Condition.Icon,
+		Temp:      owRes.Current.Temp,
+		FeelsLike: owRes.Current.FeelsLike,
+		Pressure:  owRes.Current.Pressure,
+		Humidity:  owRes.Current.Humidity,
 	}
 
-	return d, nil
+	return res, nil
 }

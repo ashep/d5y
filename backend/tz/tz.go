@@ -1,35 +1,55 @@
 package tz
 
 import (
+	"bytes"
+	"embed"
 	_ "embed"
-	"encoding/json"
 	"log"
+	"strings"
+	"sync"
 )
 
-//go:embed tz.json
-var raw []byte
+//go:embed zoneinfo
+var zoneInfo embed.FS
 
-var tz map[string]string
+var cache map[string]string
+
+var mux *sync.Mutex
 
 func ToPosix(s string) string {
-	if tz == nil {
-		load()
+	if s == "" {
+		return "UTC0"
 	}
 
-	r := tz[s]
-	if r == "" {
-		r = "UTC0"
+	if mux == nil {
+		mux = new(sync.Mutex)
 	}
 
-	return r
-}
+	mux.Lock()
+	defer mux.Unlock()
 
-func load() {
-	tz = make(map[string]string)
-
-	if err := json.Unmarshal(raw, &tz); err != nil {
-		log.Printf("failed to unmarshal tz data")
-		return
+	if cache == nil {
+		cache = make(map[string]string)
 	}
 
+	if res, ok := cache[s]; ok {
+		return res
+	}
+
+	b, err := zoneInfo.ReadFile("zoneinfo/" + s)
+	if err != nil {
+		log.Printf("tz: failed to read zone data for %s: %v", s, err)
+		return "UTC0"
+	}
+
+	bs := bytes.SplitN(b, []byte("\n"), -1)
+	if len(bs) < 2 {
+		log.Printf("tz: failed to read zone data for %s: %v", s, err)
+		return "UTC0"
+	}
+
+	res := strings.TrimSpace(string(bs[len(bs)-2]))
+	cache[s] = res
+
+	return res
 }

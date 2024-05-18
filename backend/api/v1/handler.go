@@ -26,17 +26,17 @@ type Response struct {
 
 type Handler struct {
 	geoIP   *geoip.GeoIP
-	weather *weather.Weather
+	weather *weather.Client
 }
 
-func New(gi *geoip.GeoIP, wth *weather.Weather) *Handler {
+func New(gi *geoip.GeoIP, wth *weather.Client) *Handler {
 	return &Handler{
 		geoIP:   gi,
 		weather: wth,
 	}
 }
 
-func (h *Handler) HandleRoot(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	rAddr := r.Header.Get("cf-connecting-ip")
 	if rAddr == "" {
 		rAddr = r.Header.Get("x-forwarded-for")
@@ -52,16 +52,17 @@ func (h *Handler) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	geoData, err := h.geoIP.Get(rAddr)
+	geo, err := h.geoIP.Get(rAddr)
 	if err != nil {
 		log.Printf("geoip error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("req: addr=%s; city=%s; ua=%s;", rAddr, geoData.City, r.Header.Get("User-Agent"))
+	log.Printf("%s %s remote=%q country=%q region=%q city=%q tz=%q ua=%q",
+		r.Method, r.RequestURI, rAddr, geo.CountryName, geo.RegionName, geo.City, geo.Timezone, r.Header.Get("User-Agent"))
 
-	tz, err := time.LoadLocation(geoData.TimeZone)
+	tz, err := time.LoadLocation(geo.Timezone)
 	if err != nil {
 		log.Printf("failed to determine time zone: %v", err)
 	}
@@ -84,11 +85,11 @@ func (h *Handler) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add weather data
-	weatherData, err := h.weather.Get(geoData.Latitude, geoData.Longitude)
+	weatherData, err := h.weather.GetForIPAddr(rAddr)
 	if err == nil {
 		resp.Weather = true
-		resp.Temp = weatherData.Temp
-		resp.FeelsLike = weatherData.FeelsLike
+		resp.Temp = weatherData["current"].Temp
+		resp.FeelsLike = weatherData["current"].FeelsLike
 	} else {
 		log.Printf("failed to get weather: %v", err)
 	}
@@ -106,5 +107,5 @@ func (h *Handler) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		log.Printf("response write error: %v", err)
 	}
 
-	log.Printf("rsp: addr=%s; data=%s", rAddr, d)
+	log.Printf("%s", d)
 }

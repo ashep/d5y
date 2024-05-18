@@ -24,7 +24,7 @@ type Data struct {
 	Longitude   float64 `json:"lon,omitempty"`
 	RegionCode  string  `json:"region,omitempty"`
 	RegionName  string  `json:"regionName,omitempty"`
-	TimeZone    string  `json:"timezone,omitempty"`
+	Timezone    string  `json:"timezone,omitempty"`
 }
 
 func (d *Data) String() string {

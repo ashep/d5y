@@ -26,10 +26,11 @@ func New(addr, weatherAPIKey string) *Server {
 	wth := weather.New(weatherAPIKey)
 
 	hv1 := handlerV1.New(gi, wth)
-	hv2 := handlerV2.New(gi, wth)
+	mux.HandleFunc("/", hv1.Handle)
+	mux.HandleFunc("/v1", hv1.Handle)
 
-	mux.HandleFunc("/", hv1.HandleRoot)
-	mux.HandleFunc("/v2", hv2.HandleRoot)
+	hv2 := handlerV2.New(gi, wth)
+	mux.HandleFunc("/v2", hv2.Handle)
 
 	return &Server{s: &http.Server{Addr: addr, Handler: mux}}
 }
