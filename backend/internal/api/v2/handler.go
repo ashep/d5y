@@ -14,7 +14,7 @@ type Handler struct {
 	me *me.Handler
 }
 
-func New(geoIPCli *geoip.GeoIP, weatherCli *weather.Client, l zerolog.Logger) *Handler {
+func New(geoIPCli *geoip.Service, weatherCli *weather.Client, l zerolog.Logger) *Handler {
 	return &Handler{
 		me: me.New(geoIPCli, weatherCli, l),
 	}

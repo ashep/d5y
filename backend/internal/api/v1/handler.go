@@ -7,8 +7,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/ashep/d5y/internal/api/handlerutil"
 	"github.com/ashep/d5y/internal/geoip"
+	"github.com/ashep/d5y/internal/httputil"
 	"github.com/ashep/d5y/internal/weather"
 )
 
@@ -27,12 +27,12 @@ type Response struct {
 }
 
 type Handler struct {
-	geoIP   *geoip.GeoIP
+	geoIP   *geoip.Service
 	weather *weather.Client
 	l       zerolog.Logger
 }
 
-func New(g *geoip.GeoIP, w *weather.Client, l zerolog.Logger) *Handler {
+func New(g *geoip.Service, w *weather.Client, l zerolog.Logger) *Handler {
 	return &Handler{
 		geoIP:   g,
 		weather: w,
@@ -41,7 +41,7 @@ func New(g *geoip.GeoIP, w *weather.Client, l zerolog.Logger) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	rAddr, err := handlerutil.RemoteAddr(r)
+	rAddr, err := httputil.RemoteAddr(r)
 	if err != nil {
 		h.l.Info().
 			Str("method", r.Method).
@@ -55,8 +55,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	geo, err := h.geoIP.Get(rAddr)
-	if err != nil {
+	geo := geoip.FromCtx(r.Context())
+	if geo == nil {
 		h.l.Info().
 			Str("method", r.Method).
 			Str("uri", r.RequestURI).

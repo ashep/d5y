@@ -7,9 +7,9 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/ashep/d5y/internal/api/auth"
-	"github.com/ashep/d5y/internal/api/handlerutil"
+	"github.com/ashep/d5y/internal/auth"
 	"github.com/ashep/d5y/internal/geoip"
+	"github.com/ashep/d5y/internal/httputil"
 	"github.com/ashep/d5y/internal/tz"
 	"github.com/ashep/d5y/internal/weather"
 )
@@ -34,12 +34,12 @@ type Response struct {
 }
 
 type Handler struct {
-	geoIP   *geoip.GeoIP
+	geoIP   *geoip.Service
 	weather *weather.Client
 	l       zerolog.Logger
 }
 
-func New(gi *geoip.GeoIP, wth *weather.Client, l zerolog.Logger) *Handler {
+func New(gi *geoip.Service, wth *weather.Client, l zerolog.Logger) *Handler {
 	return &Handler{
 		geoIP:   gi,
 		weather: wth,
@@ -61,13 +61,13 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		res.Timestamp.TZData = tz.ToPosix(tZone)
 	}
 
-	rAddr, err := handlerutil.RemoteAddr(r)
+	rAddr, err := httputil.RemoteAddr(r)
 	if err != nil {
 		h.l.Info().
 			Str("method", r.Method).
 			Str("uri", r.RequestURI).
 			Str("ua", r.Header.Get("User-Agent")).
-			Str("client_id", auth.Token(r.Context())).
+			Str("client_id", auth.CtxToken(r.Context())).
 			Msg("request")
 
 		h.l.Error().Err(err).Msg("remote address get failed")
@@ -76,14 +76,14 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	geo, err := h.geoIP.Get(rAddr)
-	if err != nil {
+	geo := geoip.FromCtx(r.Context())
+	if geo == nil {
 		h.l.Info().
 			Str("method", r.Method).
 			Str("uri", r.RequestURI).
 			Str("remote", rAddr).
 			Str("ua", r.Header.Get("User-Agent")).
-			Str("client_id", auth.Token(r.Context())).
+			Str("client_id", auth.CtxToken(r.Context())).
 			Msg("request")
 
 		h.l.Error().Err(err).Msg("geoip get failed")
@@ -101,7 +101,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		Str("city", geo.City).
 		Str("tz", geo.Timezone).
 		Str("ua", r.Header.Get("User-Agent")).
-		Str("client_id", auth.Token(r.Context())).
+		Str("client_id", auth.CtxToken(r.Context())).
 		Msg("request")
 
 	res.Geo = &ResponseGeo{

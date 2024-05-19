@@ -6,13 +6,15 @@ package geoip
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/ashep/d5y/internal/httpcli"
 )
 
-type GeoIP struct {
+type Service struct {
 	cli   *httpcli.Client
 	cache map[string]*Data
+	mux   *sync.Mutex
 }
 
 type Data struct {
@@ -36,26 +38,30 @@ func (d *Data) String() string {
 	return string(b)
 }
 
-func New() *GeoIP {
-	return &GeoIP{
+func New() *Service {
+	return &Service{
 		cli:   httpcli.New(),
 		cache: make(map[string]*Data),
+		mux:   &sync.Mutex{},
 	}
 }
 
-func (g *GeoIP) Get(addr string) (*Data, error) {
-	d, ok := g.cache[addr]
+func (s *Service) Get(addr string) (*Data, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	d, ok := s.cache[addr]
 	if ok {
 		return d, nil
 	}
 
 	d = &Data{}
-	err := g.cli.GetJSON("http://ip-api.com/json/"+addr, d)
+	err := s.cli.GetJSON("http://ip-api.com/json/"+addr, d)
 	if err != nil {
 		return nil, err
 	}
 
-	g.cache[addr] = d
+	s.cache[addr] = d
 
 	return d, nil
 }

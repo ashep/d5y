@@ -6,7 +6,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/ashep/d5y/internal/api/auth"
+	"github.com/ashep/d5y/internal/auth"
 	"github.com/ashep/d5y/internal/geoip"
 	"github.com/ashep/d5y/internal/weather"
 
@@ -26,11 +26,10 @@ func New(addr, weatherAPIKey string, l zerolog.Logger) *Server {
 	wth := weather.New(weatherAPIKey)
 
 	hv1 := handlerV1.New(gi, wth, l)
-	mux.HandleFunc("/", hv1.Handle)
-	mux.HandleFunc("/v1", hv1.Handle)
+	mux.HandleFunc("/", geoip.WrapHTTP(hv1.Handle, gi, l)) // BC
 
 	hv2 := handlerV2.New(gi, wth, l)
-	mux.Handle("/v2/me", auth.WrapHandler(hv2.HandleMe))
+	mux.Handle("/v2/me", auth.WrapHTTP(geoip.WrapHTTP(hv2.HandleMe, gi, l)))
 
 	return &Server{
 		s: &http.Server{Addr: addr, Handler: mux},

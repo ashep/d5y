@@ -1,4 +1,4 @@
-package handlerutil
+package httputil
 
 import (
 	"errors"
