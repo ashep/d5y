@@ -2,12 +2,14 @@ package v1
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
-	"github.com/ashep/d5y/geoip"
-	"github.com/ashep/d5y/weather"
+	"github.com/rs/zerolog"
+
+	"github.com/ashep/d5y/internal/api/handlerutil"
+	"github.com/ashep/d5y/internal/geoip"
+	"github.com/ashep/d5y/internal/weather"
 )
 
 type Response struct {
@@ -27,44 +29,61 @@ type Response struct {
 type Handler struct {
 	geoIP   *geoip.GeoIP
 	weather *weather.Client
+	l       zerolog.Logger
 }
 
-func New(gi *geoip.GeoIP, wth *weather.Client) *Handler {
+func New(g *geoip.GeoIP, w *weather.Client, l zerolog.Logger) *Handler {
 	return &Handler{
-		geoIP:   gi,
-		weather: wth,
+		geoIP:   g,
+		weather: w,
+		l:       l,
 	}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	rAddr := r.Header.Get("cf-connecting-ip")
-	if rAddr == "" {
-		rAddr = r.Header.Get("x-forwarded-for")
-	}
+	rAddr, err := handlerutil.RemoteAddr(r)
+	if err != nil {
+		h.l.Info().
+			Str("method", r.Method).
+			Str("uri", r.RequestURI).
+			Str("ua", r.Header.Get("User-Agent")).
+			Msg("request")
 
-	if rAddr == "" {
-		rAddr = r.RemoteAddr
-	}
+		h.l.Error().Err(err).Msg("remote address get failed")
 
-	if rAddr == "" {
-		log.Printf("failed to determine remote ip address")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	geo, err := h.geoIP.Get(rAddr)
 	if err != nil {
-		log.Printf("geoip error: %v", err)
+		h.l.Info().
+			Str("method", r.Method).
+			Str("uri", r.RequestURI).
+			Str("remote", rAddr).
+			Str("ua", r.Header.Get("User-Agent")).
+			Msg("request")
+
+		h.l.Warn().Err(err).Msg("geoip get failed")
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("%s %s remote=%q country=%q region=%q city=%q tz=%q ua=%q",
-		r.Method, r.RequestURI, rAddr, geo.CountryName, geo.RegionName, geo.City, geo.Timezone, r.Header.Get("User-Agent"))
+	h.l.Info().
+		Str("method", r.Method).
+		Str("uri", r.RequestURI).
+		Str("remote", rAddr).
+		Str("country", geo.CountryName).
+		Str("region", geo.RegionName).
+		Str("city", geo.City).
+		Str("tz", geo.Timezone).
+		Str("ua", r.Header.Get("User-Agent")).
+		Msg("request")
 
 	tz, err := time.LoadLocation(geo.Timezone)
 	if err != nil {
-		log.Printf("failed to determine time zone: %v", err)
+		h.l.Warn().Err(err).Msg("time zone detect failed")
 	}
 	t := time.Now().In(tz)
 
@@ -91,12 +110,12 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		resp.Temp = weatherData["current"].Temp
 		resp.FeelsLike = weatherData["current"].FeelsLike
 	} else {
-		log.Printf("failed to get weather: %v", err)
+		h.l.Error().Err(err).Msg("weather get failed")
 	}
 
 	d, err := json.Marshal(resp)
 	if err != nil {
-		log.Printf("response marshal error: %v", err)
+		h.l.Error().Err(err).Msg("response marshal failed")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,8 +123,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err = w.Write(d); err != nil {
-		log.Printf("response write error: %v", err)
+		h.l.Error().Err(err).Msg("response write failed")
 	}
 
-	log.Printf("%s", d)
+	h.l.Info().RawJSON("data", d).Msg("response")
 }

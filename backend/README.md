@@ -9,8 +9,8 @@ Get your [https://www.weatherapi.com/](weatherapi.com) API key.
 Fill `.env` file with values:
 
 ```dotenv
-EXT_PORT=9000
-WEATHER_API_KEY=yourkey
+WEATHER_APIKEY=yourkey
+EXT_PORT=:9000
 ```
 
 Start the service:

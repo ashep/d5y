@@ -7,7 +7,7 @@ package geoip
 import (
 	"encoding/json"
 
-	"github.com/ashep/d5y/httpcli"
+	"github.com/ashep/d5y/internal/httpcli"
 )
 
 type GeoIP struct {

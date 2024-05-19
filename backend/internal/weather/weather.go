@@ -7,7 +7,7 @@ package weather
 import (
 	"fmt"
 
-	"github.com/ashep/d5y/httpcli"
+	"github.com/ashep/d5y/internal/httpcli"
 )
 
 type Client struct {
