@@ -166,32 +166,32 @@ dy_err_t dy_net_init() {
     }
 
     if ((esp_err = esp_netif_init()) != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_netif_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_netif_init failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_netif_create_default_wifi_sta();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
     if ((esp_err = esp_wifi_init(&cfg)) != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_wifi_init failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ev_handler, NULL);
     if (esp_err != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_event_handler_register (WIFI) failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_event_handler_register (WIFI) failed: %s", esp_err_to_name(esp_err));
     }
 
     esp_err = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &ip_ev_handler, NULL);
     if (esp_err != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
     }
 
     if ((esp_err = esp_wifi_set_mode(WIFI_MODE_STA)) != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_set_mode failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_wifi_set_mode failed: %s", esp_err_to_name(esp_err));
     }
 
     if ((esp_err = esp_wifi_start()) != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "esp_wifi_start failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "esp_wifi_start failed: %s", esp_err_to_name(esp_err));
     }
 
     if (dy_nok(err = init_bt_cfg())) {

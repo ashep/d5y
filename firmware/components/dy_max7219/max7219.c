@@ -38,7 +38,7 @@ dy_err_t dy_max7219_init(
     };
 
     if ((err = gpio_config(&gpio_cfg)) != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "gpio_config failed: esp_err=%d", err);
+        return dy_err(DY_ERR_FAILED, "gpio_config failed: esp_err=%d", err);
     }
 
     if ((err = dy_max7219_refresh(cfg)) != DY_OK) {
