@@ -2,6 +2,8 @@
 #include "esp_wifi.h"
 #include "esp_netif_types.h"
 
+#include "dy/error.h"
+
 #define LTAG "DY_NET"
 
 static void on_got_addr(ip_event_got_ip_t *ev) {

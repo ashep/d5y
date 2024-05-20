@@ -21,7 +21,7 @@ extern void wifi_clear_config_and_disconnect();
 // byte 97-128:  scanned SSID 3
 // byte 129-160: scanned SSID 4
 // byte 161-192: scanned SSID 5
-static uint8_t buf[193] = {};
+static uint8_t buf1[193] = {};
 
 static SemaphoreHandle_t mux;
 
@@ -30,7 +30,7 @@ void bt_cfg_set_wifi_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__ );
     }
 
-    buf[0] = (uint8_t) st | (uint8_t) er;
+    buf1[0] = (uint8_t) st | (uint8_t) er;
 
     xSemaphoreGive(mux);
 }
@@ -40,7 +40,7 @@ void bt_cfg_set_connected_ssid(const uint8_t *ssid) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__ );
     }
 
-    strncpy((char *) &buf[1], (const char *) ssid, 32);
+    strncpy((char *) &buf1[1], (const char *) ssid, 32);
 
     xSemaphoreGive(mux);
 }
@@ -52,10 +52,10 @@ void bt_cfg_set_ssid_list(wifi_ap_record_t *records, int len) {
     }
 
     int buf_offset = 33;
-    memset(&buf[buf_offset], 0, sizeof(buf) - buf_offset);
+    memset(&buf1[buf_offset], 0, sizeof(buf1) - buf_offset);
     for (int i = 0; i < len; i++) {
         ESP_LOGI(LTAG, "%s: record: ssid=%s, rssi=%d", __func__, records[i].ssid, records[i].rssi);
-        strncpy((char *) &buf[buf_offset], (const char *) records[i].ssid, 32);
+        strncpy((char *) &buf1[buf_offset], (const char *) records[i].ssid, 32);
         buf_offset += 32;
     }
 
@@ -68,8 +68,8 @@ void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
         return;
     }
 
-    *len = sizeof(buf);
-    *val = buf;
+    *len = sizeof(buf1);
+    *val = buf1;
 
     xSemaphoreGive(mux);
 }

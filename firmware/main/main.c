@@ -5,6 +5,8 @@
 #include "nvs_flash.h"
 
 #include "dy/error.h"
+#include "dy/cloud.h"
+#include "dy/rtc.h"
 #include "dy/bt.h"
 #include "dy/wifi.h"
 
@@ -16,14 +18,14 @@ static dy_err_t init_nvs() {
     esp_err = nvs_flash_init();
     if (esp_err == ESP_ERR_NVS_NO_FREE_PAGES || esp_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         if ((esp_err == nvs_flash_erase()) != ESP_OK) {
-            return dy_err(DY_ERR_OP_FAILED, "nvs_flash_erase failed: %s", esp_err_to_name(esp_err));
+            return dy_err(DY_ERR_FAILED, "nvs_flash_erase failed: %s", esp_err_to_name(esp_err));
         }
 
         if ((esp_err == nvs_flash_init()) != ESP_OK) {
-            return dy_err(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
+            return dy_err(DY_ERR_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
         }
     } else if (esp_err != ESP_OK) {
-        return dy_err(DY_ERR_OP_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
+        return dy_err(DY_ERR_FAILED, "nvs_flash_init failed: %s", esp_err_to_name(esp_err));
     }
 
     return dy_ok();
@@ -90,12 +92,21 @@ void app_main(void) {
         abort();
     }
 
+    if (dy_nok(err = dy_cloud_init())) {
+        ESP_LOGE(LTAG, "dy_cloud_init: %s", dy_err_str(err));
+        abort();
+    }
+
+    if (dy_nok(err = dy_rtc_init())) {
+        ESP_LOGE(LTAG, "dy_rtc_init: %s", dy_err_str(err));
+        abort();
+    }
+
     if (dy_nok(err = dy_net_init())) {
         ESP_LOGE(LTAG, "dy_net_init: %s", dy_err_str(err));
         abort();
     }
 
-    // Must be called last
     if (dy_nok(err = dy_bt_init())) {
         ESP_LOGE(LTAG, "dy_bt_init: %s", dy_err_str(err));
         abort();
