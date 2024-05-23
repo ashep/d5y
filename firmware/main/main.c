@@ -9,6 +9,7 @@
 #include "dy/rtc.h"
 #include "dy/bt.h"
 #include "dy/wifi.h"
+#include "dy/widget.h"
 
 #include "main.h"
 
@@ -109,6 +110,11 @@ void app_main(void) {
 
     if (dy_nok(err = dy_bt_init())) {
         ESP_LOGE(LTAG, "dy_bt_init: %s", dy_err_str(err));
+        abort();
+    }
+
+    if (dy_nok(err = dy_widget_init())) {
+        ESP_LOGE(LTAG, "dy_widget_init: %s", dy_err_str(err));
         abort();
     }
 }
