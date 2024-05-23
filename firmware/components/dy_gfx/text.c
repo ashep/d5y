@@ -11,15 +11,14 @@ int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t 
     // Offset from the beginning of the font content
     uint16_t offset = (ch - font->ascii_offset) * (font->height + 1);
 
-    // Locate character's position and determine its actual width from first
-    // byte/word
+    // Locate character's position and determine its actual width from first byte/word
     void *ch_p = NULL;
     switch (font->width) {
-        case DY_GFX_FONT_WIDTH_8:
+        case DY_GFX_FONT_SYMBOL_WIDTH_8:
             ch_p = (uint8_t *) &font->content.c8[offset];
             ch_width = *(int8_t *) ch_p++;
             break;
-        case DY_GFX_FONT_WIDTH_16:
+        case DY_GFX_FONT_SYMBOL_WIDTH_16:
             ch_p = (uint16_t *) &font->content.c16[offset];
             ch_width = *(int16_t *) ch_p++;
             break;
@@ -30,10 +29,10 @@ int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t 
         uint64_t row;
 
         switch (font->width) {
-            case DY_GFX_FONT_WIDTH_8:
+            case DY_GFX_FONT_SYMBOL_WIDTH_8:
                 row = *(uint8_t *) ch_p++;
                 break;
-            case DY_GFX_FONT_WIDTH_16:
+            case DY_GFX_FONT_SYMBOL_WIDTH_16:
                 row = *(uint16_t *) ch_p++;
                 break;
             default:
@@ -83,9 +82,9 @@ int8_t dy_gfx_ch_width(const dy_gfx_font_t *font, char ch) {
     uint16_t offset = (ch - font->ascii_offset) * (font->height + 1);
 
     switch (font->width) {
-        case DY_GFX_FONT_WIDTH_8:
+        case DY_GFX_FONT_SYMBOL_WIDTH_8:
             return font->content.c8[offset];
-        case DY_GFX_FONT_WIDTH_16:
+        case DY_GFX_FONT_SYMBOL_WIDTH_16:
             return font->content.c16[offset];
     }
 
