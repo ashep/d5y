@@ -12,20 +12,21 @@
 
 static void update_tz_from_cloud() {
     dy_err_t err;
-    dy_cloud_resp_me_t me;
+    dy_cloud_resp_time_t time;
 
-    if (dy_nok(err = dy_cloud_get_me(&me))) {
-        ESP_LOGE(LTAG, "dy_cloud_get_me: %s", dy_err_str(err));
+    if (dy_nok(err = dy_cloud_get_time(&time))) {
+        ESP_LOGE(LTAG, "dy_cloud_get_time: %s", dy_err_str(err));
         return;
     }
 
-    if (strlen(me.time.tz_data) == 0) {
-        ESP_LOGE(LTAG, "dy_cloud_get_me returned empty time.tz field");
+    if (strlen(time.tz_data) == 0) {
+        ESP_LOGE(LTAG, "dy_cloud_get_time returned empty tz_data field");
         return;
     }
 
-    setenv("TZ", me.time.tz_data, true);
-    ESP_LOGI(LTAG, "timezone set: %s; %s", me.time.tz, me.time.tz_data);
+    setenv("TZ", time.tz_data, true);
+
+    ESP_LOGI(LTAG, "timezone set: %s; %s", time.tz, time.tz_data);
 }
 
 dy_err_t dy_rtc_init() {
