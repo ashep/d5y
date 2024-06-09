@@ -8,25 +8,12 @@
 
 #include "freertos/FreeRTOS.h"
 
-#include "dy/wifi.h"
+#include "dy/net.h"
+#include "dy/_net.h"
 
 #define LTAG "DY_NET"
 #define WATCHDOG_PERIOD 10000
 #define WATCHDOG_STACK_SIZE 4096
-
-extern dy_err_t init_bt_cfg();
-
-extern void bt_cfg_set_wifi_state(enum dy_wifi_state st, enum dy_wifi_err_reason er);
-
-extern void bt_cfg_set_ssid_list(wifi_ap_record_t *records, int len);
-
-extern void bt_cfg_set_connected_ssid(const uint8_t *ssid);
-
-extern void on_bt_chrc_read(uint16_t *len, uint8_t **val);
-
-extern esp_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val);
-
-extern void ip_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 static SemaphoreHandle_t mux;
 static wifi_ap_record_t scan_result[5];
@@ -139,7 +126,7 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
     }
 }
 
-static void watchdog(void *args) {
+static void watchdog() {
     esp_err_t err;
 
     while (true) {

@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -6,10 +5,9 @@
 #include "esp_wifi.h"
 
 #include "dy/error.h"
-#include "dy/wifi.h"
+#include "dy/net.h"
 #include "dy/bt.h"
-
-#define LTAG "DY_NET"
+#include "dy/_net.h"
 
 extern void wifi_set_config_and_connect(const char *ssid, const char *password);
 extern void wifi_clear_config_and_disconnect();

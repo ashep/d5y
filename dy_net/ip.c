@@ -3,8 +3,7 @@
 #include "esp_netif_types.h"
 
 #include "dy/error.h"
-
-#define LTAG "DY_NET"
+#include "dy/_net.h"
 
 static void on_got_addr(ip_event_got_ip_t *ev) {
     ESP_LOGI(LTAG, "IP_EVENT_STA_GOT_IP: addr="IPSTR"; mask="IPSTR"; gw="IPSTR,
