@@ -13,6 +13,7 @@
 
 #define LTAG "DY_BT"
 
+static char device_name_prefix[DY_BT_DEVICE_NAME_PREFIX_MAX_LEN + 1];
 static char device_name[16];
 
 typedef struct {
@@ -24,6 +25,11 @@ typedef struct {
     uint16_t conn_id;
     uint16_t attr_handle;
 } dy_bt_chrc_t;
+
+static esp_gatt_srvc_id_t service_id = {
+    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = DY_BT_SVC_UUID}}},
+    .is_primary = true,
+};
 
 static dy_bt_chrc_t chrcs[DY_BT_CHRC_ID_MAX] = {
     [DY_BT_CHRC_ID_1] = {
@@ -55,10 +61,22 @@ static esp_ble_adv_params_t advrt_params = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-static esp_gatt_srvc_id_t service_id = {
-    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = DY_BT_SVC_UUID}}},
-    .is_primary = true,
+static esp_ble_adv_data_t adv_data = {
+    .set_scan_rsp = false,
+    .include_name = true,
+    .include_txpower = true,
+    .min_interval = 0x0006, // slave connection min interval, Time = min_interval * 1.25 msec
+    .max_interval = 0x0010, // slave connection max interval, Time = max_interval * 1.25 msec
+    .appearance = 0x00,
+    .manufacturer_len = 0, // TEST_MANUFACTURER_DATA_LEN,
+    .p_manufacturer_data = NULL, //&test_manufacturer[0],
+    .service_data_len = 0,
+    .p_service_data = NULL,
+    .service_uuid_len = 0,
+    .p_service_uuid = NULL,
+    .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
+
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     esp_err_t err;
@@ -98,7 +116,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
             const uint8_t *addr = esp_bt_dev_get_address();
 
-            if (snprintf(device_name, 16, "%s-%x%x%x", DY_BT_DEVICE_NAME_PREFIX, addr[0], addr[1], addr[2]) < 0) {
+            if (snprintf(device_name, 16, "%s-%x%x%x", device_name_prefix, addr[0], addr[1], addr[2]) < 0) {
                 ESP_LOGE(LTAG, "prepare device name failed: insufficient buffer");
                 return;
             }
@@ -111,6 +129,11 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
             if ((err = esp_ble_gatts_create_service(gatts_if, &service_id, 16)) != ESP_OK) {
                 ESP_LOGE(LTAG, "GATTS: create service failed: %s", esp_err_to_name(err));
+                return;
+            }
+
+            if ((err = esp_ble_gap_config_adv_data(&adv_data)) != ESP_OK) {
+                ESP_LOGE(LTAG, "GAP: advertising data set failed: %s", esp_err_to_name(err));
                 return;
             }
 
@@ -325,8 +348,10 @@ dy_err_t dy_bt_register_chrc_writer(uint8_t id, dy_bt_chrc_chrc_writer_t writer)
     return dy_ok();
 }
 
-dy_err_t dy_bt_init() {
+dy_err_t dy_bt_init(const char *dev_name_prefix) {
     esp_err_t err;
+
+    strncpy(device_name_prefix, dev_name_prefix, DY_BT_DEVICE_NAME_PREFIX_MAX_LEN);
 
     // We don't need classic mode, so release memory it occupies
     if ((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
@@ -334,7 +359,6 @@ dy_err_t dy_bt_init() {
     }
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    bt_cfg.mode = ESP_BT_MODE_BLE;
     if ((err = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "esp_bt_controller_init failed: %s", esp_err_to_name(err));
     }
