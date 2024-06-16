@@ -192,10 +192,5 @@ dy_err_t dy_net_init() {
 
     xTaskCreate(watchdog, "watchdog", WATCHDOG_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
-    esp_sntp_config_t sntp_cfg = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
-    if ((esp_err = esp_netif_sntp_init(&sntp_cfg)) != ESP_OK) {
-        ESP_LOGE(LTAG, "%s: esp_netif_sntp_init: %s", __func__, esp_err_to_name(esp_err));
-    }
-
     return dy_ok();
 }
