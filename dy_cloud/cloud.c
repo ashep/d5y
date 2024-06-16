@@ -32,7 +32,6 @@ dy_err_t dy_cloud_get_time(dy_cloud_resp_time_t *res) {
         return json_err();
     }
 
-    // Current time
     cJSON *tz = cJSON_GetObjectItem(json, "tz");
     if (tz != NULL) {
         strncpy(res->tz, cJSON_GetStringValue(tz), DY_CLOUD_RESP_TIME_TZ_LEN);
@@ -40,7 +39,7 @@ dy_err_t dy_cloud_get_time(dy_cloud_resp_time_t *res) {
 
     cJSON *tz_data = cJSON_GetObjectItem(json, "tz_data");
     if (tz_data != NULL) {
-        strncpy(res->tz_data, cJSON_GetStringValue(tz_data), DY_CLOUD_RESP_TIME_TZ_DATA_LEN);
+        strncpy(res->tzd, cJSON_GetStringValue(tz_data), DY_CLOUD_RESP_TIME_TZ_DATA_LEN);
     }
 
     cJSON *ts = cJSON_GetObjectItem(json, "value");

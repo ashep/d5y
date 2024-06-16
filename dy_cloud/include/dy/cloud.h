@@ -5,9 +5,9 @@
 #define DY_CLOUD_RESP_TIME_TZ_DATA_LEN 32
 
 typedef struct {
-    char tz[DY_CLOUD_RESP_TIME_TZ_LEN];
-    char tz_data[DY_CLOUD_RESP_TIME_TZ_DATA_LEN];
-    int ts;
+    char tz[DY_CLOUD_RESP_TIME_TZ_LEN];       // timezone
+    char tzd[DY_CLOUD_RESP_TIME_TZ_DATA_LEN]; // timezone data in POSIX format
+    unsigned long int ts;                     // timestamp
 } dy_cloud_resp_time_t;
 
 typedef struct {
