@@ -23,6 +23,10 @@ enum dy_wifi_op {
     DY_NET_OP_DISCONNECT,
 };
 
+void dy_net_set_config_and_connect(const char *ssid, const char *password);
+
+void dy_net_clear_config_and_disconnect();
+
 dy_err_t dy_net_init();
 
 #endif  // DY_NET_H

@@ -13,7 +13,7 @@
 
 #define LTAG "DY_BT"
 
-static char device_name_prefix[DY_BT_DEVICE_NAME_PREFIX_MAX_LEN + 1];
+static char device_name_prefix[DY_BT_DEVICE_NAME_PREFIX_MAX_LEN + 1] = "D5Y";
 static char device_name[16];
 
 typedef struct {
@@ -27,23 +27,23 @@ typedef struct {
 } dy_bt_chrc_t;
 
 static esp_gatt_srvc_id_t service_id = {
-    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = DY_BT_SVC_UUID}}},
+    .id = {.uuid = {.len = ESP_UUID_LEN_16, .uuid = {.uuid16 = DY_BT_DEFAULT_SVC_UUID}}},
     .is_primary = true,
 };
 
-static dy_bt_chrc_t chrcs[DY_BT_CHRC_ID_MAX] = {
-    [DY_BT_CHRC_ID_1] = {
+static dy_bt_chrc_t chrcs[DY_BT_CHRC_MAX] = {
+    [DY_BT_CHRC_1] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_CHRC_1_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_DEFAULT_CHRC_1_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
         .conn_id = 0,
         .attr_handle = 0,
     },
-    [DY_BT_CHRC_ID_2] = {
+    [DY_BT_CHRC_2] = {
         .mux = NULL,
-        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_CHRC_2_UUID}},
+        .uuid = {ESP_UUID_LEN_16, {.uuid16 = DY_BT_DEFAULT_CHRC_2_UUID}},
         .read = NULL,
         .write = NULL,
         .gatts_if = 0,
@@ -77,6 +77,7 @@ static esp_ble_adv_data_t adv_data = {
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
 
+static bool initialized = false;
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     esp_err_t err;
@@ -149,7 +150,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                      param->read.handle, param->read.trans_id, param->read.need_rsp, param->read.is_long,
                      param->read.offset);
 
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 if (chrcs[i].attr_handle != param->read.handle) {
                     continue;
                 }
@@ -179,7 +180,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
                      param->write.handle, param->write.need_rsp, param->write.trans_id, param->write.len);
 
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 if (chrcs[i].attr_handle != param->write.handle) {
                     continue;
                 }
@@ -208,7 +209,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d",
                      param->create.status, param->create.service_handle);
 
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 esp_gatt_perm_t perm = 0;
                 esp_gatt_char_prop_t prop = 0;
 
@@ -248,7 +249,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             }
 
             bool known = false;
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 if (chrcs[i].uuid.uuid.uuid16 == param->add_char.char_uuid.uuid.uuid16) {
                     chrcs[i].attr_handle = param->add_char.attr_handle;
                     known = true;
@@ -276,7 +277,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client connected: id=%d, role=%d",
                      param->connect.conn_id, param->connect.link_role);
 
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 chrcs[i].gatts_if = gatts_if;
                 chrcs[i].conn_id = param->connect.conn_id;
             }
@@ -287,7 +288,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             ESP_LOGI(LTAG, "GATTS: client disconnect: id=%d, reason=%x",
                      param->disconnect.conn_id, param->disconnect.reason);
 
-            for (int i = 0; i < DY_BT_CHRC_ID_MAX; i++) {
+            for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
                 chrcs[i].gatts_if = 0;
                 chrcs[i].conn_id = 0;
             }
@@ -310,48 +311,64 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     }
 }
 
-esp_err_t dy_bt_notify(enum dy_bt_chrc_id chrc_id, uint16_t len, uint8_t *val) {
-    if (chrc_id >= DY_BT_CHRC_ID_MAX) {
-        return ESP_ERR_INVALID_ARG;
+dy_err_t dy_bt_register_chrc_reader(dy_bt_chrc_num num, dy_bt_chrc_chrc_reader_t reader) {
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
-    dy_bt_chrc_t chrc = chrcs[chrc_id];
-    if (chrc.attr_handle == 0) {
-        return ESP_ERR_INVALID_ARG;
+    if (num >= DY_BT_CHRC_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_MAX - 1);
     }
 
-    esp_err_t err = esp_ble_gatts_send_indicate(chrc.gatts_if, chrc.conn_id, chrc.attr_handle, len, val, false);
-    if (err != ESP_OK) {
-        return err;
+    if (chrcs[num].read != NULL) {
+        return dy_err(DY_ERR_INVALID_STATE, "characteristic reader is already registered; id=%x", num);
     }
 
-    return ESP_OK;
-}
-
-dy_err_t dy_bt_register_chrc_reader(uint8_t id, dy_bt_chrc_chrc_reader_t reader) {
-    if (id >= DY_BT_CHRC_ID_MAX) {
-        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_ID_MAX - 1);
-    }
-
-    chrcs[id].read = reader;
+    chrcs[num].read = reader;
 
     return dy_ok();
 }
 
-dy_err_t dy_bt_register_chrc_writer(uint8_t id, dy_bt_chrc_chrc_writer_t writer) {
-    if (id >= DY_BT_CHRC_ID_MAX) {
-        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_ID_MAX - 1);
+dy_err_t dy_bt_register_chrc_writer(dy_bt_chrc_num num, dy_bt_chrc_chrc_writer_t writer) {
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
-    chrcs[id].write = writer;
+    if (num >= DY_BT_CHRC_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_MAX - 1);
+    }
+
+    if (chrcs[num].write != NULL) {
+        return dy_err(DY_ERR_INVALID_STATE, "characteristic writer is already registered; id=%x", num);
+    }
+
+    chrcs[num].write = writer;
 
     return dy_ok();
 }
 
-dy_err_t dy_bt_init(const char *dev_name_prefix) {
+dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid) {
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+    }
+
+    service_id.id.uuid.uuid.uuid16 = svc_uuid;
+
+    return dy_ok();
+}
+
+dy_err_t dy_bt_set_device_name_prefix(const char *s) {
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+    }
+
+    strncpy(device_name_prefix, s, DY_BT_DEVICE_NAME_PREFIX_MAX_LEN);
+
+    return dy_ok();
+}
+
+dy_err_t dy_bt_init() {
     esp_err_t err;
-
-    strncpy(device_name_prefix, dev_name_prefix, DY_BT_DEVICE_NAME_PREFIX_MAX_LEN);
 
     // We don't need classic mode, so release memory it occupies
     if ((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
@@ -387,6 +404,8 @@ dy_err_t dy_bt_init(const char *dev_name_prefix) {
     if ((err = esp_ble_gatts_app_register(0)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "esp_ble_gatts_app_register failed: %s", esp_err_to_name(err));
     }
+
+    initialized = true;
 
     return dy_ok();
 }
