@@ -19,7 +19,7 @@ typedef enum {
 
 typedef void (*dy_bt_chrc_chrc_reader_t)(uint16_t *len, uint8_t **val);
 
-typedef esp_err_t (*dy_bt_chrc_chrc_writer_t)(uint16_t len, uint16_t offset, const uint8_t *val);
+typedef dy_err_t (*dy_bt_chrc_chrc_writer_t)(uint16_t len, uint16_t offset, const uint8_t *val);
 
 dy_err_t dy_bt_register_chrc_reader(dy_bt_chrc_num num, dy_bt_chrc_chrc_reader_t reader);
 

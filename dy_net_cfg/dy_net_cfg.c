@@ -7,7 +7,7 @@
 #include "dy/error.h"
 #include "dy/bt.h"
 #include "dy/net.h"
-#include "dy/net_cfg_bt.h"
+#include "dy/net_cfg.h"
 
 // byte 0:       bits 0-3: state; bits 4-7: error reason
 // byte 1-32:    connected SSID
@@ -16,7 +16,7 @@
 // byte 97-128:  scanned SSID 3
 // byte 129-160: scanned SSID 4
 // byte 161-192: scanned SSID 5
-static uint8_t buf1[193] = {};
+static uint8_t configuration[193] = {};
 
 static SemaphoreHandle_t mux;
 
@@ -29,7 +29,7 @@ static void store_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
     }
 
-    buf1[0] = (uint8_t) st | (uint8_t) er;
+    configuration[0] = (uint8_t) st | (uint8_t) er;
 
     xSemaphoreGive(mux);
 }
@@ -39,7 +39,7 @@ static void store_connected_ssid(const uint8_t *ssid) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
     }
 
-    strncpy((char *) &buf1[1], (const char *) ssid, 32);
+    strncpy((char *) &configuration[1], (const char *) ssid, 32);
 
     xSemaphoreGive(mux);
 }
@@ -51,10 +51,10 @@ static void store_ssid_list(wifi_ap_record_t *records, int len) {
     }
 
     int buf_offset = 33;
-    memset(&buf1[buf_offset], 0, sizeof(buf1) - buf_offset);
+    memset(&configuration[buf_offset], 0, sizeof(configuration) - buf_offset);
     for (int i = 0; i < len; i++) {
         ESP_LOGI(LTAG, "%s: record: ssid=%s, rssi=%d", __func__, records[i].ssid, records[i].rssi);
-        strncpy((char *) &buf1[buf_offset], (const char *) records[i].ssid, 32);
+        strncpy((char *) &configuration[buf_offset], (const char *) records[i].ssid, 32);
         buf_offset += 32;
     }
 
@@ -112,53 +112,54 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
     }
 }
 
-void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
+static void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
         return;
     }
 
-    *len = sizeof(buf1);
-    *val = buf1;
+    *len = sizeof(configuration);
+    *val = configuration;
 
     xSemaphoreGive(mux);
 }
 
-esp_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
+// TODO: chunked transfers are not supported
+static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
     ESP_LOGI(LTAG, "%s: len=%d, offset=%d", __func__, len, offset);
 
     // byte 0: op
     // byte 1-32: SSID (optional)
     // byte 33-97: password (optional)
     if (len != 1 && len != 97) {
-        ESP_LOGE(LTAG, "%s: invalid request len", __func__);
-        return ESP_ERR_INVALID_ARG;
+        return dy_err(DY_ERR_INVALID_ARG, "invalid request len");
     }
 
     esp_err_t err;
     switch (val[0]) {
         case DY_NET_OP_DISCONNECT:
+            ESP_LOGI(LTAG, "wifi disconnect request");
             dy_net_clear_config_and_disconnect();
             break;
 
         case DY_NET_OP_SCAN:
+            ESP_LOGI(LTAG, "wifi scan request");
             if ((err = esp_wifi_scan_start(NULL, 0)) != ESP_OK) {
-                ESP_LOGE(LTAG, "%s: esp_wifi_scan_start: %s", __func__, esp_err_to_name(err));
+                return dy_err(DY_ERR_FAILED, "esp_wifi_scan_start: %s", esp_err_to_name(err));
             }
             break;
 
         case DY_NET_OP_CONNECT:
+            ESP_LOGI(LTAG, "wifi connect request");
             store_state(DY_NET_ST_CONNECTING, DY_NET_ERR_NONE);
-            ESP_LOGW(LTAG, "wifi connect request");
             dy_net_set_config_and_connect((const char *) &val[1], (const char *) &val[33]);
             break;
 
         default:
-            ESP_LOGE(LTAG, "%s: unexpected op: %d", __func__, val[0]);
-            break;
+            return dy_err(DY_ERR_FAILED, "unexpected op: %d", val[0]);
     }
 
-    return ESP_OK;
+    return dy_ok();
 }
 
 dy_err_t dy_net_cfg_bt_init(dy_bt_chrc_num btc_n) {

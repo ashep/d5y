@@ -191,9 +191,9 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 }
 
                 // Ask the writer to write the value
-                esp_err_t w_err = chrcs[i].write(param->write.len, param->write.offset, param->write.value);
-                if (w_err != ESP_OK) {
-                    ESP_LOGW(LTAG, "characteristic write failed");
+                dy_err_t w_err = chrcs[i].write(param->write.len, param->write.offset, param->write.value);
+                if (dy_nok(w_err)) {
+                    ESP_LOGW(LTAG, "characteristic write failed: %s", dy_err_str(w_err));
                     return;
                 }
             }
@@ -317,11 +317,11 @@ dy_err_t dy_bt_register_chrc_reader(dy_bt_chrc_num num, dy_bt_chrc_chrc_reader_t
     }
 
     if (num >= DY_BT_CHRC_MAX) {
-        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_MAX - 1);
+        return dy_err(DY_ERR_INVALID_ARG, "characteristic num is too big; max=%d", DY_BT_CHRC_MAX - 1);
     }
 
     if (chrcs[num].read != NULL) {
-        return dy_err(DY_ERR_INVALID_STATE, "characteristic reader is already registered; id=%x", num);
+        return dy_err(DY_ERR_INVALID_STATE, "characteristic reader is already registered; num=%x", num);
     }
 
     chrcs[num].read = reader;
@@ -335,11 +335,11 @@ dy_err_t dy_bt_register_chrc_writer(dy_bt_chrc_num num, dy_bt_chrc_chrc_writer_t
     }
 
     if (num >= DY_BT_CHRC_MAX) {
-        return dy_err(DY_ERR_INVALID_ARG, "characteristic id is too big; max=%d", DY_BT_CHRC_MAX - 1);
+        return dy_err(DY_ERR_INVALID_ARG, "characteristic num is too big; max=%d", DY_BT_CHRC_MAX - 1);
     }
 
     if (chrcs[num].write != NULL) {
-        return dy_err(DY_ERR_INVALID_STATE, "characteristic writer is already registered; id=%x", num);
+        return dy_err(DY_ERR_INVALID_STATE, "characteristic writer is already registered; num=%x", num);
     }
 
     chrcs[num].write = writer;
