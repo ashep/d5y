@@ -5,16 +5,16 @@
 #include "dy/error.h"
 
 // FIXME: concurrent usage
-char cfg_buf[DY_ERROR_DESC_MAX_LEN] = {0};
+char buf1[DY_ERROR_DESC_MAX_LEN] = {0};
 char buf2[DY_ERROR_DESC_MAX_LEN] = {0};
 
 dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vsnprintf(cfg_buf, DY_ERROR_DESC_MAX_LEN, fmt, args);
+    vsnprintf(buf1, DY_ERROR_DESC_MAX_LEN, fmt, args);
     va_end(args);
 
-    return (dy_err_t) {code, cfg_buf};
+    return (dy_err_t) {code, buf1};
 }
 
 char *dy_err_str(dy_err_t err) {
