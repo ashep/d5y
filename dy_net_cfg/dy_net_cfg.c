@@ -22,7 +22,7 @@ static SemaphoreHandle_t mux;
 
 static wifi_ap_record_t scan_result[5];
 
-#define LTAG "DY_NET_CFG_BT"
+#define LTAG "DY_NET_CFG"
 
 static void store_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
@@ -162,7 +162,7 @@ static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *v
     return dy_ok();
 }
 
-dy_err_t dy_net_cfg_bt_init(dy_bt_chrc_num btc_n) {
+dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
     dy_err_t err;
 
     mux = xSemaphoreCreateMutex();
