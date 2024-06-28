@@ -97,13 +97,13 @@ static void set_localtime_from_cloud() {
     dy_err_t err;
     dy_cloud_resp_time_t cloud_time;
 
-    if (dy_nok(err = dy_cloud_get_time(&cloud_time))) {
-        ESP_LOGE(LTAG, "set local time from cloud failed: dy_cloud_get_time: %s", dy_err_str(err));
+    if (dy_nok(err = dy_cloud_time(&cloud_time))) {
+        ESP_LOGE(LTAG, "set local time from cloud failed: dy_cloud_time: %s", dy_err_str(err));
         return;
     }
 
     if (strlen(cloud_time.tzd) == 0) {
-        ESP_LOGE(LTAG, "set time from cloud failed: dy_cloud_get_time returned empty tz_data field");
+        ESP_LOGE(LTAG, "set time from cloud failed: dy_cloud_time returned empty tz_data field");
         return;
     }
 
