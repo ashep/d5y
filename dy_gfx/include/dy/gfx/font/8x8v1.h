@@ -8,6 +8,7 @@
 #ifndef DY_GFX_FONT_8X8V1_H
 #define DY_GFX_FONT_8X8V1_H
 
+#include <stdio.h>
 #include "dy/gfx/text.h"
 
 static const uint8_t data[] =

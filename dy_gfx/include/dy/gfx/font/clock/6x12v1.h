@@ -5,9 +5,10 @@
 #ifndef DY_GFX_FONT_CLOCK_8X14V1_H
 #define DY_GFX_FONT_CLOCK_8X14V1_H
 
+#include <stdio.h>
 #include "dy/gfx/text.h"
 
-static const uint8_t data[] = {
+static const uint8_t dy_gfx_font_6x12v1_data[] = {
     2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //   - 32 (whitespace)
     6, 0xCC, 0xCC, 0xC0, 0xC0, 0xF0, 0xC0, 0xC0, 0xC0, 0xC0, 0xCC, 0xFC, 0x78,  // ! - 33 (thermometer sign)
     0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // " - 34 (not implemented)
@@ -43,7 +44,7 @@ dy_gfx_font_t dy_gfx_font_6x12v1 = {
     .length = 27,// last_char - ascii_offset + 1
     .width = 8,
     .height = 12,
-    .content.c8 = data,
+    .content.c8 = dy_gfx_font_6x12v1_data,
 };
 
 #endif // DY_GFX_FONT_CLOCK_8X14V1_H
