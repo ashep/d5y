@@ -8,7 +8,7 @@ static dy_display_driver_t drv[DY_DISPLAY_ID_MAX];
 /**
  * For internal use only.
  */
-dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer) {
+dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer, display_brightness_setter_t brs) {
     if (id >= DY_DISPLAY_ID_MAX) {
         return dy_err(DY_ERR_INVALID_ARG, "display id must be lower than %d", DY_DISPLAY_ID_MAX);
     }
@@ -23,6 +23,7 @@ dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer) {
 
     drv[id].cfg = cfg;
     drv[id].write = writer;
+    drv[id].set_brightness = brs;
 
     return dy_ok();
 }
@@ -41,4 +42,13 @@ dy_err_t dy_display_write(uint8_t id, dy_gfx_buf_t *buf) {
     }
 
     return drv[id].write(drv[id].cfg, buf);
+}
+
+
+dy_err_t dy_display_set_brightness(uint8_t id, uint8_t value) {
+    if (id >= DY_DISPLAY_ID_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "display id must not be greater than %d", DY_DISPLAY_ID_MAX);
+    }
+
+    return drv[id].set_brightness(drv[id].cfg, value);
 }

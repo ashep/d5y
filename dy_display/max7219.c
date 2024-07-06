@@ -4,7 +4,7 @@
 #include "dy/display.h"
 #include "dy/max7219.h"
 
-dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer);
+dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer, display_brightness_setter_t brs);
 
 static dy_err_t draw(void *cfg, dy_gfx_buf_t *buf) {
     dy_err_code_t err;
@@ -40,10 +40,23 @@ static dy_err_t draw(void *cfg, dy_gfx_buf_t *buf) {
     return dy_ok();
 }
 
+static dy_err_t set_brightness(void *cfg, uint8_t value) {
+    if (value > DY_MAX7219_INTENSITY_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "value must not be greater than %d", DY_MAX7219_INTENSITY_MAX);
+    }
+
+    dy_err_code_t err_code = dy_max7219_send_all((dy_max7219_config_t *) cfg, DY_MAX7219_ADDR_INTENSITY, value);
+    if (err_code != DY_OK) {
+        return dy_err(err_code, "dy_max7219_send_all failed");
+    }
+
+    return dy_ok();
+}
+
 dy_err_t dy_display_init_driver_max7219(uint8_t id, dy_max7219_config_t *cfg) {
     if (id >= DY_DISPLAY_ID_MAX) {
         return dy_err(DY_ERR_INVALID_ARG, "display id must be lower than %d", DY_DISPLAY_ID_MAX);
     }
 
-    return set_driver(id, cfg, draw);
+    return set_driver(id, cfg, draw, set_brightness);
 }
