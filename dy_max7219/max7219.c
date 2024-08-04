@@ -13,7 +13,7 @@ dy_err_t dy_max7219_init(
     bool rx,
     bool ry
 ) {
-    int err;
+    int err_code;
 
     cfg->pin_cs = cs;
     cfg->pin_clk = clk;
@@ -37,16 +37,16 @@ dy_err_t dy_max7219_init(
         .intr_type = GPIO_INTR_DISABLE,
     };
 
-    if ((err = gpio_config(&gpio_cfg)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "gpio_config failed: esp_err=%d", err);
+    if ((err_code = gpio_config(&gpio_cfg)) != ESP_OK) {
+        return dy_err(DY_ERR_FAILED, "gpio_config failed: esp_err=%d", err_code);
     }
 
-    if ((err = dy_max7219_refresh(cfg)) != DY_OK) {
-        return dy_err(err, "dy_max7219_refresh failed");
+    if ((err_code = dy_max7219_refresh(cfg)) != DY_OK) {
+        return dy_err(err_code, "dy_max7219_refresh failed");
     }
 
-    if ((err = dy_max7219_clear(cfg)) != DY_OK) {
-        return dy_err(err, "dy_max7219_clear failed");
+    if ((err_code = dy_max7219_clear(cfg)) != DY_OK) {
+        return dy_err(err_code, "dy_max7219_clear failed");
     }
 
     return dy_ok();
