@@ -1,5 +1,5 @@
-#ifndef _CRONUS_CLOUD_H
-#define _CRONUS_CLOUD_H
+#ifndef _DY_CLOUD
+#define _DY_CLOUD
 
 #define LTAG "DY_CLOUD"
 
@@ -12,6 +12,7 @@
 #define API_URL_TIME "http://api.d5y.xyz/v2/time"
 #define API_URL_WEATHER "http://api.d5y.xyz/v2/weather"
 
+dy_err_t json_err();
 dy_err_t http_request(const char *url, char *rsp);
 
-#endif
+#endif // _DY_CLOUD
