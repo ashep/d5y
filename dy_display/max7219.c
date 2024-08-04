@@ -4,16 +4,25 @@
 #include "dy/display.h"
 #include "dy/max7219.h"
 
-dy_err_t set_driver(uint8_t id, void *cfg, display_writer_t writer, display_brightness_setter_t brs);
+dy_err_t set_driver(
+    uint8_t id,
+    void *cfg,
+    display_drv_write_t write,
+    display_drv_set_brightness_t set_bri,
+    display_drv_refresh_t refresh
+);
 
 static dy_err_t draw(void *cfg, dy_gfx_buf_t *buf) {
     dy_err_code_t err;
 
     dy_max7219_config_t *cf = (dy_max7219_config_t *) cfg;
-    dy_gfx_buf_array_t *chunks;
+
+    if((err = dy_max7219_refresh(cf)) != DY_OK) {
+        return dy_err(err, "dy_max7219_refresh failed");
+    }
 
     // Split incoming buffer into 8x8 chunks; each chunk contains data for a single device
-    chunks = dy_gfx_split(buf, 8, 8);
+    dy_gfx_buf_array_t *chunks = dy_gfx_split(buf, 8, 8);
     if (chunks == NULL) {
         return dy_err(DY_ERR_UNKNOWN, "dy_gfx_split failed");
     }
@@ -45,9 +54,21 @@ static dy_err_t set_brightness(void *cfg, uint8_t value) {
         return dy_err(DY_ERR_INVALID_ARG, "value must not be greater than %d", DY_MAX7219_INTENSITY_MAX);
     }
 
-    dy_err_code_t err_code = dy_max7219_send_all((dy_max7219_config_t *) cfg, DY_MAX7219_ADDR_INTENSITY, value);
+    dy_max7219_config_t *cfg_t = (dy_max7219_config_t *) cfg;
+    cfg_t->intensity = value;
+
+    dy_err_code_t err_code = dy_max7219_send_all(cfg_t, DY_MAX7219_ADDR_INTENSITY, value);
     if (err_code != DY_OK) {
         return dy_err(err_code, "dy_max7219_send_all failed");
+    }
+
+    return dy_ok();
+}
+
+static dy_err_t refresh(void *cfg) {
+    dy_err_code_t err_code = dy_max7219_refresh((dy_max7219_config_t *) cfg);
+    if (err_code != DY_OK) {
+        return dy_err(err_code, "dy_max7219_refresh failed");
     }
 
     return dy_ok();
@@ -58,5 +79,5 @@ dy_err_t dy_display_init_driver_max7219(uint8_t id, dy_max7219_config_t *cfg) {
         return dy_err(DY_ERR_INVALID_ARG, "display id must be lower than %d", DY_DISPLAY_ID_MAX);
     }
 
-    return set_driver(id, cfg, draw, set_brightness);
+    return set_driver(id, cfg, draw, set_brightness, refresh);
 }

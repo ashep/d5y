@@ -12,14 +12,17 @@
 
 #define DY_DISPLAY_ID_MAX 4
 
-typedef dy_err_t (*display_writer_t)(void *cfg, dy_gfx_buf_t *buf);
+typedef dy_err_t (*display_drv_write_t)(void *cfg, dy_gfx_buf_t *buf);
 
-typedef dy_err_t (*display_brightness_setter_t)(void *cfg, uint8_t value);
+typedef dy_err_t (*display_drv_set_brightness_t)(void *cfg, uint8_t value);
+
+typedef dy_err_t (*display_drv_refresh_t)(void *cfg);
 
 typedef struct {
     void *cfg;
-    display_writer_t write;
-    display_brightness_setter_t set_brightness;
+    display_drv_write_t write;
+    display_drv_set_brightness_t set_brightness;
+    display_drv_refresh_t refresh;
 } dy_display_driver_t;
 
 /**
@@ -36,5 +39,10 @@ dy_err_t dy_display_write(uint8_t id, dy_gfx_buf_t *buf);
  * Sets display brightness.
  */
 dy_err_t dy_display_set_brightness(uint8_t id, uint8_t value);
+
+/**
+ * Refreshes display.
+ */
+dy_err_t dy_display_refresh(uint8_t id);
 
 #endif // DY_DISPLAY
