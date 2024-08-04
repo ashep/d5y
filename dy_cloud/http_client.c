@@ -34,6 +34,7 @@ static dy_err_t init_client(const char *url) {
         .user_agent = user_agent,
         .timeout_ms = HTTP_REQ_TIMEOUT_MS,
         .event_handler = http_cli_ev_handler,
+        .keep_alive_enable = false,
     };
 
     client = esp_http_client_init(&cfg);
