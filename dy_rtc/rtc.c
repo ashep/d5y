@@ -34,8 +34,9 @@ static void set_localtime_from_ds3231() {
         .tm_sec = dt.sec,
         .tm_min = dt.min,
         .tm_hour = dt.hour,
+        .tm_wday = dt.dow - 1, // DS3231 stores week day starting from 1
         .tm_mday = dt.day,
-        .tm_mon = dt.mon,
+        .tm_mon = dt.mon - 1,  // DS3231 stores month starting from 1
         .tm_year = dt.year,
     };
 
