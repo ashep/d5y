@@ -1,5 +1,5 @@
 idf_component_register(
-        SRCS http.c json.c time.c weather.c
+        SRCS http_client.c json.c time.c weather.c update.c
         INCLUDE_DIRS include
-        REQUIRES esp_netif esp_http_client json dy_error
+        REQUIRES esp_netif esp_http_client json app_update esp_https_ota dy_error dy_appinfo dy_net_cfg
 )

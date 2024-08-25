@@ -84,7 +84,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
-            ESP_LOGI(LTAG, "GAP: advertising data set: status=%d", param->adv_data_cmpl.status);
+            ESP_LOGD(LTAG, "GAP: advertising data set: status=%d", param->adv_data_cmpl.status);
 
             if ((err = esp_ble_gap_start_advertising(&advrt_params)) != ESP_OK) {
                 ESP_LOGE(LTAG, "GAP: advertising start failed: %s", esp_err_to_name(err));
@@ -94,7 +94,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             break;
 
         case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
-            ESP_LOGI(LTAG, "GAP: scan response data set: status=%d", param->scan_rsp_data_cmpl.status);
+            ESP_LOGD(LTAG, "GAP: scan response data set: status=%d", param->scan_rsp_data_cmpl.status);
             break;
 
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
@@ -102,7 +102,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             break;
 
         default:
-            ESP_LOGI(LTAG, "GAP: unknown event: %d", event);
+            ESP_LOGW(LTAG, "GAP: unknown event: %d", event);
             break;
     }
 }
@@ -112,7 +112,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
     switch (event) {
         case ESP_GATTS_REG_EVT:
-            ESP_LOGI(LTAG, "GATTS: application registered: gatts_if=%d, status=%d, id=%d",
+            ESP_LOGD(LTAG, "GATTS: application registered: gatts_if=%d, status=%d, id=%d",
                      gatts_if, param->reg.status, param->reg.app_id);
 
             const uint8_t *addr = esp_bt_dev_get_address();
@@ -146,7 +146,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_READ_EVT:
-            ESP_LOGI(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
+            ESP_LOGD(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
                      param->read.handle, param->read.trans_id, param->read.need_rsp, param->read.is_long,
                      param->read.offset);
 
@@ -177,7 +177,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_WRITE_EVT:
-            ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
+            ESP_LOGD(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
                      param->write.handle, param->write.need_rsp, param->write.trans_id, param->write.len);
 
             for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
@@ -201,12 +201,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_MTU_EVT:
-            ESP_LOGI(LTAG, "GATTS: mtu set: conn_id=%d, mtu=%d",
+            ESP_LOGD(LTAG, "GATTS: mtu set: conn_id=%d, mtu=%d",
                      param->mtu.conn_id, param->mtu.mtu);
             break;
 
         case ESP_GATTS_CREATE_EVT:
-            ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d",
+            ESP_LOGD(LTAG, "GATTS: service created, status=%d, handle=%d",
                      param->create.status, param->create.service_handle);
 
             for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
@@ -285,7 +285,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_DISCONNECT_EVT:
-            ESP_LOGI(LTAG, "GATTS: client disconnect: id=%d, reason=%x",
+            ESP_LOGI(LTAG, "GATTS: client disconnected: id=%d, reason=%x",
                      param->disconnect.conn_id, param->disconnect.reason);
 
             for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
@@ -301,12 +301,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_RESPONSE_EVT:
-            ESP_LOGI(LTAG, "GATTS: response sent: status=%d, handle=%d",
+            ESP_LOGD(LTAG, "GATTS: response sent: status=%d, handle=%d",
                      param->rsp.status, param->rsp.handle);
             break;
 
         default:
-            ESP_LOGI(LTAG, "GATTS: unknown event: %d (if %d)", event, gatts_if);
+            ESP_LOGD(LTAG, "GATTS: unknown event: %d (if %d)", event, gatts_if);
             break;
     }
 }

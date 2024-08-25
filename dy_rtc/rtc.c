@@ -6,27 +6,24 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 
-#include "freertos/task.h"
-
 #include "dy/error.h"
 #include "dy/cloud.h"
 #include "dy/ds3231.h"
 
 #define LTAG "DY_RTC"
-#define CLOUD_SYNC_PERIOD 1800 // 30 min
 
 static dy_ds3231_handle_t *ds3231 = NULL;
 
-static void set_localtime_from_ds3231() {
-    if (!ds3231) {
-        ESP_LOGE(LTAG, "set local time from ext rtc failed: no device handle");
+static void localtime_from_ds3231() {
+    if (ds3231 == NULL) {
+        ESP_LOGE(LTAG, "set local time from ds3231: no device handle set up");
         return;
     }
 
     dy_ds3231_data_t dt;
     dy_err_t ds3231_err = dy_ds3231_read(ds3231, &dt);
     if (dy_nok(ds3231_err)) {
-        ESP_LOGE(LTAG, "set local time from ext rtc failed: dy_ds3231_read: %s", dy_err_str(ds3231_err));
+        ESP_LOGE(LTAG, "set local time from ds3231: dy_ds3231_read: %s", dy_err_str(ds3231_err));
         return;
     }
 
@@ -52,12 +49,12 @@ static void set_localtime_from_ds3231() {
     time_t tt = time(NULL);
     struct tm *ti = localtime(&tt);
     strftime(b, 20, "%Y-%m-%d %H:%M:%S", ti);
-    ESP_LOGI(LTAG, "local time set from ext rtc: %s", b);
+    ESP_LOGI(LTAG, "local time set from ds3231: %s", b);
 }
 
-static void write_localtime_to_ds3231() {
-    if (!ds3231) {
-        ESP_LOGE(LTAG, "store local time to ext rtc failed: no device handle");
+static void localtime_to_ds3231() {
+    if (ds3231 == NULL) {
+        ESP_LOGE(LTAG, "set local time from ds3231: no device handle set up");
         return;
     }
 
@@ -91,61 +88,47 @@ static void write_localtime_to_ds3231() {
 
     char b[20];
     strftime(b, 20, "%Y-%m-%d %H:%M:%S", ti);
-    ESP_LOGI(LTAG, "local time written to ext rtc: %s", b);
+    ESP_LOGI(LTAG, "local time written to ds3231: %s", b);
 }
 
-static void set_localtime_from_cloud() {
-    dy_err_t err;
-    dy_cloud_resp_time_t cloud_time;
+static void cloud_update_handler(void *arg, esp_event_base_t base, int32_t id, void *data) {
+    dy_cloud_time_t *dt = (dy_cloud_time_t *) data;
 
-    if (dy_nok(err = dy_cloud_time(&cloud_time))) {
-        ESP_LOGE(LTAG, "set local time from cloud failed: dy_cloud_time: %s", dy_err_str(err));
+    if (strlen(dt->tzd) == 0) {
+        ESP_LOGE(LTAG, "got empty tzd from cloud");
         return;
     }
 
-    if (strlen(cloud_time.tzd) == 0) {
-        ESP_LOGE(LTAG, "set time from cloud failed: dy_cloud_time returned empty tz_data field");
-        return;
-    }
-
-    setenv("TZ", cloud_time.tzd, true);
-    ESP_LOGI(LTAG, "got local time from the cloud: %lu; %s; %s", cloud_time.ts, cloud_time.tz, cloud_time.tzd);
+    setenv("TZ", dt->tzd, true);
 
     int c_err;
-    struct timespec ts = {.tv_sec = cloud_time.ts};
+    struct timespec ts = {.tv_sec = dt->ts};
     if ((c_err = clock_settime(CLOCK_REALTIME, &ts)) != 0) {
-        ESP_LOGE(LTAG, "set local time from cloud failed: clock_settime: %d", c_err);
+        ESP_LOGE(LTAG, "clock_settime: %d", c_err);
+        return;
     }
 
     char b[20];
     time_t tt = time(NULL);
     struct tm *ti = localtime(&tt);
     strftime(b, 20, "%Y-%m-%d %H:%M:%S", ti);
-    ESP_LOGI(LTAG, "local time set from the cloud: %s", b);
+    ESP_LOGI(LTAG, "local time set from cloud: %s", b);
 
-    if (ds3231) {
-        write_localtime_to_ds3231();
-    }
-}
-
-static void cloud_sync() {
-    while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000 * CLOUD_SYNC_PERIOD));
-        set_localtime_from_cloud();
+    if (ds3231 != NULL) {
+        localtime_to_ds3231();
     }
 }
 
 dy_err_t dy_rtc_init(dy_ds3231_handle_t *ds3231_hdl) {
-    esp_err_t esp_err = esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &set_localtime_from_cloud, NULL);
-    if (esp_err != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_event_handler_register (IP) failed: %s", esp_err_to_name(esp_err));
-    }
-
-    xTaskCreate(cloud_sync, "dy_rtc_cloud_sync", 4096, NULL, tskIDLE_PRIORITY, NULL);
-
     if (ds3231_hdl) {
         ds3231 = ds3231_hdl;
-        set_localtime_from_ds3231();
+        localtime_from_ds3231();
+    }
+
+    esp_err_t esp_err = esp_event_handler_register(
+        DY_CLOUD_EV_BASE, DY_CLOUD_EV_TIME_UPDATED, cloud_update_handler, NULL);
+    if (esp_err != ESP_OK) {
+        return dy_err(DY_ERR_FAILED, "esp_event_handler_register: %s", esp_err_to_name(esp_err));
     }
 
     return dy_ok();

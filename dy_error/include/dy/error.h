@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include "esp_err.h"
 
-#define DY_ERROR_DESC_MAX_LEN 256
+#define DY_ERROR_DESC_MAX_LEN 100
 
 typedef enum {
     DY_OK,
@@ -17,6 +17,7 @@ typedef enum {
 
     DY_ERR_FAILED,
     DY_ERR_NO_MEM,
+    DY_ERR_NO_CONTENT,
     DY_ERR_NOT_FOUND,
     DY_ERR_TIMEOUT,
 
@@ -36,8 +37,8 @@ typedef enum {
  */
 typedef struct {
     dy_err_code_t code;
-    char *desc;
-} dy_err_t;
+    char desc[DY_ERROR_DESC_MAX_LEN];
+} dy_err_struct_t, *dy_err_t;
 
 /**
  * Value with error result.
@@ -51,7 +52,6 @@ typedef struct {
  * Creates an error.
  */
 dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...);
-
 
 /**
  * Formats error as a string.

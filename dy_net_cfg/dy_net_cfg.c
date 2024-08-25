@@ -27,6 +27,7 @@ static wifi_ap_record_t scan_result[5];
 static void store_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
+        return;
     }
 
     configuration[0] = (uint8_t) st | (uint8_t) er;
@@ -37,6 +38,7 @@ static void store_state(enum dy_wifi_state st, enum dy_wifi_err_reason er) {
 static void store_connected_ssid(const uint8_t *ssid) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
+        return;
     }
 
     strncpy((char *) &configuration[1], (const char *) ssid, 32);
@@ -160,6 +162,18 @@ static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *v
     }
 
     return dy_ok();
+}
+
+bool dy_net_cfg_net_ready() {
+    if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
+        ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
+        return false;
+    }
+
+    bool res = (configuration[0] & DY_NET_ST_MAX) == DY_NET_ST_CONNECTED;
+    xSemaphoreGive(mux);
+
+    return res;
 }
 
 dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
