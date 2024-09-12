@@ -138,12 +138,12 @@ dy_err_t dy_ds3231_write(dy_ds3231_handle_t *hdl, const dy_ds3231_data_t *data) 
     buf[10] = data->alarm_1_12 << 6;
     if (data->alarm_1_12) {
         buf[10] |= (data->alarm_1_pm << 5) |
-                                         ((data->alarm_1_hour / 10) << 4) |
-                                         (data->alarm_1_hour % 10);
+                   ((data->alarm_1_hour / 10) << 4) |
+                   (data->alarm_1_hour % 10);
     } else {
         buf[10] |= ((data->alarm_1_hour / 20) << 5) |
-                                         ((data->alarm_1_hour / 10) << 4) |
-                                         (data->alarm_1_hour % 10);
+                   ((data->alarm_1_hour / 10) << 4) |
+                   (data->alarm_1_hour % 10);
     }
 
     // TODO: alarm 1: day, month
@@ -164,13 +164,13 @@ dy_err_t dy_ds3231_init(int scl_pin, int sda_pin, dy_ds3231_handle_t *hdl) {
     esp_err_t esp_err;
 
     i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = 0,
-        .scl_io_num =38,
-        .sda_io_num =39,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .intr_priority = 0,
-        .flags = {.enable_internal_pullup = 0},
+            .i2c_port = 0,
+            .scl_io_num = scl_pin,
+            .sda_io_num = sda_pin,
+            .clk_source = I2C_CLK_SRC_DEFAULT,
+            .glitch_ignore_cnt = 7,
+            .intr_priority = 0,
+            .flags = {.enable_internal_pullup = 0},
     };
 
     esp_err = i2c_new_master_bus(&bus_cfg, &hdl->bus);
@@ -179,9 +179,9 @@ dy_err_t dy_ds3231_init(int scl_pin, int sda_pin, dy_ds3231_handle_t *hdl) {
     }
 
     i2c_device_config_t dev_cfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = DY_DS3231_I2C_ADDR,
-        .scl_speed_hz = 100000,
+            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+            .device_address = DY_DS3231_I2C_ADDR,
+            .scl_speed_hz = 100000,
     };
 
     esp_err = i2c_master_bus_add_device(hdl->bus, &dev_cfg, &hdl->device);
