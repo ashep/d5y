@@ -16,7 +16,7 @@ static dy_err_t get_cloud_time() {
     dy_cloud_time_t res;
 
     dy_err_t err = http_get_json(API_URL_TIME, &json);
-    if (dy_nok(err)) {
+    if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
 
@@ -54,7 +54,7 @@ _Noreturn static void task() {
     while (true) {
         if (!dy_net_cfg_net_ready()) {
             delay_sec = 10;
-        } else if (dy_nok(err = get_cloud_time())) {
+        } else if (dy_is_err(err = get_cloud_time())) {
             ESP_LOGE(LTAG, "set_localtime_from_cloud: %s", dy_err_str(err));
             delay_sec = 10;
         } else {

@@ -5,7 +5,6 @@
 
 #include "dy/error.h"
 #include "dy/gfx/gfx.h"
-#include "dy/gfx/gfx.h"
 
 void print_bin(uint32_t v, uint8_t width) {
     for (uint8_t i = width; i > 0; i--) {
@@ -110,6 +109,20 @@ void dy_gfx_clear_buf(dy_gfx_buf_t *buf) {
     }
 }
 
+dy_err_t dy_gfx_fill_buf(dy_gfx_buf_t *buf, uint32_t color) {
+    if (buf == NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "null buffer");
+    }
+
+    for (uint16_t x = 0; x < buf->width; x++) {
+        for (uint16_t y = 0; y < buf->width; y++) {
+            dy_gfx_set_px(buf, x, y, color);
+        }
+    }
+
+    return dy_ok();
+}
+
 void dy_gfx_dump_buf(const dy_gfx_buf_t *buf) {
     for (uint16_t r = 0; r < buf->height; r++) {
         for (uint8_t w = buf->wpr; w > 0; w--) {
@@ -135,7 +148,7 @@ void dy_gfx_dump_buf(const dy_gfx_buf_t *buf) {
     }
 }
 
-void dy_gfx_set_px(dy_gfx_buf_t *buf, int16_t x, int16_t y, uint32_t color) {
+void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, uint32_t color) {
     // It's okay to set a pixel outside buffer's boundaries
     if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) {
         return;

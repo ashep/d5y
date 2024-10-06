@@ -78,6 +78,11 @@ void dy_gfx_free_buf_array(dy_gfx_buf_array_t *buf_arr);
 void dy_gfx_clear_buf(dy_gfx_buf_t *buf);
 
 /**
+ * Fills a buffer with a color.
+ */
+dy_err_t dy_gfx_fill_buf(dy_gfx_buf_t *buf, uint32_t color);
+
+/**
  * Dumps buffer's content to the stdout.
  */
 void dy_gfx_dump_buf(const dy_gfx_buf_t *buf);
@@ -85,7 +90,7 @@ void dy_gfx_dump_buf(const dy_gfx_buf_t *buf);
 /**
  * Sets buffer pixel's value.
  */
-void dy_gfx_set_px(dy_gfx_buf_t *buf, int16_t x, int16_t y, uint32_t color);
+void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, uint32_t color);
 
 /**
  * Returns buffer pixel's value.

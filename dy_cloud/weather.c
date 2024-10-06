@@ -15,7 +15,7 @@ dy_err_t get_weather() {
     cJSON *json;
     dy_cloud_weather_t res;
 
-    if (dy_nok(err = http_get_json(API_URL_WEATHER, &json))) {
+    if (dy_is_err(err = http_get_json(API_URL_WEATHER, &json))) {
         return dy_err_pfx("http_get_json", err);
     }
 
@@ -64,7 +64,7 @@ _Noreturn static void task() {
     while (true) {
         if (!dy_net_cfg_net_ready()) {
             delay_sec = 10;
-        } else if (dy_nok(err = get_weather())) {
+        } else if (dy_is_err(err = get_weather())) {
             ESP_LOGE(LTAG, "get_weather: %s", dy_err_str(err));
             delay_sec = 10;
         } else {

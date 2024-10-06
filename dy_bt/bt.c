@@ -192,7 +192,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
                 // Ask the writer to write the value
                 dy_err_t w_err = chrcs[i].write(param->write.len, param->write.offset, param->write.value);
-                if (dy_nok(w_err)) {
+                if (dy_is_err(w_err)) {
                     ESP_LOGW(LTAG, "characteristic write failed: %s", dy_err_str(w_err));
                     return;
                 }

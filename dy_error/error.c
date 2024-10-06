@@ -8,9 +8,7 @@
 
 static dy_err_struct_t errors[MAX_ERROR];
 static char error_strings[MAX_ERROR][DY_ERROR_DESC_MAX_LEN];
-
 static dy_err_struct_t ok = {.code=DY_OK, .desc="no error"};
-
 static uint8_t cur_err;
 static uint8_t cur_err_str;
 
@@ -53,7 +51,7 @@ dy_err_t dy_ok() {
     return (dy_err_t) &ok;
 }
 
-bool dy_nok(dy_err_t err) {
+bool dy_is_err(dy_err_t err) {
     return err->code != DY_OK;
 }
 
@@ -72,6 +70,8 @@ const char *dy_err_code_str(dy_err_code_t e) {
             return "no memory";
         case DY_ERR_NOT_FOUND:
             return "not found";
+        case DY_ERR_NOT_CONFIGURED:
+            return "not configured";
         case DY_ERR_NO_CONTENT:
             return "not found";
         case DY_ERR_TIMEOUT:

@@ -37,11 +37,14 @@ static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
 }
 
 dy_err_t http_request(dy_cloud_http_req_t *req) {
+    dy_err_t err;
     esp_err_t esp_err;
     esp_http_client_handle_t cli;
 
-    dy_appinfo_info_t ai = dy_appinfo_get();
-    dy_appinfo_ext_info_t xi = dy_appinfo_get_ext();
+    dy_appinfo_info_t ai;
+    if (dy_is_err(err = dy_appinfo_get(&ai))) {
+        return dy_err_pfx("dy_appinfo_get", err);
+    }
 
     if (mux == NULL) {
         mux = xSemaphoreCreateMutex();
@@ -57,7 +60,7 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
     esp_http_client_config_t cfg = {
         .method = req->method,
         .url = req->url,
-        .user_agent = xi.user_agent,
+        .user_agent = ai.id,
         .timeout_ms = HTTP_REQ_TIMEOUT,
         .event_handler = http_cli_ev_handler,
         .keep_alive_enable = false,
@@ -115,7 +118,7 @@ dy_err_t http_get_json(const char *url, cJSON **rsp_json) {
     };
 
     dy_err_t err = http_request(&req);
-    if (dy_nok(err)) {
+    if (dy_is_err(err)) {
         free(rsp_body);
         return dy_err_pfx("http request failed", err);
     }

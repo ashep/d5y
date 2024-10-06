@@ -22,7 +22,7 @@ static void localtime_from_ds3231() {
 
     dy_ds3231_data_t dt;
     dy_err_t ds3231_err = dy_ds3231_read(ds3231, &dt);
-    if (dy_nok(ds3231_err)) {
+    if (dy_is_err(ds3231_err)) {
         ESP_LOGE(LTAG, "set local time from ds3231: dy_ds3231_read: %s", dy_err_str(ds3231_err));
         return;
     }
@@ -66,7 +66,7 @@ static void localtime_to_ds3231() {
 
     // Read all the data from DS3231, because we want to preserve alarm settings
     ds3231_err = dy_ds3231_read(ds3231, &dt);
-    if (dy_nok(ds3231_err)) {
+    if (dy_is_err(ds3231_err)) {
         ESP_LOGE(LTAG, "store local time to ext rtc failed: dy_ds3231_read: %s", dy_err_str(ds3231_err));
         return;
     }
@@ -81,7 +81,7 @@ static void localtime_to_ds3231() {
     dt.year = ti->tm_year; // years since 1900
 
     ds3231_err = dy_ds3231_write(ds3231, &dt);
-    if (dy_nok(ds3231_err)) {
+    if (dy_is_err(ds3231_err)) {
         ESP_LOGE(LTAG, "write local time to ext rtc failed: dy_ds3231_write: %s", dy_err_str(ds3231_err));
         return;
     }

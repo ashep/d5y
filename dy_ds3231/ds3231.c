@@ -5,6 +5,8 @@
 #include "dy/error.h"
 #include "dy/ds3231.h"
 
+#define LTAG "DS3231"
+
 dy_err_t dy_ds3231_read(dy_ds3231_handle_t *hdl, dy_ds3231_data_t *data) {
     esp_err_t esp_err;
     uint8_t buf[DY_DS3231_REG_SZ_READ];

@@ -19,6 +19,7 @@ typedef enum {
     DY_ERR_NO_MEM,
     DY_ERR_NO_CONTENT,
     DY_ERR_NOT_FOUND,
+    DY_ERR_NOT_CONFIGURED,
     DY_ERR_TIMEOUT,
 
     DY_ERR_INVALID_ARG,
@@ -66,7 +67,7 @@ dy_err_t dy_ok();
 /**
  * Checks whether err is not DY_OK.
  */
-bool dy_nok(dy_err_t err);
+bool dy_is_err(dy_err_t err);
 
 /**
  * Creates a new error from another one prefixed by a string.

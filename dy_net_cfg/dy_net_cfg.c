@@ -185,12 +185,12 @@ dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
     }
 
     err = dy_bt_register_chrc_reader(btc_n, on_bt_chrc_read);
-    if (dy_nok(err)) {
+    if (dy_is_err(err)) {
         return dy_err_pfx("dy_bt_register_chrc_reader failed", err);
     }
 
     err = dy_bt_register_chrc_writer(btc_n, on_bt_chrc_write);
-    if (dy_nok(err)) {
+    if (dy_is_err(err)) {
         return dy_err_pfx("dy_bt_register_chrc_writer failed", err);
     }
 

@@ -29,4 +29,4 @@ dy_err_t dy_cloud_time_start_scheduler();
 
 dy_err_t dy_cloud_weather_start_scheduler();
 
-dy_err_t dy_cloud_update_start_scheduler();
+dy_err_t dy_cloud_update_start_scheduler(bool allow_alpha);
