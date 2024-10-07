@@ -117,7 +117,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
             const uint8_t *addr = esp_bt_dev_get_address();
 
-            if (snprintf(device_name, 16, "%s-%x%x%x", device_name_prefix, addr[0], addr[1], addr[2]) < 0) {
+            if (snprintf(device_name, 16, "%s-%x%x%x", device_name_prefix, addr[3], addr[4], addr[5]) < 0) {
                 ESP_LOGE(LTAG, "prepare device name failed: insufficient buffer");
                 return;
             }
