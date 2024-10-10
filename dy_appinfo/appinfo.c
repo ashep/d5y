@@ -37,7 +37,7 @@ dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
     v_alpha = inf->ver.alpha;
 
     strncpy(arch, CONFIG_IDF_TARGET, DY_APPINFO_APP_ARCH_LEN);
-    snprintf(id, DY_APPINFO_APP_ID_LEN, "%s:%s:%s-%s:%d.%d.%d", owner, name, arch, hwid, v_major, v_minor, v_patch);
+    snprintf(id, DY_APPINFO_APP_ID_LEN, "%s:%s:%s_%s:%d.%d.%d", owner, name, arch, hwid, v_major, v_minor, v_patch);
 
     if (v_alpha > 0) {
         strcat(id, "-alpha");
