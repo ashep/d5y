@@ -10,6 +10,7 @@ static bool init = 0;
 
 static char owner[DY_APPINFO_APP_OWNER_LEN + 1];
 static char name[DY_APPINFO_APP_NAME_LEN + 1];
+static char hwid[DY_APPINFO_APP_HWID_LEN + 1];
 static char auth[DY_APPINFO_APP_AUTH_LEN + 1];
 
 static uint8_t v_major;
@@ -21,8 +22,13 @@ static char arch[DY_APPINFO_APP_ARCH_LEN + 1];
 static char id[DY_APPINFO_APP_ID_LEN + 1];
 
 dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
+    if (init) {
+        return dy_err(DY_ERR_INVALID_STATE, "already configured");
+    }
+
     strncpy(owner, inf->owner, DY_APPINFO_APP_OWNER_LEN);
     strncpy(name, inf->name, DY_APPINFO_APP_NAME_LEN);
+    strncpy(hwid, inf->hwid, DY_APPINFO_APP_HWID_LEN);
     strncpy(auth, inf->auth, DY_APPINFO_APP_AUTH_LEN);
 
     v_major = inf->ver.major;
@@ -31,7 +37,7 @@ dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
     v_alpha = inf->ver.alpha;
 
     strncpy(arch, CONFIG_IDF_TARGET, DY_APPINFO_APP_ARCH_LEN);
-    snprintf(id, DY_APPINFO_APP_ID_LEN, "%s:%s:%s:%d.%d.%d", owner, name, arch, v_major, v_minor, v_patch);
+    snprintf(id, DY_APPINFO_APP_ID_LEN, "%s:%s:%s-%s:%d.%d.%d", owner, name, arch, hwid, v_major, v_minor, v_patch);
 
     if (v_alpha > 0) {
         strcat(id, "-alpha");
@@ -43,6 +49,10 @@ dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
     init = true;
 
     return dy_ok();
+}
+
+void dy_appinfo_set_auth(const char *s) {
+    strncpy(auth, s, DY_APPINFO_APP_AUTH_LEN);
 }
 
 dy_err_t dy_appinfo_get(dy_appinfo_info_t *dst) {

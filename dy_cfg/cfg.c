@@ -74,6 +74,7 @@ static dy_err_t save() {
 static void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         ESP_LOGE(LTAG, "%s: xSemaphoreTake failed", __func__);
+        return;
     }
 
     *len = sizeof(cfg_buf);
@@ -82,21 +83,23 @@ static void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
     xSemaphoreGive(mux);
 }
 
-// TODO: chunked transfers are not supported
 static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
-    ESP_LOGI(LTAG, "%s: len=%d, offset=%d", __func__, len, offset);
+    dy_err_t err;
 
-    if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
-        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
+    if (len != 2) {
+        return dy_err(DY_ERR_INVALID_ARG, "unexpected input length: %d", len);
     }
 
-    memcpy(cfg_buf, val, DY_CFG_ID_MAX + 1);
+    if (offset != 0) {
+        return dy_err(DY_ERR_INVALID_ARG, "unexpected offset: %d", len);
+    }
 
-    xSemaphoreGive(mux);
+    if (dy_is_err(err = dy_cfg_set(val[0], val[1]))) {
+        return dy_err_pfx("dy_cfg_set", err);
+    }
 
-    dy_err_t err = save();
-    if (dy_is_err(err)) {
-        return dy_err_pfx("store data to the nvs failed", err);
+    if (dy_is_err(err = save())) {
+        return dy_err_pfx("save", err);
     }
 
     return dy_ok();
@@ -117,6 +120,10 @@ void dy_cfg_must_set_initial(uint8_t id, uint8_t val) {
 }
 
 dy_err_t dy_cfg_set(uint8_t id, uint8_t val) {
+    if (id < DY_CFG_ID_MIN) {
+        return dy_err(DY_ERR_INVALID_ARG, "reserved id: %d", id);
+    }
+
     if (mux == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "%s must not be called before dy_cfg_init", __func__);
     }

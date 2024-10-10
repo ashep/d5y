@@ -7,6 +7,7 @@
 #include "esp_bt_main.h"
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
+#include "esp_event.h"
 #include "freertos/semphr.h"
 
 #include "dy/bt.h"
@@ -141,6 +142,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             if ((err = esp_ble_gap_start_advertising(&advrt_params)) != ESP_OK) {
                 ESP_LOGE(LTAG, "GAP: advertising start failed: %s", esp_err_to_name(err));
                 return;
+            }
+
+            dy_bt_evt_ready_t evt = {};
+            memcpy(evt.address, addr, 6);
+            if ((err = esp_event_post(DY_BT_EVENT_BASE, DY_BT_EVENT_READY, &evt, sizeof(evt), 10)) != ESP_OK) {
+                ESP_LOGE(LTAG, "post ready event: %s", esp_err_to_name(err));
             }
 
             break;

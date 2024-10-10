@@ -4,10 +4,11 @@
 
 #define DY_APPINFO_APP_OWNER_LEN 16
 #define DY_APPINFO_APP_NAME_LEN 16
+#define DY_APPINFO_APP_HWID_LEN 16
 #define DY_APPINFO_APP_AUTH_LEN 32
 
 #define DY_APPINFO_APP_ARCH_LEN 16
-#define DY_APPINFO_APP_ID_LEN 64
+#define DY_APPINFO_APP_ID_LEN 96
 
 typedef struct {
     uint8_t major;
@@ -21,6 +22,7 @@ typedef struct {
 
     char *owner;
     char *name;
+    char *hwid; // hardware id
     char *auth; // authentication token
 
     char *arch; // architecture; set by dy_appinfo_set
@@ -30,5 +32,7 @@ typedef struct {
 
 
 dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf);
+
+void dy_appinfo_set_auth(const char *s);
 
 dy_err_t dy_appinfo_get(dy_appinfo_info_t *);

@@ -27,7 +27,7 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
     }
 
     memset(req_url, 0, URL_LEN + 1);
-    snprintf(req_url, URL_LEN, "%s?app=%s&alpha=%d", API_URL_FW_UPDATE, ai.id, allow_alpha_versions);
+    snprintf(req_url, URL_LEN, "%s?app=%s&to_alpha=%d", API_URL_FW_UPDATE, ai.id, allow_alpha_versions);
 
     cJSON *json;
     memset(res, 0, sizeof(*res));
