@@ -1,9 +1,10 @@
-#include "esp_err.h"
-#include "esp_http_client.h"
-#include "esp_log.h"
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+
+#include "esp_err.h"
+#include "esp_http_client.h"
+#include "esp_crt_bundle.h"
+#include "esp_log.h"
 
 #include "dy/appinfo.h"
 #include "dy/error.h"
@@ -64,6 +65,7 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
         .timeout_ms = HTTP_REQ_TIMEOUT,
         .event_handler = http_cli_ev_handler,
         .keep_alive_enable = false,
+        .crt_bundle_attach = esp_crt_bundle_attach,
     };
 
     cli = esp_http_client_init(&cfg);
