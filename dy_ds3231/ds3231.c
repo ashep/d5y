@@ -13,12 +13,12 @@ dy_err_t dy_ds3231_read(dy_ds3231_handle_t *hdl, dy_ds3231_data_t *data) {
 
     // At first, we must point to a register address which we want to start read from: from the beginning.
     buf[0] = 0x0;
-    esp_err = i2c_master_transmit(hdl->device, buf, 1, -1);
+    esp_err = i2c_master_transmit(hdl->device, buf, 1, 100);
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "write register address failed: %s", esp_err_to_name(esp_err));
     }
 
-    esp_err = i2c_master_receive(hdl->device, buf, DY_DS3231_REG_SZ_READ, -1);
+    esp_err = i2c_master_receive(hdl->device, buf, DY_DS3231_REG_SZ_READ, 100);
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "i2c_master_receive failed: %s", esp_err_to_name(esp_err));
     }
@@ -154,7 +154,7 @@ dy_err_t dy_ds3231_write(dy_ds3231_handle_t *hdl, const dy_ds3231_data_t *data) 
     // TODO: control status
     // TODO: aging offset
 
-    esp_err_t esp_err = i2c_master_transmit(hdl->device, buf, DY_DS3231_REG_SZ_WRITE, -1);
+    esp_err_t esp_err = i2c_master_transmit(hdl->device, buf, DY_DS3231_REG_SZ_WRITE, 100);
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "i2c_master_transmit failed: %s", esp_err_to_name(esp_err));
     }
