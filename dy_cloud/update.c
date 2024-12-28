@@ -1,6 +1,7 @@
 #include "freertos/FreeRTOS.h"
 
 #include "esp_log.h"
+#include "esp_crt_bundle.h"
 #include "esp_ota_ops.h"
 #include "esp_https_ota.h"
 
@@ -97,7 +98,8 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
         .method = HTTP_METHOD_GET,
         .url = res->url,
         .timeout_ms = HTTP_REQ_TIMEOUT,
-        .use_global_ca_store = true,
+        .keep_alive_enable = false,
+        .crt_bundle_attach = esp_crt_bundle_attach,
         .buffer_size_tx = 2048,
     };
 
