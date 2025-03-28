@@ -2,7 +2,7 @@
 
 #include "dy/gfx/geometry.h"
 
-void dy_gfx_line(dy_gfx_buf_t *buf, const dy_gfx_line_t *line, uint32_t color) {
+void dy_gfx_line(dy_gfx_buf_t *buf, const dy_gfx_line_t *line, dy_gfx_px_t color) {
     uint16_t x1 = line->p1.x, x2 = line->p2.x, y1 = line->p1.y, y2 = line->p2.y;
 
     if (x2 >= buf->width) {
@@ -39,7 +39,7 @@ void dy_gfx_line(dy_gfx_buf_t *buf, const dy_gfx_line_t *line, uint32_t color) {
     }
 }
 
-void dy_gfx_poly(dy_gfx_buf_t *buf, const dy_gfx_poly_t *poly, uint32_t color) {
+void dy_gfx_poly(dy_gfx_buf_t *buf, const dy_gfx_poly_t *poly, dy_gfx_px_t color) {
     dy_gfx_line_t l;
 
     for (uint8_t i = 0; i < poly->n_corners; i++) {
@@ -53,24 +53,18 @@ void dy_gfx_poly(dy_gfx_buf_t *buf, const dy_gfx_poly_t *poly, uint32_t color) {
     }
 }
 
-void dy_gfx_rect(dy_gfx_buf_t *buf, const dy_gfx_point_t p1, const dy_gfx_point_t p2, uint32_t color) {
+void dy_gfx_rect(dy_gfx_buf_t *buf, dy_gfx_point_t p1, dy_gfx_point_t p2, dy_gfx_px_t color) {
     dy_gfx_point_t points[4] = {
-        p1,
-        (dy_gfx_point_t) {p2.x, p1.y},
-        p2,
-        (dy_gfx_point_t) {p1.x, p2.y},
+            p1,
+            (dy_gfx_point_t) {p2.x, p1.y},
+            p2,
+            (dy_gfx_point_t) {p1.x, p2.y},
     };
 
     dy_gfx_poly(buf, &((dy_gfx_poly_t) {4, points}), color);
 }
 
-void dy_gfx_tri(
-    dy_gfx_buf_t *buf,
-    const dy_gfx_point_t p1,
-    const dy_gfx_point_t p2,
-    const dy_gfx_point_t p3,
-    uint32_t color
-) {
+void dy_gfx_tri(dy_gfx_buf_t *buf, dy_gfx_point_t p1, dy_gfx_point_t p2, dy_gfx_point_t p3, dy_gfx_px_t color) {
     dy_gfx_point_t points[3] = {p1, p2, p3};
     dy_gfx_poly(buf, &((dy_gfx_poly_t) {3, points}), color);
 }

@@ -7,7 +7,10 @@
 
 #include "dy/error.h"
 #include "dy/appinfo.h"
+
+#ifdef CONFIG_BT_ENABLED
 #include "dy/bt.h"
+#endif
 
 #include "dy/cfg.h"
 
@@ -168,6 +171,7 @@ uint8_t dy_cfg_get(uint8_t id, uint8_t def) {
     return r;
 }
 
+#ifdef CONFIG_BT_ENABLED // FIXME: decouple from BT
 dy_err_t dy_cfg_init(dy_bt_chrc_num btc_n) {
     dy_err_t err;
     esp_err_t esp_err;
@@ -204,3 +208,4 @@ dy_err_t dy_cfg_init(dy_bt_chrc_num btc_n) {
 
     return dy_ok();
 }
+#endif

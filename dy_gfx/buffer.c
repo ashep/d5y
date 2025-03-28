@@ -3,91 +3,68 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "esp_log.h"
+
 #include "dy/error.h"
 #include "dy/gfx/gfx.h"
 
-void print_bin(uint32_t v, uint8_t width) {
+static void print_bin(uint32_t v, uint8_t width) {
     for (uint8_t i = width; i > 0; i--) {
         printf("%lu", (v >> (i - 1)) & 1);
     }
 }
 
-dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode) {
+dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height) {
     dy_gfx_buf_t *buf = malloc(sizeof(dy_gfx_buf_t));
     if (!buf) {
         return NULL;
     }
+
     buf->width = width;
     buf->height = height;
-    buf->c_mode = c_mode;
 
-    buf->content = calloc(height, sizeof(buf->content));  // pointers to rows
+    buf->content = calloc(width * height, sizeof(dy_gfx_px_t));
     if (!buf->content) {
         free(buf);
         return NULL;
     }
 
-    // Pixels per row
-    switch (c_mode) {
-        case DY_GFX_COLOR_MONO:
-            buf->ppw = sizeof(**buf->content) * 8;  // 8 pixels per word
-            break;
-        case DY_GFX_COLOR_RGB565:
-            buf->ppw = sizeof(**buf->content) * 8 / 16;  // 2 pixels per word
-            break;
-        case DY_GFX_COLOR_ARGB888:
-            buf->ppw = 1;  // 1 pixel per word
-            break;
-    }
-
-    // Words per row
-    buf->wpr = 1 + ((width - 1) / buf->ppw);
-
-    // Allocate memory for content
-    for (uint16_t r = 0; r < height; r++) {
-        // Allocate memory for each row
-        buf->content[r] = calloc(buf->wpr, sizeof(*buf->content));
-        if (!buf->content[r]) {
-            free(buf->content);
-            free(buf);
-            return NULL;
-        }
-    }
-
-    // Fill buffer with zeros
-    dy_gfx_clear_buf(buf);
-
     return buf;
 }
 
 void dy_gfx_free_buf(dy_gfx_buf_t *buf) {
-    for (uint16_t r = 0; r < buf->height; r++) {
-        free(buf->content[r]);
-    }
-
     free(buf->content);
     free(buf);
 }
 
-dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height, dy_gfx_color_mode_t c_mode) {
+dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16_t height) {
     dy_gfx_buf_array_t *buf_arr = malloc(sizeof(dy_gfx_buf_array_t));
     if (!buf_arr) {
         return NULL;
     }
 
-    buf_arr->length = length;
-    buf_arr->c_mode = c_mode;
+    buf_arr->len = length;
     buf_arr->buffers = calloc(length, sizeof(dy_gfx_buf_t *));
 
     for (uint8_t i = 0; i < length; i++) {
-        buf_arr->buffers[i] = dy_gfx_make_buf(width, height, c_mode);
+        dy_gfx_buf_t *b = dy_gfx_make_buf(width, height);
+        if (!b) {
+            for (uint8_t k = 0; k < i; k++) {
+                free(buf_arr->buffers[k]);
+            }
+            dy_gfx_free_buf(b);
+            free(buf_arr);
+            return NULL;
+        }
+
+        buf_arr->buffers[i] = b;
     }
 
     return buf_arr;
 }
 
 void dy_gfx_free_buf_array(dy_gfx_buf_array_t *buf_arr) {
-    for (uint16_t i = 0; i < buf_arr->length; i++) {
+    for (uint16_t i = 0; i < buf_arr->len; i++) {
         dy_gfx_free_buf(buf_arr->buffers[i]);
     }
 
@@ -99,105 +76,29 @@ void dy_gfx_clear_buf(dy_gfx_buf_t *buf) {
     if (buf->content == NULL) {
         return;
     }
-
-    for (uint16_t r = 0; r < buf->height; r++) {
-        if (buf->content[r] == NULL) {
-            continue;
-        }
-
-        memset(buf->content[r], 0, buf->wpr * sizeof(**buf->content));
-    }
+    memset(buf->content, 0, buf->width * buf->height);
 }
 
-dy_err_t dy_gfx_fill_buf(dy_gfx_buf_t *buf, uint32_t color) {
-    if (buf == NULL) {
-        return dy_err(DY_ERR_INVALID_ARG, "null buffer");
-    }
-
-    for (uint16_t x = 0; x < buf->width; x++) {
-        for (uint16_t y = 0; y < buf->width; y++) {
-            dy_gfx_set_px(buf, x, y, color);
-        }
-    }
-
-    return dy_ok();
+uint32_t dy_gfx_get_px_pos(const dy_gfx_buf_t *buf, uint16_t x, uint16_t y) {
+    return y * buf->width + x;
 }
 
-void dy_gfx_dump_buf(const dy_gfx_buf_t *buf) {
-    for (uint16_t r = 0; r < buf->height; r++) {
-        for (uint8_t w = buf->wpr; w > 0; w--) {
-            if (w == buf->wpr) {
-                printf("[%4u] ", r);
-            }
-
-            print_bin(buf->content[r][w - 1], sizeof(buf->content) * 8);
-
-            if (w == 1) {
-                printf(" ");
-                for (uint16_t w2 = buf->wpr; w2 > 0; w2--) {
-                    printf("%lu", buf->content[r][w2 - 1]);
-                    if (w2 == 1)
-                        printf("\n");
-                    else
-                        printf("|");
-                }
-            } else {
-                printf("|");
-            }
-        }
-    }
-}
-
-void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, uint32_t color) {
+void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, dy_gfx_px_t px) {
     // It's okay to set a pixel outside buffer's boundaries
     if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) {
         return;
     }
 
-    size_t word_bits = sizeof(**buf->content) * 8;
-    uint16_t word_n = buf->wpr - 1 - x / buf->ppw;
-
-    switch (buf->c_mode) {
-        case DY_GFX_COLOR_MONO:
-            if (color == 0) {
-                buf->content[y][word_n] &= ~(1 << (word_bits - x - 1 % word_bits));
-            } else {
-                buf->content[y][word_n] |= 1 << (word_bits - x - 1 % word_bits);
-            }
-            break;
-
-        case DY_GFX_COLOR_RGB565:
-            buf->content[y][word_n] |= color << ((x % 2) ? 0 : 16);
-            break;
-
-        case DY_GFX_COLOR_ARGB888:
-            buf->content[y][word_n] = color;
-            break;
-    }
+    buf->content[dy_gfx_get_px_pos(buf, x, y)] = px;
 }
 
-uint32_t dy_gfx_get_px(const dy_gfx_buf_t *buf, int16_t x, int16_t y) {
+dy_gfx_px_t dy_gfx_get_px(const dy_gfx_buf_t *buf, uint16_t x, uint16_t y) {
     // It's okay to get a pixel outside buffer's boundaries
     if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) {
-        return 0x0;
+        return (dy_gfx_px_t) {};
     }
 
-    size_t word_bits = sizeof(**buf->content) * 8;
-    uint16_t word_n = buf->wpr - 1 - x / buf->ppw;
-    uint32_t w = buf->content[y][word_n];
-
-    switch (buf->c_mode) {
-        case DY_GFX_COLOR_MONO:
-            return 1 & (w >> (word_bits - x - 1 % word_bits));
-
-        case DY_GFX_COLOR_RGB565:
-            return 0xffff & (w >> ((x % 2) ? 0 : 16));
-
-        case DY_GFX_COLOR_ARGB888:
-            return w;
-    }
-
-    return 0x0;
+    return buf->content[dy_gfx_get_px_pos(buf, x, y)];
 }
 
 dy_err_code_t dy_gfx_merge(dy_gfx_buf_t *dst, const dy_gfx_buf_t *src, dy_gfx_point_t d_pos, dy_gfx_point_t s_pos) {
@@ -206,10 +107,10 @@ dy_err_code_t dy_gfx_merge(dy_gfx_buf_t *dst, const dy_gfx_buf_t *src, dy_gfx_po
         return DY_ERR_INVALID_ARG;
     }
 
-    int16_t dst_x = d_pos.x;
-    for (int16_t src_x = s_pos.x; src_x < src->width && dst_x < dst->width; src_x++, dst_x++) {
-        int16_t dst_y = d_pos.y;
-        for (int16_t src_y = s_pos.y; src_y < src->height && dst_y < dst->height; src_y++, dst_y++) {
+    int32_t dst_x = d_pos.x;
+    for (int32_t src_x = s_pos.x; src_x < src->width && dst_x < dst->width; src_x++, dst_x++) {
+        int32_t dst_y = d_pos.y;
+        for (int32_t src_y = s_pos.y; src_y < src->height && dst_y < dst->height; src_y++, dst_y++) {
             dy_gfx_set_px(dst, dst_x, dst_y, dy_gfx_get_px(src, src_x, src_y));
         }
     }
@@ -221,7 +122,7 @@ dy_gfx_buf_array_t *dy_gfx_split(const dy_gfx_buf_t *src, uint8_t chunk_w, uint8
     uint8_t nx = src->width / chunk_w;
     uint8_t ny = src->height / chunk_h;
 
-    dy_gfx_buf_array_t *dst = dy_gfx_make_buf_array(nx * ny, chunk_w, chunk_h, src->c_mode);
+    dy_gfx_buf_array_t *dst = dy_gfx_make_buf_array(nx * ny, chunk_w, chunk_h);
     if (!dst) {
         return NULL;
     }
@@ -243,7 +144,7 @@ dy_gfx_buf_array_t *dy_gfx_split(const dy_gfx_buf_t *src, uint8_t chunk_w, uint8
 
 dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos) {
     dy_err_code_t err;
-    dy_gfx_buf_t *tmp_buf = dy_gfx_make_buf(buf->width, buf->height, buf->c_mode);
+    dy_gfx_buf_t *tmp_buf = dy_gfx_make_buf(buf->width, buf->height);
     if (!tmp_buf) {
         return DY_ERR_UNKNOWN;
     }

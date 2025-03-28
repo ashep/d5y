@@ -5,9 +5,12 @@
 #include "esp_wifi.h"
 
 #include "dy/error.h"
-#include "dy/bt.h"
 #include "dy/net.h"
 #include "dy/net_cfg.h"
+
+#ifdef CONFIG_BT_ENABLED
+#include "dy/bt.h"
+#endif
 
 // byte 0:       bits 0-3: state; bits 4-7: error reason
 // byte 1-32:    connected SSID
@@ -176,6 +179,7 @@ bool dy_net_cfg_net_ready() {
     return res;
 }
 
+#ifdef CONFIG_BT_ENABLED // TODO: decouple BT
 dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
     dy_err_t err;
 
@@ -201,3 +205,4 @@ dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
 
     return dy_ok();
 }
+#endif

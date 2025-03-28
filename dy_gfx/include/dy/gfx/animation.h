@@ -1,13 +1,6 @@
-/**
- * @author    Oleksandr Shepetko <a@shepetko.com>
- * @copyright MIT License
- */
-
-#ifndef DY_GFX_ANIMATION_H
-#define DY_GFX_ANIMATION_H
+#pragma once
 
 #include <stdio.h>
-
 #include "dy/gfx/gfx.h"
 
 /**
@@ -40,5 +33,3 @@ typedef struct {
  * Starts animation.
  */
 dy_gfx_animation_t *dy_gfx_animate(dy_gfx_animator_t fn, void *args, uint8_t fps);
-
-#endif // DY_GFX_ANIMATION_H

@@ -1,6 +1,6 @@
 #include "dy/gfx/text.h"
 
-int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, uint8_t ch, uint32_t color) {
+int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, uint8_t ch, dy_gfx_px_t color) {
     int8_t ch_width = 0;
 
     // Check if the character is covered by the font
@@ -40,8 +40,7 @@ int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t 
         }
 
         // Each column
-        for (int8_t n = 0, col_n = font->width - 1; n < ch_width;
-             n++, col_n--) {
+        for (int8_t n = 0, col_n = font->width - 1; n < ch_width; n++, col_n--) {
             if (1 & (row >> col_n)) {  // if pixel is set
                 dy_gfx_set_px(buf, pos.x + n, pos.y + row_n, color);
             }
@@ -52,12 +51,12 @@ int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t 
 }
 
 dy_gfx_point_t dy_gfx_puts(
-    dy_gfx_buf_t *buf,
-    const dy_gfx_font_t *font,
-    dy_gfx_point_t pos,
-    const char *s,
-    uint32_t color,
-    uint8_t space
+        dy_gfx_buf_t *buf,
+        const dy_gfx_font_t *font,
+        dy_gfx_point_t pos,
+        const char *s,
+        dy_gfx_px_t color,
+        uint8_t space
 ) {
     int8_t ch_width;
 
@@ -106,12 +105,7 @@ int16_t dy_gfx_str_width(const dy_gfx_font_t *font, const char *str, uint8_t spa
     return w;
 }
 
-dy_gfx_buf_t *dy_gfx_make_str_buf(
-    dy_gfx_color_mode_t c_mode,
-    const dy_gfx_font_t *font,
-    const char *str, uint32_t color,
-    uint8_t space
-) {
+dy_gfx_buf_t *dy_gfx_make_str_buf(const dy_gfx_font_t *font, const char *str, dy_gfx_px_t color, uint8_t space) {
     // Calculate buffer's width
     int16_t str_w = dy_gfx_str_width(font, str, space);
     if (str_w < 0) {
@@ -119,7 +113,7 @@ dy_gfx_buf_t *dy_gfx_make_str_buf(
     }
 
     // Create a buffer
-    dy_gfx_buf_t *buf = dy_gfx_make_buf(str_w, font->height, c_mode);
+    dy_gfx_buf_t *buf = dy_gfx_make_buf(str_w, font->height);
     if (!buf) {
         return NULL;
     }

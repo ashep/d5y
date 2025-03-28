@@ -1,12 +1,16 @@
 # D5Y
 
-A minimalistic library for building ESP32-based display devices.
+A minimalistic library for building ESP32-based devices.
 
-## Features
+## Installation
 
-- Easy to use API.
-- Support of popular displays:
-  - MAX71219-based LED matrices.
-- Bluetooth configuration interface.
-- Support of more than one display connection.
-- No fucking Arduino.
+```shell
+cd your-project
+git submodule add --name d5y git@github.com:ashep/d5y.git vendor/d5y
+```
+
+Add the following to your project's `CMakeLists.txt`:
+
+```cmake
+set(EXTRA_COMPONENT_DIRS ./vendor/d5y)
+```

@@ -1,10 +1,4 @@
-/**
- * @author    Oleksandr Shepetko <a@shepetko.com>
- * @copyright MIT License
- */
-
-#ifndef DY_GFX_TEXT_H
-#define DY_GFX_TEXT_H
+#pragma once
 
 #include <stdio.h>
 #include "dy/gfx/gfx.h"
@@ -34,18 +28,13 @@ typedef struct {
 /**
  * Draws a character.
  */
-int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, uint8_t ch, uint32_t color);
+int8_t dy_gfx_putc(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, uint8_t ch, dy_gfx_px_t color);
 
 /**
  * @brief Draws a string.
  */
-dy_gfx_point_t dy_gfx_puts(
-    dy_gfx_buf_t *buf,
-    const dy_gfx_font_t *font,
-    dy_gfx_point_t pos,
-    const char *s,
-    uint32_t color,
-    uint8_t space);
+dy_gfx_point_t dy_gfx_puts(dy_gfx_buf_t *buf, const dy_gfx_font_t *font, dy_gfx_point_t pos, const char *s,
+                           dy_gfx_px_t color, uint8_t space);
 
 /**
  * Returns width of a character.
@@ -55,17 +44,9 @@ int8_t dy_gfx_ch_width(const dy_gfx_font_t *font, char ch);
 /**
  * Get width of a string.
  */
-int16_t dy_gfx_str_width(const dy_gfx_font_t *font, const char *str,
-                         uint8_t space);
+int16_t dy_gfx_str_width(const dy_gfx_font_t *font, const char *str, uint8_t space);
 
 /**
  * @brief Creates a graphics buffer and put a string into it.
  */
-dy_gfx_buf_t *dy_gfx_make_str_buf(
-    dy_gfx_color_mode_t c_mode,
-    const dy_gfx_font_t *font,
-    const char *str,
-    uint32_t color,
-    uint8_t space);
-
-#endif // DY_GFX_TEXT_H
+dy_gfx_buf_t *dy_gfx_make_str_buf(const dy_gfx_font_t *font, const char *str, dy_gfx_px_t color, uint8_t space);
