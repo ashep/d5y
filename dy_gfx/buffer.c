@@ -76,7 +76,7 @@ void dy_gfx_clear_buf(dy_gfx_buf_t *buf) {
     if (buf->content == NULL) {
         return;
     }
-    memset(buf->content, 0, buf->width * buf->height);
+    memset(buf->content, 0, buf->width * buf->height * sizeof(dy_gfx_px_t));
 }
 
 uint32_t dy_gfx_get_px_pos(const dy_gfx_buf_t *buf, uint16_t x, uint16_t y) {

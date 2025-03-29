@@ -1,13 +1,7 @@
 /**
  * Basic 8x8 font, CP-1251.
- *
- * @author    Oleksandr Shepetko <a@shepetko.com>
- * @copyright MIT License
  */
-
-#ifndef DY_GFX_FONT_8X8V1_H
-#define DY_GFX_FONT_8X8V1_H
-
+#pragma once
 #include <stdio.h>
 #include "dy/gfx/text.h"
 
@@ -242,9 +236,7 @@ static const uint8_t data[] =
 dy_gfx_font_t dy_gfx_font_8x8v1 = {
     .ascii_offset = 32,
     .length = 224,  // last_char - ascii_offset + 1
-    .width = DY_GFX_FONT_WIDTH_8,
+    .width = DY_GFX_FONT_SYMBOL_WIDTH_8,
     .height = 8,
     .content.c8 = data,
 };
-
-#endif // DY_GFX_FONT_8X8V1_H
