@@ -113,7 +113,7 @@ dy_gfx_buf_t *dy_gfx_make_str_buf(const dy_gfx_font_t *font, const char *str, dy
     }
 
     // Create a buffer
-    dy_gfx_buf_t *buf = dy_gfx_make_buf(str_w, font->height);
+    dy_gfx_buf_t *buf = dy_gfx_new_buf(str_w, font->height);
     if (!buf) {
         return NULL;
     }

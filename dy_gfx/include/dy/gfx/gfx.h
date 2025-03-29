@@ -6,11 +6,16 @@
 /**
  * Pixel.
  */
+typedef uint16_t dy_gfx_px_t;
+
+/**
+ * RGB888 pixel representation.
+ */
 typedef struct {
     uint8_t r;
     uint8_t g;
     uint8_t b;
-} dy_gfx_px_t;
+} dy_gfx_rgb888_t;
 
 /**
  * Point.
@@ -37,33 +42,42 @@ typedef struct {
     dy_gfx_buf_t **buffers;
 } dy_gfx_buf_array_t;
 
-//    led_strip_set_pixel(cfg->ls, 15, 128, 128, 128); // silver
 
-#define DY_GFX_C_BLACK (dy_gfx_px_t) {.r=0, .g=0, .b=0}
-#define DY_GFX_C_RED (dy_gfx_px_t) {.r=255, .g=0, .b=0}
-#define DY_GFX_C_GREEN (dy_gfx_px_t) {.r=0, .g=255, .b=0}
-#define DY_GFX_C_BLUE (dy_gfx_px_t) {.r=0, .g=0, .b=255}
-#define DY_GFX_C_CYAN (dy_gfx_px_t) {.r=0, .g=255, .b=255}
-#define DY_GFX_C_MAGENTA (dy_gfx_px_t) {.r=255, .g=0, .b=255}
-#define DY_GFX_C_YELLOW (dy_gfx_px_t) {.r=255, .g=255, .b=0}
-#define DY_GFX_C_WHITE (dy_gfx_px_t) {.r=255, .g=255, .b=255}
+#define DY_GFX_C_BLACK dy_gfx_new_px(0, 0, 0)
+#define DY_GFX_C_RED dy_gfx_new_px(255, 0, 0)
+#define DY_GFX_C_GREEN dy_gfx_new_px(0, 255, 0)
+#define DY_GFX_C_BLUE dy_gfx_new_px(0, 0, 255)
+#define DY_GFX_C_CYAN dy_gfx_new_px(0, 255, 255)
+#define DY_GFX_C_MAGENTA dy_gfx_new_px(255, 0, 255)
+#define DY_GFX_C_YELLOW dy_gfx_new_px(255, 255, 0)
+#define DY_GFX_C_WHITE dy_gfx_new_px(255, 255, 255)
 
-#define DY_GFX_C_ORANGE (dy_gfx_px_t) {.r=255, .g=64, .b=0}
-#define DY_GFX_C_PURPLE (dy_gfx_px_t) {.r=128, .g=64, .b=128}
-#define DY_GFX_C_PINK (dy_gfx_px_t) {.r=128, .g=105, .b=180}
-#define DY_GFX_C_LIME (dy_gfx_px_t) {.r=191, .g=255, .b=0}
-#define DY_GFX_C_TEAL (dy_gfx_px_t) {.r=0, .g=128, .b=129}
-#define DY_GFX_C_BROWN (dy_gfx_px_t) {.r=129, .g=69, .b=19}
-#define DY_GFX_C_GOLD (dy_gfx_px_t) {.r=255, .g=128, .b=0}
-#define DY_GFX_C_SILVER (dy_gfx_px_t) {.r=128, .g=128, .b=128}
+#define DY_GFX_C_ORANGE dy_gfx_new_px(255, 64, 0)
+#define DY_GFX_C_PURPLE dy_gfx_new_px(128, 64, 128)
+#define DY_GFX_C_PINK dy_gfx_new_px(128, 105, 180)
+#define DY_GFX_C_LIME dy_gfx_new_px(191, 255, 0)
+#define DY_GFX_C_TEAL dy_gfx_new_px(0, 128, 129)
+#define DY_GFX_C_BROWN dy_gfx_new_px(129, 69, 19)
+#define DY_GFX_C_GOLD dy_gfx_new_px(255, 128, 0)
+#define DY_GFX_C_SILVER dy_gfx_new_px(128, 128, 128)
+
+/**
+ * Creates a pixel from RGB888 parts.
+ */
+dy_gfx_px_t dy_gfx_new_px(uint8_t r, uint8_t g, uint8_t b);
+
+/**
+ * Transforms a pixel to an RGB888 values.
+ */
+dy_gfx_rgb888_t dy_gfx_px_to_rgb888(dy_gfx_px_t px);
 
 /**
  * Initializes a buffer.
  */
-dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height);
+dy_gfx_buf_t *dy_gfx_new_buf(uint16_t width, uint16_t height);
 
 /**
- * Frees resources allocated by `dy_gfx_make_buf()`.
+ * Frees resources allocated by `dy_gfx_new_buf()`.
  */
 void dy_gfx_free_buf(dy_gfx_buf_t *buf);
 

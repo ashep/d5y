@@ -14,7 +14,7 @@ static void print_bin(uint32_t v, uint8_t width) {
     }
 }
 
-dy_gfx_buf_t *dy_gfx_make_buf(uint16_t width, uint16_t height) {
+dy_gfx_buf_t *dy_gfx_new_buf(uint16_t width, uint16_t height) {
     dy_gfx_buf_t *buf = malloc(sizeof(dy_gfx_buf_t));
     if (!buf) {
         return NULL;
@@ -47,7 +47,7 @@ dy_gfx_buf_array_t *dy_gfx_make_buf_array(uint8_t length, uint16_t width, uint16
     buf_arr->buffers = calloc(length, sizeof(dy_gfx_buf_t *));
 
     for (uint8_t i = 0; i < length; i++) {
-        dy_gfx_buf_t *b = dy_gfx_make_buf(width, height);
+        dy_gfx_buf_t *b = dy_gfx_new_buf(width, height);
         if (!b) {
             for (uint8_t k = 0; k < i; k++) {
                 free(buf_arr->buffers[k]);
@@ -144,7 +144,7 @@ dy_gfx_buf_array_t *dy_gfx_split(const dy_gfx_buf_t *src, uint8_t chunk_w, uint8
 
 dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos) {
     dy_err_code_t err;
-    dy_gfx_buf_t *tmp_buf = dy_gfx_make_buf(buf->width, buf->height);
+    dy_gfx_buf_t *tmp_buf = dy_gfx_new_buf(buf->width, buf->height);
     if (!tmp_buf) {
         return DY_ERR_UNKNOWN;
     }
