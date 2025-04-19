@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef CONFIG_BT_ENABLED
+
 #include "esp_bt_defs.h"
 #include "esp_gatts_api.h"
 #include "dy/error.h"
@@ -38,3 +40,5 @@ dy_err_t dy_bt_set_device_name_prefix(const char *s);
 dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid);
 
 dy_err_t dy_bt_init();
+
+#endif

@@ -4,18 +4,13 @@
 #include "dy/error.h"
 
 /**
- * Pixel.
- */
-typedef uint16_t dy_gfx_px_t;
-
-/**
  * RGB888 pixel representation.
  */
 typedef struct {
     uint8_t r;
     uint8_t g;
     uint8_t b;
-} dy_gfx_rgb888_t;
+} dy_gfx_px_t;
 
 /**
  * Point.
@@ -69,7 +64,7 @@ dy_gfx_px_t dy_gfx_new_px(uint8_t r, uint8_t g, uint8_t b);
 /**
  * Transforms a pixel to an RGB888 values.
  */
-dy_gfx_rgb888_t dy_gfx_px_to_rgb888(dy_gfx_px_t px);
+dy_gfx_px_t dy_gfx_px_to_rgb888(dy_gfx_px_t px);
 
 /**
  * Initializes a buffer.

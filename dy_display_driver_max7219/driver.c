@@ -29,7 +29,7 @@ static dy_err_t write(void *cfg, dy_gfx_buf_t *buf) {
 
             // Each row has 8-pixel width
             for (uint16_t x = 0; x < 8; x++) {
-                uint8_t px_val = dy_gfx_get_px(dev_buf, x, row_n) != 0;
+                uint8_t px_val = dy_gfx_get_px(dev_buf, x, row_n).r != 0;
                 row_data |= px_val << (7 - x);
             }
 
