@@ -21,12 +21,47 @@ static uint32_t px_offset(dy_ws2812_config_t *cfg, uint32_t x, uint32_t y) {
     return pos + cfg->segments.ppx * cfg->segments.ppy * seg_pos;
 }
 
+/**
+ * It's assumed that passed px has maximum brightness.
+ */
+static dy_gfx_px_t set_px_brightness(dy_gfx_px_t px, uint8_t level) {
+    if (level >= DY_DISPLAY_BRI_MAX) {
+        return px;
+    }
+
+    uint8_t divider = 255 - level * (DY_DISPLAY_BRI_MAX + 1);
+
+    if (px.r != 0) {
+        px.r = px.r / divider * (level + 1);
+        if (px.r == 0) {
+            px.r = 1;
+        }
+    }
+
+    if (px.g != 0) {
+        px.g = px.g / divider * (level + 1);
+        if (px.g == 0) {
+            px.g = 1;
+        }
+    }
+
+    if (px.b != 0) {
+        px.b = px.b / divider * (level + 1);
+        if (px.b == 0) {
+            px.b = 1;
+        }
+    }
+
+    return px;
+}
+
 static dy_err_t write(void *cf, dy_gfx_buf_t *buf) {
     dy_ws2812_config_t *cfg = (dy_ws2812_config_t *) cf;
 
     for (uint16_t y = 0; y < buf->height; y++) {
         for (uint16_t x = 0; x < buf->width; x++) {
             dy_gfx_px_t px = dy_gfx_get_px(buf, x, y);
+            px = set_px_brightness(px, cfg->brightness);
             led_strip_set_pixel(cfg->handle, px_offset(cfg, x, y), px.r, px.g, px.b);
         }
     }
@@ -39,8 +74,14 @@ static dy_err_t write(void *cf, dy_gfx_buf_t *buf) {
     return dy_ok();
 }
 
-static dy_err_t set_brightness(void *cfg, uint8_t value) {
-    // not implemented
+static dy_err_t set_brightness(void *cf, uint8_t value) {
+    if (value > DY_DISPLAY_BRI_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "value must not be greater than %d", DY_DISPLAY_BRI_MAX);
+    }
+
+    dy_ws2812_config_t *cfg = (dy_ws2812_config_t *) cf;
+    cfg->brightness = value;
+
     return dy_ok();
 }
 
