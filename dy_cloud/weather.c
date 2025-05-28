@@ -19,10 +19,21 @@ dy_err_t get_weather() {
         return dy_err_pfx("http_get_json", err);
     }
 
+    cJSON *id = cJSON_GetObjectItem(json, "id");
+    if (id != NULL) {
+        res.id = (int8_t) round(cJSON_GetNumberValue(id));
+    }
+
     cJSON *title = cJSON_GetObjectItem(json, "title");
     if (title != NULL) {
         strncpy(res.title, cJSON_GetStringValue(title), DY_CLOUD_WEATHER_TITLE_LEN);
     }
+
+    cJSON *is_day = cJSON_GetObjectItem(json, "is_day");
+    if (is_day != NULL) {
+        res.is_day = (bool) cJSON_GetNumberValue(is_day);
+    }
+
 
     cJSON *temp = cJSON_GetObjectItem(json, "temp");
     if (temp != NULL) {
@@ -34,20 +45,12 @@ dy_err_t get_weather() {
         res.feels = (int8_t) round(cJSON_GetNumberValue(feels));
     }
 
-    cJSON *pres = cJSON_GetObjectItem(json, "pressure");
-    if (temp != NULL) {
-        res.pressure = (uint16_t) cJSON_GetNumberValue(pres);
-    }
-
-    cJSON *hum = cJSON_GetObjectItem(json, "humidity");
-    if (temp != NULL) {
-        res.humidity = (uint16_t) cJSON_GetNumberValue(hum);
-    }
-
     cJSON_free(json);
 
-    ESP_LOGI(LTAG, "got weather: title=%s; temp=%d; feels=%d; pres=%d; hum=%d",
-             res.title, res.temp, res.feels, res.pressure, res.humidity);
+    ESP_LOGI(LTAG, "got weather: id=%d, title=%s; is_day=%d; temp=%d; feels=%d",
+             res.id, res.title, res.is_day, res.temp, res.feels);
+
+    res.ts = time(NULL);
 
     esp_err_t esp_err = esp_event_post(DY_CLOUD_EV_BASE, DY_CLOUD_EV_WEATHER_UPDATED, &res, sizeof(res), 10);
     if (esp_err != ESP_OK) {

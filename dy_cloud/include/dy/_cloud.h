@@ -14,9 +14,9 @@
 #define API_URL_WEATHER "https://api.d5y.xyz/v2/weather"
 #define API_URL_FW_UPDATE "https://api.d5y.xyz/v2/firmware/update"
 
-#define TIME_SYNC_PERIOD 42949 // ~11 hours, restricted by max value of uint32
+#define TIME_SYNC_PERIOD 42949 // ~11 hours, limited by max value of uint32
 #define WEATHER_SYNC_PERIOD 900 // 15 min
-#define UPDATE_CHECK_PERIOD 42949 // ~11 hours, restricted by max value of uint32
+#define UPDATE_CHECK_PERIOD 42949 // ~11 hours, limited by max value of uint32
 
 typedef struct {
     esp_http_client_method_t method;
