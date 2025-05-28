@@ -1,5 +1,3 @@
-#ifdef CONFIG_BT_ENABLED
-
 #include <string.h>
 
 #include "esp_log.h"
@@ -418,5 +416,3 @@ dy_err_t dy_bt_init() {
 
     return dy_ok();
 }
-
-#endif
