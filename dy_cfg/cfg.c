@@ -188,7 +188,7 @@ dy_err_t dy_cfg_init(dy_bt_chrc_num btc_n) {
 
     err = load();
     if (err->code == DY_ERR_NOT_FOUND) {
-        err = save(); // write current values that was presumably set before via cronus_cfg_set_default()
+        err = save(); // write current values that was presumably set before via dy_cfg_must_set_initial()
         if (dy_is_err(err)) {
             return dy_err_pfx("initial data save failed", err);
         }
