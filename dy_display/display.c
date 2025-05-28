@@ -35,11 +35,15 @@ dy_err_t dy_display_write(uint8_t id, dy_gfx_buf_t *buf) {
 
 dy_err_t dy_display_set_brightness(uint8_t id, uint8_t value) {
     if (id >= DY_DISPLAY_ID_MAX) {
-        return dy_err(DY_ERR_INVALID_ARG, "display id must not be greater than %d", DY_DISPLAY_ID_MAX);
+        return dy_err(DY_ERR_INVALID_ARG, "id must not be greater than %d", DY_DISPLAY_ID_MAX);
+    }
+
+    if (value > DY_DISPLAY_BRI_MAX) {
+        return dy_err(DY_ERR_INVALID_ARG, "brightness must not be greater than %d", DY_DISPLAY_BRI_MAX);
     }
 
     if (drivers[id].set_brightness == NULL || drivers[id].cfg == NULL) {
-        return dy_err(DY_ERR_INVALID_ARG, "display driver is not initialized");
+        return dy_err(DY_ERR_INVALID_ARG, "driver is not initialized");
     }
 
     return drivers[id].set_brightness(drivers[id].cfg, value);
