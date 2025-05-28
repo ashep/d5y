@@ -6,6 +6,8 @@
 
 static dy_err_t write(void *cfg, dy_gfx_buf_t *buf) {
     dy_err_t err;
+    dy_gfx_px_t px;
+    uint8_t px_val;
     max7219_config_t *cfg_t = (max7219_config_t *) cfg;
 
     if (dy_is_err(err = max7219_refresh(cfg_t))) {
@@ -29,7 +31,8 @@ static dy_err_t write(void *cfg, dy_gfx_buf_t *buf) {
 
             // Each row has 8-pixel width
             for (uint16_t x = 0; x < 8; x++) {
-                uint8_t px_val = dy_gfx_get_px(dev_buf, x, row_n).r != 0;
+                px = dy_gfx_get_px(dev_buf, x, row_n);
+                px_val = px.r || px.g || px.b;
                 row_data |= px_val << (7 - x);
             }
 
