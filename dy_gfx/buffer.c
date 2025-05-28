@@ -7,6 +7,7 @@
 
 #include "dy/error.h"
 #include "dy/gfx/gfx.h"
+#include "dy/gfx/sprite.h"
 
 static void print_bin(uint32_t v, uint8_t width) {
     for (uint8_t i = width; i > 0; i--) {
@@ -164,4 +165,21 @@ dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos) {
     dy_gfx_free_buf(tmp_buf);
 
     return DY_OK;
+}
+
+dy_err_t dy_gfx_write_sprite(dy_gfx_buf_t *buf, uint16_t bx, uint16_t by, dy_gfx_sprite_t *sp) {
+    uint16_t sp_offset;
+    uint16_t max_offset = sp->width * sp->height - 1;
+
+    for (uint16_t x = 0; x < sp->width; x++) {
+        for (uint16_t y = 0; y < sp->height; y++) {
+            sp_offset = x + y * sp->height;
+            if (sp_offset > max_offset) {
+                return dy_err(DY_ERR_INVALID_ARG, "invalid sprite offset: %d", sp_offset);
+            }
+            buf->content[dy_gfx_get_px_pos(buf, bx + x, by + y)] = sp->data[sp_offset];
+        }
+    }
+
+    return dy_ok();
 }

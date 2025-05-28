@@ -2,6 +2,7 @@
  * IBM EGA 8x14, suitable for clock; only numbers and special signs.
  */
 #pragma once
+
 #include <stdio.h>
 #include "dy/gfx/text.h"
 
