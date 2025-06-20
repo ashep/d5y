@@ -35,6 +35,8 @@ dy_err_t dy_bt_register_chrc_writer(dy_bt_chrc_num num, dy_bt_chrc_chrc_writer_t
 
 dy_err_t dy_bt_set_device_name_prefix(const char *s);
 
+dy_err_t dy_bt_set_device_appearance(uint16_t appearance);
+
 dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid);
 
 dy_err_t dy_bt_init();

@@ -62,19 +62,15 @@ static esp_ble_adv_params_t advrt_params = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
+static uint8_t mnf_data[2] = {0xE5, 0x02}; // Espressif
+
 static esp_ble_adv_data_t adv_data = {
     .set_scan_rsp = false,
     .include_name = true,
     .include_txpower = true,
-    .min_interval = 0x0006, // slave connection min interval, Time = min_interval * 1.25 msec
-    .max_interval = 0x0010, // slave connection max interval, Time = max_interval * 1.25 msec
-    .appearance = 0x00,
-    .manufacturer_len = 0, // TEST_MANUFACTURER_DATA_LEN,
-    .p_manufacturer_data = NULL, //&test_manufacturer[0],
-    .service_data_len = 0,
-    .p_service_data = NULL,
-    .service_uuid_len = 0,
-    .p_service_uuid = NULL,
+    .appearance = 0x00, // https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/Assigned_Numbers.pdf
+    .manufacturer_len = sizeof(mnf_data),
+    .p_manufacturer_data = mnf_data,
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
 
@@ -85,7 +81,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
-            ESP_LOGD(LTAG, "GAP: advertising data set: status=%d", param->adv_data_cmpl.status);
+            ESP_LOGI(LTAG, "GAP: advertising data set: status=%d", param->adv_data_cmpl.status);
 
             if ((err = esp_ble_gap_start_advertising(&advrt_params)) != ESP_OK) {
                 ESP_LOGE(LTAG, "GAP: advertising start failed: %s", esp_err_to_name(err));
@@ -95,7 +91,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             break;
 
         case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
-            ESP_LOGD(LTAG, "GAP: scan response data set: status=%d", param->scan_rsp_data_cmpl.status);
+            ESP_LOGI(LTAG, "GAP: scan response data set: status=%d", param->scan_rsp_data_cmpl.status);
             break;
 
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
@@ -112,8 +108,9 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     esp_err_t err;
 
     switch (event) {
+        // This event occurs first after esp_ble_gatts_app_register is called
         case ESP_GATTS_REG_EVT:
-            ESP_LOGD(LTAG, "GATTS: application registered: gatts_if=%d, status=%d, id=%d",
+            ESP_LOGI(LTAG, "GATTS: application registered: gatts_if=%d, status=%d, id=%d",
                      gatts_if, param->reg.status, param->reg.app_id);
 
             const uint8_t *addr = esp_bt_dev_get_address();
@@ -134,26 +131,21 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 return;
             }
 
+            dy_bt_evt_ready_t evt = {};
+            memcpy(evt.address, addr, 6);
+            if ((err = esp_event_post(DY_BT_EVENT_BASE, DY_BT_EVENT_READY, &evt, sizeof(evt), 10)) != ESP_OK) {
+                ESP_LOGE(LTAG, "GAP: post ready event failed: %s", esp_err_to_name(err));
+            }
+
             if ((err = esp_ble_gap_config_adv_data(&adv_data)) != ESP_OK) {
                 ESP_LOGE(LTAG, "GAP: advertising data set failed: %s", esp_err_to_name(err));
                 return;
             }
 
-            if ((err = esp_ble_gap_start_advertising(&advrt_params)) != ESP_OK) {
-                ESP_LOGE(LTAG, "GAP: advertising start failed: %s", esp_err_to_name(err));
-                return;
-            }
-
-            dy_bt_evt_ready_t evt = {};
-            memcpy(evt.address, addr, 6);
-            if ((err = esp_event_post(DY_BT_EVENT_BASE, DY_BT_EVENT_READY, &evt, sizeof(evt), 10)) != ESP_OK) {
-                ESP_LOGE(LTAG, "post ready event: %s", esp_err_to_name(err));
-            }
-
             break;
 
         case ESP_GATTS_READ_EVT:
-            ESP_LOGD(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
+            ESP_LOGI(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
                      param->read.handle, param->read.trans_id, param->read.need_rsp, param->read.is_long,
                      param->read.offset);
 
@@ -163,7 +155,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 }
 
                 if (chrcs[i].read == NULL) {
-                    ESP_LOGW(LTAG, "no characteristic reader registered: uuid=0x%x", chrcs[i].uuid.uuid.uuid16);
+                    ESP_LOGW(LTAG, "GATTS: no characteristic reader registered: uuid=0x%x", chrcs[i].uuid.uuid.uuid16);
                     return;
                 }
 
@@ -184,7 +176,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_WRITE_EVT:
-            ESP_LOGD(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
+            ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d",
                      param->write.handle, param->write.need_rsp, param->write.trans_id, param->write.len);
 
             for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
@@ -193,14 +185,14 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 }
 
                 if (chrcs[i].write == NULL) {
-                    ESP_LOGW(LTAG, "no characteristic writer registered: uuid=0x%x", chrcs[i].uuid.uuid.uuid16);
+                    ESP_LOGW(LTAG, "GATTS: no characteristic writer registered: uuid=0x%x", chrcs[i].uuid.uuid.uuid16);
                     return;
                 }
 
                 // Ask the writer to write the value
                 dy_err_t w_err = chrcs[i].write(param->write.len, param->write.offset, param->write.value);
                 if (dy_is_err(w_err)) {
-                    ESP_LOGW(LTAG, "characteristic write failed: %s", dy_err_str(w_err));
+                    ESP_LOGW(LTAG, "GATTS: characteristic write failed: %s", dy_err_str(w_err));
                     return;
                 }
             }
@@ -208,12 +200,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_MTU_EVT:
-            ESP_LOGD(LTAG, "GATTS: mtu set: conn_id=%d, mtu=%d",
+            ESP_LOGI(LTAG, "GATTS: mtu set: conn_id=%d, mtu=%d",
                      param->mtu.conn_id, param->mtu.mtu);
             break;
 
         case ESP_GATTS_CREATE_EVT:
-            ESP_LOGD(LTAG, "GATTS: service created, status=%d, handle=%d",
+            ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d",
                      param->create.status, param->create.service_handle);
 
             for (int i = 0; i < DY_BT_CHRC_MAX; i++) {
@@ -265,12 +257,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             }
 
             if (!known) {
-                ESP_LOGE(LTAG, "unknown characteristic: uuid=0x%x, status=%d, handle=%d",
+                ESP_LOGE(LTAG, "GATTS: unknown characteristic: uuid=0x%x, status=%d, handle=%d",
                          param->add_char.char_uuid.uuid.uuid16, param->add_char.status, param->add_char.attr_handle);
                 return;
             }
 
-            ESP_LOGI(LTAG, "characteristic added: uuid=0x%x, status=%d, handle=%d",
+            ESP_LOGI(LTAG, "GATTS: characteristic added: uuid=0x%x, status=%d, handle=%d",
                      param->add_char.char_uuid.uuid.uuid16, param->add_char.status, param->add_char.attr_handle);
 
             break;
@@ -308,12 +300,12 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             break;
 
         case ESP_GATTS_RESPONSE_EVT:
-            ESP_LOGD(LTAG, "GATTS: response sent: status=%d, handle=%d",
+            ESP_LOGI(LTAG, "GATTS: response sent: status=%d, handle=%d",
                      param->rsp.status, param->rsp.handle);
             break;
 
         default:
-            ESP_LOGD(LTAG, "GATTS: unknown event: %d (if %d)", event, gatts_if);
+            ESP_LOGI(LTAG, "GATTS: unknown event: %d (if %d)", event, gatts_if);
             break;
     }
 }
@@ -374,6 +366,16 @@ dy_err_t dy_bt_set_device_name_prefix(const char *s) {
     return dy_ok();
 }
 
+dy_err_t dy_bt_set_device_appearance(uint16_t appearance) {
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+    }
+
+    adv_data.appearance = appearance;
+
+    return dy_ok();
+}
+
 dy_err_t dy_bt_init() {
     esp_err_t err;
 
@@ -400,12 +402,12 @@ dy_err_t dy_bt_init() {
         return dy_err(DY_ERR_FAILED, "esp_bluedroid_enable failed: %s", esp_err_to_name(err));
     }
 
-    if ((err = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_register_callback failed: %s", esp_err_to_name(err));
-    }
-
     if ((err = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "esp_ble_gap_register_callback failed: %s", esp_err_to_name(err));
+    }
+
+    if ((err = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK) {
+        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_register_callback failed: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gatts_app_register(0)) != ESP_OK) {
