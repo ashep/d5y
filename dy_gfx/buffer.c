@@ -167,7 +167,7 @@ dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos) {
     return DY_OK;
 }
 
-dy_err_t dy_gfx_write_sprite(dy_gfx_buf_t *buf, uint16_t bx, uint16_t by, dy_gfx_sprite_t *sp) {
+dy_err_t dy_gfx_write_sprite(dy_gfx_buf_t *buf, uint16_t bx, uint16_t by, const dy_gfx_sprite_t *sp) {
     uint16_t sp_offset;
     uint16_t max_offset = sp->width * sp->height - 1;
 
