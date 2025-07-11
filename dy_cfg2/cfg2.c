@@ -5,6 +5,7 @@
 #define CFG2_KEY_LEN 5 // 4 hex digits + null terminator
 
 static nvs_handle_t nvs_hdl;
+static bool nvs_initialized = false;
 
 static char *id2key(uint16_t id, char *dst) {
     snprintf(dst, CFG2_KEY_LEN, "%04x", id);
@@ -25,6 +26,10 @@ dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
     esp_err_t err;
     char key[CFG2_KEY_LEN];
 
+    if (!nvs_initialized) {
+        return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
+    }
+
     if ((err = nvs_set_u8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_u8: %s", esp_err_to_name(err));
     }
@@ -36,6 +41,10 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
     esp_err_t err;
     char key[CFG2_KEY_LEN];
 
+    if (!nvs_initialized) {
+        return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
+    }
+
     if ((err = nvs_set_i8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_i8: %s", esp_err_to_name(err));
     }
@@ -45,6 +54,10 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
 
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
     char key[CFG2_KEY_LEN];
+
+    if (!nvs_initialized) {
+        return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
+    }
 
     if (dst == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "dst is null");
@@ -62,6 +75,10 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
 
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
     char key[CFG2_KEY_LEN];
+
+    if (!nvs_initialized) {
+        return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
+    }
 
     if (dst == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "dst is null");
@@ -82,6 +99,8 @@ dy_err_t dy_cfg2_init() {
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_open: %s", esp_err_to_name(esp_err));
     }
+
+    nvs_initialized = true;
 
     return dy_ok();
 }
