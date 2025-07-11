@@ -13,11 +13,12 @@
 
 #define API_URL "https://api.d5y.xyz/v2/firmware/update"
 #define CHECK_PERIOD 42949 // ~11 hours, limited by max value of uint32
-#define URL_MAX_LEN 512
+#define URL_MAX_LEN 512 // URL can be really long, so we use 512 bytes
 #define HTTP_REQ_TIMEOUT 5000
 #define LTAG "DY_CLOUD"
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
+
 static char fwupdate_url[URL_MAX_LEN] = {0};
 static bool allow_alpha_versions = false;
 
@@ -62,7 +63,7 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         res->size = (int) cJSON_GetNumberValue(size);
     }
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     return dy_ok();
 }
@@ -100,18 +101,18 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
     ESP_LOGI(LTAG, "starting firmware update");
 
     esp_http_client_config_t http_cfg = {
-        .user_agent = ai.id,
-        .method = HTTP_METHOD_GET,
-        .url = res->url,
-        .timeout_ms = HTTP_REQ_TIMEOUT,
-        .keep_alive_enable = false,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-        .buffer_size_tx = 2048,
+            .user_agent = ai.id,
+            .method = HTTP_METHOD_GET,
+            .url = res->url,
+            .timeout_ms = HTTP_REQ_TIMEOUT,
+            .keep_alive_enable = false,
+            .crt_bundle_attach = esp_crt_bundle_attach,
+            .buffer_size_tx = 2048,
     };
 
     esp_https_ota_config_t ota_cfg = {
-        .http_config = &http_cfg,
-        .partial_http_download = true,
+            .http_config = &http_cfg,
+            .partial_http_download = true,
     };
 
     esp_err = esp_https_ota(&ota_cfg);

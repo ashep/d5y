@@ -12,7 +12,7 @@
 
 #define API_URL "https://api.d5y.xyz/v2/weather"
 #define SYNC_PERIOD 900 // 15 min
-#define URL_MAX_LEN 256
+#define URL_MAX_LEN 128
 #define LTAG "DY_CLOUD"
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
@@ -55,7 +55,7 @@ static dy_err_t get_weather() {
         res.feels = (int8_t) round(cJSON_GetNumberValue(feels));
     }
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     ESP_LOGI(LTAG, "got weather: id=%d, title=%s; is_day=%d; temp=%d; feels=%d",
              res.id, res.title, res.is_day, res.temp, res.feels);
