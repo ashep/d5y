@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "nvs.h"
 #include "dy/error.h"
 
