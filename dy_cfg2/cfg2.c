@@ -1,14 +1,17 @@
+#include "dy/cfg2.h"
+#include <stdio.h>
 #include <stdint.h>
 #include "nvs.h"
 #include "dy/error.h"
 
-#define CFG2_KEY_LEN 5 // 4 hex digits + null terminator
+#define DY_CFG2_NVS_NAMESPACE "dy_cfg"
+#define DY_CFG2_NVS_KEY_LEN 5 // 4 hex digits + null terminator
 
 static nvs_handle_t nvs_hdl;
 static bool nvs_initialized = false;
 
 static char *id2key(uint16_t id, char *dst) {
-    snprintf(dst, CFG2_KEY_LEN, "%04x", id);
+    snprintf(dst, DY_CFG2_NVS_KEY_LEN, "%04x", id);
     return dst;
 }
 
@@ -24,7 +27,7 @@ static dy_err_t commit() {
 
 dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
     esp_err_t err;
-    char key[CFG2_KEY_LEN];
+    char key[DY_CFG2_NVS_KEY_LEN];
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
@@ -39,7 +42,7 @@ dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
 
 dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
     esp_err_t err;
-    char key[CFG2_KEY_LEN];
+    char key[DY_CFG2_NVS_KEY_LEN];
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
@@ -53,7 +56,7 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
 }
 
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
-    char key[CFG2_KEY_LEN];
+    char key[DY_CFG2_NVS_KEY_LEN];
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
@@ -74,7 +77,7 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
 }
 
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
-    char key[CFG2_KEY_LEN];
+    char key[DY_CFG2_NVS_KEY_LEN];
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
@@ -95,7 +98,7 @@ dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
 }
 
 dy_err_t dy_cfg2_init() {
-    esp_err_t esp_err = nvs_open("config", NVS_READWRITE, &nvs_hdl);
+    esp_err_t esp_err = nvs_open(DY_CFG2_NVS_NAMESPACE, NVS_READWRITE, &nvs_hdl);
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_open: %s", esp_err_to_name(esp_err));
     }
