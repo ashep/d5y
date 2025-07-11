@@ -1,5 +1,8 @@
+#include "dy/cloud.h"
+
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "esp_log.h"
 #include "cJSON.h"
@@ -7,15 +10,21 @@
 #include "dy/error.h"
 #include "dy/net_cfg.h"
 
-#include "dy/_cloud.h"
-#include "dy/cloud.h"
+#define API_URL "https://api.d5y.xyz/v2/weather"
+#define SYNC_PERIOD 900 // 15 min
+#define URL_MAX_LEN 512
+#define LTAG "DY_CLOUD"
 
-dy_err_t get_weather() {
+extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
+static char weather_url[URL_MAX_LEN] = {0};
+
+static dy_err_t get_weather() {
     dy_err_t err;
     cJSON *json;
     dy_cloud_weather_t res;
 
-    if (dy_is_err(err = http_get_json(API_URL_WEATHER, &json))) {
+    err = http_get_json(weather_url, &json);
+    if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
 
@@ -33,7 +42,6 @@ dy_err_t get_weather() {
     if (is_day != NULL) {
         res.is_day = (bool) cJSON_GetNumberValue(is_day);
     }
-
 
     cJSON *temp = cJSON_GetObjectItem(json, "temp");
     if (temp != NULL) {
@@ -71,14 +79,16 @@ _Noreturn static void task() {
             ESP_LOGE(LTAG, "get_weather: %s", dy_err_str(err));
             delay_sec = 10;
         } else {
-            delay_sec = WEATHER_SYNC_PERIOD;
+            delay_sec = SYNC_PERIOD;
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000 * delay_sec));
     }
 }
 
-dy_err_t dy_cloud_weather_start_scheduler() {
+dy_err_t dy_cloud_weather_scheduler_start(float lat, float lng) {
+    snprintf(weather_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL, lat, lng);
+
     BaseType_t res = xTaskCreate(task, "dy_cloud_weather", 4096, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {
         return dy_err(DY_ERR_FAILED, "xTaskCreate");

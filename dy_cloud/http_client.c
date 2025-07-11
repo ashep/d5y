@@ -1,6 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-
+#include "cJSON.h"
 #include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -8,12 +8,35 @@
 
 #include "dy/appinfo.h"
 #include "dy/error.h"
-#include "dy/_cloud.h"
+
+#define HTTP_REQ_TIMEOUT 5000
+#define HTTP_RSP_LEN 1024
+#define HTTP_AUTHORIZATION_LEN 128
+
+typedef struct {
+    esp_http_client_method_t method;
+    const char *url;
+    int *rsp_status;
+    int64_t *rsp_len;
+    char *rsp_body;
+} dy_cloud_http_req_t;
 
 static char authorization[HTTP_AUTHORIZATION_LEN + 1];
 static char response[HTTP_RSP_LEN + 1];
-
 static QueueHandle_t mux = NULL;
+
+static dy_err_t json_err() {
+    dy_err_t err;
+
+    const char *error_ptr = cJSON_GetErrorPtr();
+    if (error_ptr != NULL) {
+        err = dy_err(DY_ERR_JSON_PARSE, "%s", error_ptr);
+    } else {
+        err = dy_err(DY_ERR_JSON_PARSE, "reason unknown");
+    }
+
+    return err;
+}
 
 static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
     int len;
