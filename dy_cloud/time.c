@@ -41,7 +41,7 @@ static dy_err_t get_cloud_time() {
     }
 
     cJSON *ts = cJSON_GetObjectItem(json, "value");
-    if (tz_data != NULL) {
+    if (ts != NULL) {
         res.ts = (int) cJSON_GetNumberValue(ts);
     }
 

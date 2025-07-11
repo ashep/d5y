@@ -42,9 +42,10 @@ static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
     switch (evt->event_id) {
         case HTTP_EVENT_ON_DATA:
             if (evt->data_len >= HTTP_RSP_MAX_LEN) {
-                return ESP_ERR_NO_MEM; // Prevent buffer overflow
+                return ESP_ERR_NO_MEM;
             }
-            strlcpy(response, evt->data, evt->data_len);
+            memcpy(response, evt->data, evt->data_len);
+            response[evt->data_len] = '\0';
             break;
 
         default:
@@ -76,13 +77,13 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
     }
 
     esp_http_client_config_t cfg = {
-        .method = req->method,
-        .url = req->url,
-        .user_agent = ai.id,
-        .timeout_ms = HTTP_REQ_TIMEOUT,
-        .event_handler = http_cli_ev_handler,
-        .keep_alive_enable = false,
-        .crt_bundle_attach = esp_crt_bundle_attach,
+            .method = req->method,
+            .url = req->url,
+            .user_agent = ai.id,
+            .timeout_ms = HTTP_REQ_TIMEOUT,
+            .event_handler = http_cli_ev_handler,
+            .keep_alive_enable = false,
+            .crt_bundle_attach = esp_crt_bundle_attach,
     };
 
     cli = esp_http_client_init(&cfg);
@@ -97,9 +98,6 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
         strncat(authorization, ai.auth, HTTP_AUTHORIZATION_MAX_LEN - strlen(authorization));
         esp_http_client_set_header(cli, "Authorization", authorization);
     }
-
-    // http_cli_ev_handler will write to this buffer
-    memset(response, 0, HTTP_RSP_MAX_LEN);
 
     if ((esp_err = esp_http_client_perform(cli)) != ESP_OK) {
         esp_http_client_cleanup(cli);
@@ -132,11 +130,11 @@ dy_err_t http_get_json(const char *url, cJSON **rsp_json) {
         return dy_err(DY_ERR_NO_MEM, "response buffer allocation failed");
     }
     dy_cloud_http_req_t req = {
-        .method = HTTP_METHOD_GET,
-        .url = url,
-        .rsp_status = &rsp_status,
-        .rsp_len = &rsp_len,
-        .rsp_body = rsp_body,
+            .method = HTTP_METHOD_GET,
+            .url = url,
+            .rsp_status = &rsp_status,
+            .rsp_len = &rsp_len,
+            .rsp_body = rsp_body,
     };
 
     dy_err_t err = http_request(&req);
