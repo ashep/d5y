@@ -76,7 +76,10 @@ _Noreturn static void task() {
 }
 
 dy_err_t dy_cloud_time_scheduler_start(float lat, float lng) {
-    snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL, lat, lng);
+    int n = snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL, lat, lng);
+    if (n < 0 || n >= URL_MAX_LEN) {
+        return dy_err(DY_ERR_FAILED, "api url is too long");
+    }
 
     BaseType_t res = xTaskCreate(task, "dy_cloud_time", 4096, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {

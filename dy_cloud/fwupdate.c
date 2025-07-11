@@ -36,7 +36,10 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         return dy_err_pfx("dy_appinfo_get", err);
     }
 
-    snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
+    int n = snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
+    if (n < 0 || n >= URL_MAX_LEN) {
+        return dy_err(DY_ERR_INVALID_ARG, "firmware update url is too long");
+    }
 
     cJSON *json;
     err = http_get_json(fwupdate_url, &json);
