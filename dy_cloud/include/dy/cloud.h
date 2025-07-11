@@ -42,7 +42,7 @@ typedef struct {
 
 typedef struct {
     uint8_t id;
-    char title[DY_CLOUD_WEATHER_TITLE_LEN + 1];
+    char title[DY_CLOUD_WEATHER_TITLE_LEN];
     bool is_day;
     int8_t temp;
     int8_t feels;
