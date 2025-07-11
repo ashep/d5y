@@ -5,7 +5,7 @@
 static nvs_handle_t nvs_hdl;
 
 static char *id2key(uint16_t id, char *dst) {
-    snprintf(dst, 6, "%x", id);
+    snprintf(dst, 6, "%04x", id);
     return dst;
 }
 
