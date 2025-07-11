@@ -45,12 +45,12 @@ static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
         case HTTP_EVENT_ON_DATA:
             memset(response, 0, HTTP_RSP_LEN);
 
-            len = HTTP_RSP_LEN - 1;
+            len = HTTP_RSP_LEN;
             if (evt->data_len < len) {
                 len = evt->data_len;
             }
 
-            strncpy(response, evt->data, len);
+            strlcpy(response, evt->data, len);
             break;
 
         default:
@@ -114,7 +114,7 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
     *req->rsp_len = esp_http_client_get_content_length(cli);
 
     memset(req->rsp_body, 0, HTTP_RSP_LEN);
-    strncpy(req->rsp_body, response, HTTP_RSP_LEN);
+    strlcpy(req->rsp_body, response, HTTP_RSP_LEN);
 
     if ((esp_err = esp_http_client_cleanup(cli)) != ESP_OK) {
         xSemaphoreGive(mux);

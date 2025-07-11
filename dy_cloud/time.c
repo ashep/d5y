@@ -32,12 +32,12 @@ static dy_err_t get_cloud_time() {
 
     cJSON *tz = cJSON_GetObjectItem(json, "tz");
     if (tz != NULL) {
-        strncpy(res.tz, cJSON_GetStringValue(tz), DY_CLOUD_TIME_TZ_LEN);
+        strlcpy(res.tz, cJSON_GetStringValue(tz), DY_CLOUD_TIME_TZ_LEN);
     }
 
     cJSON *tz_data = cJSON_GetObjectItem(json, "tz_data");
     if (tz_data != NULL) {
-        strncpy(res.tzd, cJSON_GetStringValue(tz_data), DY_CLOUD_TIME_TZ_DATA_LEN);
+        strlcpy(res.tzd, cJSON_GetStringValue(tz_data), DY_CLOUD_TIME_TZ_DATA_LEN);
     }
 
     cJSON *ts = cJSON_GetObjectItem(json, "value");

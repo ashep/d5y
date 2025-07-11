@@ -49,12 +49,12 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
 
     cJSON *r_url = cJSON_GetObjectItem(json, "url");
     if (r_url != NULL) {
-        strncpy(res->url, cJSON_GetStringValue(r_url), URL_MAX_LEN);
+        strlcpy(res->url, cJSON_GetStringValue(r_url), URL_MAX_LEN);
     }
 
     cJSON *sha256 = cJSON_GetObjectItem(json, "sha256");
     if (sha256 != NULL) {
-        strncpy(res->sha256, cJSON_GetStringValue(sha256), 64);
+        strlcpy(res->sha256, cJSON_GetStringValue(sha256), 64);
     }
 
     cJSON *size = cJSON_GetObjectItem(json, "size");

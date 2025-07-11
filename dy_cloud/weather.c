@@ -37,7 +37,7 @@ static dy_err_t get_weather() {
 
     cJSON *title = cJSON_GetObjectItem(json, "title");
     if (title != NULL) {
-        strncpy(res.title, cJSON_GetStringValue(title), DY_CLOUD_WEATHER_TITLE_LEN);
+        strlcpy(res.title, cJSON_GetStringValue(title), DY_CLOUD_WEATHER_TITLE_LEN);
     }
 
     cJSON *is_day = cJSON_GetObjectItem(json, "is_day");
