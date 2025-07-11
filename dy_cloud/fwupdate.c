@@ -55,7 +55,7 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
 
     cJSON *sha256 = cJSON_GetObjectItem(json, "sha256");
     if (sha256 != NULL) {
-        strlcpy(res->sha256, cJSON_GetStringValue(sha256), 64);
+        strlcpy(res->sha256, cJSON_GetStringValue(sha256), sizeof(res->sha256));
     }
 
     cJSON *size = cJSON_GetObjectItem(json, "size");
