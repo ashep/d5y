@@ -44,6 +44,10 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
     char key[6];
 
+    if (dst == NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
+    }
+
     esp_err_t err = nvs_get_u8(nvs_hdl, id2key(id, key), dst);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
         return dy_err(DY_ERR_NOT_FOUND, "key not found");
@@ -56,6 +60,10 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
 
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
     char key[6];
+
+    if (dst == NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
+    }
 
     esp_err_t err = nvs_get_i8(nvs_hdl, id2key(id, key), dst);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
