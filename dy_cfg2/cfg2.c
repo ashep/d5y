@@ -1,4 +1,3 @@
-#include "esp_log.h"
 #include "nvs.h"
 #include "dy/error.h"
 
