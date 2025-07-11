@@ -2,7 +2,7 @@
 #include "nvs.h"
 #include "dy/error.h"
 
-#define CFG2_KEY_LEN 6
+#define CFG2_KEY_LEN 5 // 4 hex digits + null terminator
 
 static nvs_handle_t nvs_hdl;
 
@@ -23,7 +23,7 @@ static dy_err_t commit() {
 
 dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
     esp_err_t err;
-    char key[6];
+    char key[CFG2_KEY_LEN];
 
     if ((err = nvs_set_u8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_u8: %s", esp_err_to_name(err));
@@ -34,7 +34,7 @@ dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
 
 dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
     esp_err_t err;
-    char key[6];
+    char key[CFG2_KEY_LEN];
 
     if ((err = nvs_set_i8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_i8: %s", esp_err_to_name(err));
@@ -44,7 +44,7 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
 }
 
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
-    char key[6];
+    char key[CFG2_KEY_LEN];
 
     if (dst == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "dst is null");
@@ -61,7 +61,7 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
 }
 
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
-    char key[6];
+    char key[CFG2_KEY_LEN];
 
     if (dst == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "dst is null");
