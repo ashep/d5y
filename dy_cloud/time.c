@@ -1,3 +1,5 @@
+#include "dy/cloud.h"
+
 #include <string.h>
 
 #include "esp_log.h"
@@ -6,36 +8,44 @@
 #include "dy/error.h"
 #include "dy/net_cfg.h"
 
-#include "dy/_cloud.h"
-#include "dy/cloud.h"
+#define SYNC_PERIOD 42949 // ~11 hours, limited by max value of uint32
+#define API_URL "https://api.d5y.xyz/v2/time"
+#define URL_MAX_LEN 128
+#define LTAG "DY_CLOUD"
 
 ESP_EVENT_DEFINE_BASE(DY_CLOUD_EVENT_BASE);
 
-static dy_err_t get_cloud_time() {
-    cJSON *json;
-    dy_cloud_time_t res;
+extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
+static char time_url[URL_MAX_LEN] = {0};
 
-    dy_err_t err = http_get_json(API_URL_TIME, &json);
+static dy_err_t get_cloud_time() {
+    dy_err_t err;
+    cJSON *json;
+
+    dy_cloud_time_t res;
+    memset(&res, 0, sizeof(res));
+
+    err = http_get_json(time_url, &json);
     if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
 
     cJSON *tz = cJSON_GetObjectItem(json, "tz");
     if (tz != NULL) {
-        strncpy(res.tz, cJSON_GetStringValue(tz), DY_CLOUD_TIME_TZ_LEN);
+        strlcpy(res.tz, cJSON_GetStringValue(tz), DY_CLOUD_TIME_TZ_LEN);
     }
 
     cJSON *tz_data = cJSON_GetObjectItem(json, "tz_data");
     if (tz_data != NULL) {
-        strncpy(res.tzd, cJSON_GetStringValue(tz_data), DY_CLOUD_TIME_TZ_DATA_LEN);
+        strlcpy(res.tzd, cJSON_GetStringValue(tz_data), DY_CLOUD_TIME_TZ_DATA_LEN);
     }
 
     cJSON *ts = cJSON_GetObjectItem(json, "value");
-    if (tz_data != NULL) {
+    if (ts != NULL) {
         res.ts = (int) cJSON_GetNumberValue(ts);
     }
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     ESP_LOGI(LTAG, "got time: %lu; %s; %s", res.ts, res.tz, res.tzd);
 
@@ -58,14 +68,19 @@ _Noreturn static void task() {
             ESP_LOGE(LTAG, "set_localtime_from_cloud: %s", dy_err_str(err));
             delay_sec = 10;
         } else {
-            delay_sec = TIME_SYNC_PERIOD;
+            delay_sec = SYNC_PERIOD;
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000 * delay_sec));
     }
 }
 
-dy_err_t dy_cloud_time_start_scheduler() {
+dy_err_t dy_cloud_time_scheduler_start(float lat, float lng) {
+    int n = snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL, lat, lng);
+    if (n < 0 || n >= URL_MAX_LEN) {
+        return dy_err(DY_ERR_FAILED, "api url is too long");
+    }
+
     BaseType_t res = xTaskCreate(task, "dy_cloud_time", 4096, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {
         return dy_err(DY_ERR_FAILED, "xTaskCreate");

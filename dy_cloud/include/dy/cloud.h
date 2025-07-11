@@ -1,6 +1,8 @@
 #pragma once
 
 #include <time.h>
+#include <stdbool.h>
+#include "dy/error.h"
 
 #define DY_CLOUD_WEATHER_TITLE_LEN 32
 #define DY_CLOUD_TIME_TZ_LEN 32
@@ -40,15 +42,41 @@ typedef struct {
 
 typedef struct {
     uint8_t id;
-    char title[DY_CLOUD_WEATHER_TITLE_LEN + 1];
+    char title[DY_CLOUD_WEATHER_TITLE_LEN];
     bool is_day;
     int8_t temp;
     int8_t feels;
     time_t ts;
 } dy_cloud_weather_t;
 
-dy_err_t dy_cloud_time_start_scheduler();
+/**
+ * @brief Starts the current time fetcher.
+ *
+ * @param lat Latitude of the location.
+ * @param lng Longitude of the location.
+ * @return
+ *  - DY_ERR_FAILED if the scheduler could not be started.
+ *  - DY_OK on success.
+ */
+dy_err_t dy_cloud_time_scheduler_start(float lat, float lng);
 
-dy_err_t dy_cloud_weather_start_scheduler();
+/**
+ * @brief Starts the weather fetcher.
+ *
+ * @param lat Latitude of the location.
+ * @param lng Longitude of the location.
+ * @return
+ *  - DY_ERR_FAILED if the scheduler could not be started.
+ *  - DY_OK on success.
+ */
+dy_err_t dy_cloud_weather_scheduler_start(float lat, float lng);
 
-dy_err_t dy_cloud_update_start_scheduler(bool allow_alpha);
+/**
+ * @brief Starts the firmware update scheduler.
+ *
+ * @param allow_alpha If true, allows alpha versions of the firmware to be fetched.
+ * @return
+ *  - DY_ERR_FAILED if the scheduler could not be started.
+ *  - DY_OK on success.
+ */
+dy_err_t dy_cloud_fwupdate_scheduler_start(bool allow_alpha);

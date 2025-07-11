@@ -1,5 +1,7 @@
-#include "freertos/FreeRTOS.h"
+#include <stdbool.h>
 
+#include "freertos/FreeRTOS.h"
+#include "cJSON.h"
 #include "esp_log.h"
 #include "esp_crt_bundle.h"
 #include "esp_ota_ops.h"
@@ -9,9 +11,22 @@
 #include "dy/net_cfg.h"
 #include "dy/appinfo.h"
 
-#include "dy/_cloud.h"
+#define API_URL "https://api.d5y.xyz/v2/firmware/update"
+#define CHECK_PERIOD 42949 // ~11 hours, limited by max value of uint32
+#define URL_MAX_LEN 512 // URL can be really long, so we use 512 bytes
+#define HTTP_REQ_TIMEOUT 5000
+#define LTAG "DY_CLOUD"
 
+extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
+
+static char fwupdate_url[URL_MAX_LEN] = {0};
 static bool allow_alpha_versions = false;
+
+typedef struct {
+    char url[URL_MAX_LEN];
+    size_t size;
+    char sha256[65];
+} dy_cloud_resp_fw_update_t;
 
 static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
     dy_err_t err;
@@ -21,35 +36,29 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         return dy_err_pfx("dy_appinfo_get", err);
     }
 
-
-    char *req_url = malloc(URL_LEN + 1);
-    if (!req_url) {
-        return dy_err(DY_ERR_NO_MEM, "request url buffer allocation failed");
+    int n = snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
+    if (n < 0 || n >= URL_MAX_LEN) {
+        return dy_err(DY_ERR_INVALID_ARG, "firmware update url is too long");
     }
 
-    memset(req_url, 0, URL_LEN + 1);
-    snprintf(req_url, URL_LEN, "%s?app=%s&to_alpha=%d", API_URL_FW_UPDATE, ai.id, allow_alpha_versions);
-
     cJSON *json;
-    memset(res, 0, sizeof(*res));
-
-    err = http_get_json(req_url, &json);
-    free(req_url);
-
+    err = http_get_json(fwupdate_url, &json);
     if (err->code == DY_ERR_NOT_FOUND) {
         return err;
     } else if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
 
+    memset(res, 0, sizeof(*res));
+
     cJSON *r_url = cJSON_GetObjectItem(json, "url");
     if (r_url != NULL) {
-        strncpy(res->url, cJSON_GetStringValue(r_url), URL_LEN - 1);
+        strlcpy(res->url, cJSON_GetStringValue(r_url), URL_MAX_LEN);
     }
 
     cJSON *sha256 = cJSON_GetObjectItem(json, "sha256");
     if (sha256 != NULL) {
-        strncpy(res->sha256, cJSON_GetStringValue(sha256), 64);
+        strlcpy(res->sha256, cJSON_GetStringValue(sha256), sizeof(res->sha256));
     }
 
     cJSON *size = cJSON_GetObjectItem(json, "size");
@@ -57,7 +66,7 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         res->size = (int) cJSON_GetNumberValue(size);
     }
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     return dy_ok();
 }
@@ -79,6 +88,7 @@ static dy_err_t print_part_info() {
 }
 
 static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
+    esp_err_t esp_err;
     dy_err_t err;
 
     dy_appinfo_info_t ai;
@@ -94,21 +104,21 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
     ESP_LOGI(LTAG, "starting firmware update");
 
     esp_http_client_config_t http_cfg = {
-        .user_agent = ai.id,
-        .method = HTTP_METHOD_GET,
-        .url = res->url,
-        .timeout_ms = HTTP_REQ_TIMEOUT,
-        .keep_alive_enable = false,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-        .buffer_size_tx = 2048,
+            .user_agent = ai.id,
+            .method = HTTP_METHOD_GET,
+            .url = res->url,
+            .timeout_ms = HTTP_REQ_TIMEOUT,
+            .keep_alive_enable = false,
+            .crt_bundle_attach = esp_crt_bundle_attach,
+            .buffer_size_tx = 2048,
     };
 
     esp_https_ota_config_t ota_cfg = {
-        .http_config = &http_cfg,
-        .partial_http_download = true,
+            .http_config = &http_cfg,
+            .partial_http_download = true,
     };
 
-    esp_err_t esp_err = esp_https_ota(&ota_cfg);
+    esp_err = esp_https_ota(&ota_cfg);
     if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "esp_https_ota: %s", esp_err_to_name(esp_err));
     }
@@ -137,7 +147,7 @@ _Noreturn static void task() {
 
         if (err->code == DY_ERR_NOT_FOUND) {
             ESP_LOGI(LTAG, "no firmware update found");
-            vTaskDelay(pdMS_TO_TICKS(1000 * UPDATE_CHECK_PERIOD));
+            vTaskDelay(pdMS_TO_TICKS(1000 * CHECK_PERIOD));
             continue;
         } else if (dy_is_err(err)) {
             ESP_LOGE(LTAG, "firmware update check: %s", dy_err_str(err));
@@ -159,7 +169,7 @@ _Noreturn static void task() {
     }
 }
 
-dy_err_t dy_cloud_update_start_scheduler(bool allow_alpha) {
+dy_err_t dy_cloud_fwupdate_scheduler_start(bool allow_alpha) {
     allow_alpha_versions = allow_alpha;
 
     if (xTaskCreate(task, "dy_cloud_fw_upd", 8192, NULL, tskIDLE_PRIORITY, NULL) != pdTRUE) {
