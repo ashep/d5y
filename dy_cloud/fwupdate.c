@@ -39,14 +39,14 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
     snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
 
     cJSON *json;
-    memset(res, 0, sizeof(*res));
-
     err = http_get_json(fwupdate_url, &json);
     if (err->code == DY_ERR_NOT_FOUND) {
         return err;
     } else if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
+
+    memset(res, 0, sizeof(*res));
 
     cJSON *r_url = cJSON_GetObjectItem(json, "url");
     if (r_url != NULL) {

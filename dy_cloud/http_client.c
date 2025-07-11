@@ -10,8 +10,8 @@
 #include "dy/error.h"
 
 #define HTTP_REQ_TIMEOUT 5000
-#define HTTP_RSP_LEN 1024
-#define HTTP_AUTHORIZATION_LEN 128
+#define HTTP_RSP_MAX_LEN 2048 // Should be enough for any reasonable response
+#define HTTP_AUTHORIZATION_MAX_LEN 128
 
 typedef struct {
     esp_http_client_method_t method;
@@ -21,8 +21,8 @@ typedef struct {
     char *rsp_body;
 } dy_cloud_http_req_t;
 
-static char authorization[HTTP_AUTHORIZATION_LEN + 1];
-static char response[HTTP_RSP_LEN + 1];
+static char authorization[HTTP_AUTHORIZATION_MAX_LEN];
+static char response[HTTP_RSP_MAX_LEN];
 static QueueHandle_t mux = NULL;
 
 static dy_err_t json_err() {
@@ -39,18 +39,12 @@ static dy_err_t json_err() {
 }
 
 static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
-    int len;
-
     switch (evt->event_id) {
         case HTTP_EVENT_ON_DATA:
-            memset(response, 0, HTTP_RSP_LEN);
-
-            len = HTTP_RSP_LEN;
-            if (evt->data_len < len) {
-                len = evt->data_len;
+            if (evt->data_len >= HTTP_RSP_MAX_LEN) {
+                return ESP_ERR_NO_MEM; // Prevent buffer overflow
             }
-
-            strlcpy(response, evt->data, len);
+            strlcpy(response, evt->data, evt->data_len);
             break;
 
         default:
@@ -98,11 +92,14 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
     }
 
     if (strlen(ai.auth) > 0) {
-        memset(authorization, 0, HTTP_AUTHORIZATION_LEN);
+        memset(authorization, 0, HTTP_AUTHORIZATION_MAX_LEN);
         strcpy(authorization, "Bearer ");
-        strncat(authorization, ai.auth, HTTP_AUTHORIZATION_LEN - strlen(authorization));
+        strncat(authorization, ai.auth, HTTP_AUTHORIZATION_MAX_LEN - strlen(authorization));
         esp_http_client_set_header(cli, "Authorization", authorization);
     }
+
+    // http_cli_ev_handler will write to this buffer
+    memset(response, 0, HTTP_RSP_MAX_LEN);
 
     if ((esp_err = esp_http_client_perform(cli)) != ESP_OK) {
         esp_http_client_cleanup(cli);
@@ -113,8 +110,8 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
     *req->rsp_status = esp_http_client_get_status_code(cli);
     *req->rsp_len = esp_http_client_get_content_length(cli);
 
-    memset(req->rsp_body, 0, HTTP_RSP_LEN);
-    strlcpy(req->rsp_body, response, HTTP_RSP_LEN);
+    memset(req->rsp_body, 0, HTTP_RSP_MAX_LEN);
+    strlcpy(req->rsp_body, response, HTTP_RSP_MAX_LEN);
 
     if ((esp_err = esp_http_client_cleanup(cli)) != ESP_OK) {
         xSemaphoreGive(mux);
@@ -130,7 +127,7 @@ dy_err_t http_get_json(const char *url, cJSON **rsp_json) {
     int rsp_status = 0;
     int64_t rsp_len = 0;
 
-    char *rsp_body = malloc(HTTP_RSP_LEN);
+    char *rsp_body = malloc(HTTP_RSP_MAX_LEN);
     if (rsp_body == NULL) {
         return dy_err(DY_ERR_NO_MEM, "response buffer allocation failed");
     }
