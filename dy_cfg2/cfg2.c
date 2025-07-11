@@ -3,7 +3,9 @@
 #include "dy/error.h"
 
 #define CFG2_KEY_LEN 6
+
 static nvs_handle_t nvs_hdl;
+
 static char *id2key(uint16_t id, char *dst) {
     snprintf(dst, CFG2_KEY_LEN, "%04x", id);
     return dst;
