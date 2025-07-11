@@ -16,9 +16,8 @@ static char *id2key(uint16_t id, char *dst) {
 }
 
 static dy_err_t commit() {
-    esp_err_t err;
-
-    if ((err = nvs_commit(nvs_hdl)) != ESP_OK) {
+    esp_err_t err = nvs_commit(nvs_hdl);
+    if (err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_commit: %s", esp_err_to_name(err));
     }
 
@@ -26,14 +25,13 @@ static dy_err_t commit() {
 }
 
 dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
-    esp_err_t err;
-    char key[DY_CFG2_NVS_KEY_LEN];
-
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
     }
 
-    if ((err = nvs_set_u8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
+    char key[DY_CFG2_NVS_KEY_LEN];
+    esp_err_t err = nvs_set_u8(nvs_hdl, id2key(id, key), val);
+    if (err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_u8: %s", esp_err_to_name(err));
     }
 
@@ -41,14 +39,13 @@ dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val) {
 }
 
 dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
-    esp_err_t err;
-    char key[DY_CFG2_NVS_KEY_LEN];
-
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
     }
 
-    if ((err = nvs_set_i8(nvs_hdl, id2key(id, key), val)) != ESP_OK) {
+    char key[DY_CFG2_NVS_KEY_LEN];
+    esp_err_t err = nvs_set_i8(nvs_hdl, id2key(id, key), val);
+    if (err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_set_i8: %s", esp_err_to_name(err));
     }
 
@@ -56,16 +53,15 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val) {
 }
 
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
-    char key[DY_CFG2_NVS_KEY_LEN];
+    if (dst == NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
+    }
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
     }
 
-    if (dst == NULL) {
-        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
-    }
-
+    char key[DY_CFG2_NVS_KEY_LEN];
     esp_err_t err = nvs_get_u8(nvs_hdl, id2key(id, key), dst);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
         return dy_err(DY_ERR_NOT_FOUND, "key not found");
@@ -77,16 +73,15 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst) {
 }
 
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst) {
-    char key[DY_CFG2_NVS_KEY_LEN];
+    if (dst == NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
+    }
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
     }
 
-    if (dst == NULL) {
-        return dy_err(DY_ERR_INVALID_ARG, "dst is null");
-    }
-
+    char key[DY_CFG2_NVS_KEY_LEN];
     esp_err_t err = nvs_get_i8(nvs_hdl, id2key(id, key), dst);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
         return dy_err(DY_ERR_NOT_FOUND, "key not found");

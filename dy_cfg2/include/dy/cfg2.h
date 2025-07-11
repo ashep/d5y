@@ -19,7 +19,7 @@ dy_err_t dy_cfg2_init();
  * @param val The value to set.
  * @return
  *  - DY_ERR_NOT_CONFIGURED if the module is not initialized.
- *  - DY_ERR_FAILED if setting the value fails.
+ *  - DY_ERR_FAILED in case of other unexpected errors.
  *  - DY_ERR_OK on success.
  */
 dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val);
@@ -31,7 +31,7 @@ dy_err_t dy_cfg2_set_u8(uint16_t id, uint8_t val);
  * @param val The value to set.
  * @return
  *  - DY_ERR_NOT_CONFIGURED if the module is not initialized.
- *  - DY_ERR_FAILED if setting the value fails.
+ *  - DY_ERR_FAILED in case of other unexpected errors.
  *  - DY_ERR_OK on success.
  */
 dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val);
@@ -42,8 +42,10 @@ dy_err_t dy_cfg2_set_i8(uint16_t id, int8_t val);
  * @param id The configuration ID.
  * @param dst Pointer to store the retrieved value.
  * @return
+ *  - DY_ERR_INVALID_ARG if dst is NULL.
  *  - DY_ERR_NOT_CONFIGURED if the module is not initialized.
- *  - DY_ERR_FAILED if getting the value fails.
+ *  - DY_ERR_NOT_FOUND if the key does not exist.
+ *  - DY_ERR_FAILED in case of other unexpected errors.
  *  - DY_ERR_OK on success.
  */
 dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst);
@@ -54,8 +56,10 @@ dy_err_t dy_cfg2_get_u8(uint16_t id, uint8_t *dst);
  * @param id The configuration ID.
  * @param dst Pointer to store the retrieved value.
  * @return
+ *  - DY_ERR_INVALID_ARG if dst is NULL.
  *  - DY_ERR_NOT_CONFIGURED if the module is not initialized.
- *  - DY_ERR_FAILED if getting the value fails.
+ *  - DY_ERR_NOT_FOUND if the key does not exist.
+ *  - DY_ERR_FAILED in case of other unexpected errors.
  *  - DY_ERR_OK on success.
  */
 dy_err_t dy_cfg2_get_i8(uint16_t id, int8_t *dst);
