@@ -1,6 +1,7 @@
 #include "dy/cfg2.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "nvs.h"
 #include "dy/error.h"
 
