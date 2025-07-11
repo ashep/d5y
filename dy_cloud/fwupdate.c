@@ -18,6 +18,7 @@
 #define LTAG "DY_CLOUD"
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
+static char fwupdate_url[URL_MAX_LEN] = {0};
 static bool allow_alpha_versions = false;
 
 typedef struct {
@@ -34,20 +35,12 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         return dy_err_pfx("dy_appinfo_get", err);
     }
 
-    char *req_url = malloc(URL_MAX_LEN + 1);
-    if (!req_url) {
-        return dy_err(DY_ERR_NO_MEM, "request url buffer allocation failed");
-    }
-
-    memset(req_url, 0, URL_MAX_LEN + 1);
-    snprintf(req_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
+    snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
 
     cJSON *json;
     memset(res, 0, sizeof(*res));
 
-    err = http_get_json(req_url, &json);
-    free(req_url);
-
+    err = http_get_json(fwupdate_url, &json);
     if (err->code == DY_ERR_NOT_FOUND) {
         return err;
     } else if (dy_is_err(err)) {
@@ -56,7 +49,7 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
 
     cJSON *r_url = cJSON_GetObjectItem(json, "url");
     if (r_url != NULL) {
-        strncpy(res->url, cJSON_GetStringValue(r_url), URL_MAX_LEN - 1);
+        strncpy(res->url, cJSON_GetStringValue(r_url), URL_MAX_LEN);
     }
 
     cJSON *sha256 = cJSON_GetObjectItem(json, "sha256");

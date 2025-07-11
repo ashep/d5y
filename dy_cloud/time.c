@@ -10,7 +10,7 @@
 
 #define SYNC_PERIOD 42949 // ~11 hours, limited by max value of uint32
 #define API_URL "https://api.d5y.xyz/v2/time"
-#define URL_MAX_LEN 512
+#define URL_MAX_LEN 256
 #define LTAG "DY_CLOUD"
 
 ESP_EVENT_DEFINE_BASE(DY_CLOUD_EVENT_BASE);
@@ -21,7 +21,9 @@ static char time_url[URL_MAX_LEN] = {0};
 static dy_err_t get_cloud_time() {
     dy_err_t err;
     cJSON *json;
+
     dy_cloud_time_t res;
+    memset(&res, 0, sizeof(res));
 
     err = http_get_json(time_url, &json);
     if (dy_is_err(err)) {
