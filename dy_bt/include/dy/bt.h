@@ -29,4 +29,11 @@ dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid);
 
 dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_bt_chrc_writer_t w);
 
+/**
+ * @brief Initializes the Bluetooth stack and sets up the GATT service.
+ * @return
+ *  - DY_ERR_INVALID_STATE if Bluetooth is already initialized.
+ *  - DY_ERR_FAILED if there was an error during initialization.
+ *  - DY_ERR_OK on success.
+ */
 dy_err_t dy_bt_init();

@@ -338,7 +338,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 
 dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_bt_chrc_writer_t w) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
     }
 
     dy_bt_chrc_t *chrc = (dy_bt_chrc_t *) malloc(sizeof(dy_bt_chrc_t));
@@ -359,7 +359,7 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
 
 dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
     }
 
     service_id.id.uuid.uuid.uuid16 = svc_uuid;
@@ -379,7 +379,7 @@ dy_err_t dy_bt_set_device_name_prefix(const char *s) {
 
 dy_err_t dy_bt_set_device_appearance(uint16_t appearance) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
     }
 
     adv_data.appearance = appearance;
@@ -390,39 +390,43 @@ dy_err_t dy_bt_set_device_appearance(uint16_t appearance) {
 dy_err_t dy_bt_init() {
     esp_err_t err;
 
+    if (initialized) {
+        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
+    }
+
     // We don't need classic mode, so release memory it occupies
     if ((err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_bt_controller_mem_release failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_bt_controller_mem_release: %s", esp_err_to_name(err));
     }
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     if ((err = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_bt_controller_init failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_bt_controller_init: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_bt_controller_enable(ESP_BT_MODE_BLE)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_bt_controller_enable failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_bt_controller_enable: %s", esp_err_to_name(err));
     }
 
     esp_bluedroid_config_t bluedroid_cfg = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
     if ((err = esp_bluedroid_init_with_cfg(&bluedroid_cfg)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_bluedroid_init_with_cfg failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_bluedroid_init_with_cfg: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_bluedroid_enable()) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_bluedroid_enable failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_bluedroid_enable: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_ble_gap_register_callback failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_ble_gap_register_callback: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_register_callback failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_register_callback: %s", esp_err_to_name(err));
     }
 
     if ((err = esp_ble_gatts_app_register(0)) != ESP_OK) {
-        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_app_register failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "esp_ble_gatts_app_register: %s", esp_err_to_name(err));
     }
 
     initialized = true;
