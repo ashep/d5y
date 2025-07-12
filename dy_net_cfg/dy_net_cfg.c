@@ -135,10 +135,7 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     return dy_ok();
 }
 
-// TODO: chunked transfers are not supported
-static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len, uint16_t offset) {
-    ESP_LOGI(LTAG, "%s: len=%d, offset=%d", __func__, len, offset);
-
+static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len) {
     // byte 0: op
     // byte 1-32: SSID (optional)
     // byte 33-97: password (optional)

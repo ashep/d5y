@@ -249,7 +249,7 @@ static void on_gatts_write(struct gatts_write_evt_param evt) {
             return;
         }
 
-        dy_err_t w_err = chrc->writer(evt.value, evt.len, evt.offset);
+        dy_err_t w_err = chrc->writer(evt.value, evt.len);
         if (dy_is_err(w_err)) {
             ESP_LOGW(LTAG, "GATTS: characteristic write failed: %s", dy_err_str(w_err));
             return;

@@ -15,7 +15,7 @@ enum {
 
 typedef dy_err_t (*dy_bt_chrc_reader_t)(uint8_t *val, size_t *len);
 
-typedef dy_err_t (*dy_bt_chrc_writer_t)(const uint8_t *val, size_t len, uint16_t offset);
+typedef dy_err_t (*dy_bt_chrc_writer_t)(const uint8_t *val, size_t len);
 
 typedef struct {
     uint8_t address[6];
@@ -70,7 +70,7 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
 
 /**
  * @brief Initializes the Bluetooth stack and sets up the GATT service.
- * 
+ *
  * @note Must be called at last order, after all characteristics are registered.
  * @return
  *  - DY_ERR_INVALID_STATE if Bluetooth is already initialized.

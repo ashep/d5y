@@ -92,15 +92,11 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     return dy_ok();
 }
 
-static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len, uint16_t offset) {
+static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len) {
     dy_err_t err;
 
     if (len != 2) {
         return dy_err(DY_ERR_INVALID_ARG, "unexpected input length: %d", len);
-    }
-
-    if (offset != 0) {
-        return dy_err(DY_ERR_INVALID_ARG, "unexpected offset: %d", len);
     }
 
     if (dy_is_err(err = dy_cfg_set(val[0], val[1]))) {
