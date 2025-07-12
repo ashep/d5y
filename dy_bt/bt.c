@@ -372,7 +372,7 @@ dy_err_t dy_bt_set_device_name_prefix(const char *s) {
         return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
-    strncpy(device_name_prefix, s, DY_BT_DEVICE_NAME_PREFIX_MAX_LEN);
+    strlcpy(device_name_prefix, s, DY_BT_DEVICE_NAME_PREFIX_MAX_LEN);
 
     return dy_ok();
 }

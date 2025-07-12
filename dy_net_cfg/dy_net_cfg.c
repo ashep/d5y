@@ -124,7 +124,7 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
 
     if (sizeof(configuration) > *len) {
         xSemaphoreGive(mux);
-        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %d < %d", *len, sizeof(configuration));
+        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %zu < %zu", *len, sizeof(configuration));
     }
 
     memcpy(val, configuration, sizeof(configuration));

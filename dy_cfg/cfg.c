@@ -18,14 +18,14 @@
 
 static SemaphoreHandle_t mux = NULL;
 static nvs_handle_t nvs_hdl;
-static uint8_t cfg_buf[DY_CFG_ID_MAX];
+static uint8_t cfg_buf[256];
 
 static dy_err_t load() {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
-    size_t len = DY_CFG_ID_MAX;
+    size_t len = 256;
     esp_err_t err = nvs_get_blob(nvs_hdl, "config", cfg_buf, &len);
 
     if (err != ESP_OK) {
@@ -81,7 +81,7 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
 
     if (sizeof(cfg_buf) > *len) {
         xSemaphoreGive(mux);
-        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %d < %d", *len, sizeof(cfg_buf));
+        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %zu < %zu", *len, sizeof(cfg_buf));
     }
 
     memcpy(val, cfg_buf, sizeof(cfg_buf));

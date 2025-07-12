@@ -12,7 +12,6 @@
 #define DY_CFG_ID_APP_VER_ALPHA 3
 
 #define DY_CFG_ID_MIN 10
-#define DY_CFG_ID_MAX 256
 
 void dy_cfg_must_set_initial(uint8_t id, uint8_t val);
 
