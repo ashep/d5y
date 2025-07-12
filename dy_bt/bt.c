@@ -344,7 +344,8 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
 
     dy_bt_chrc_t *chrc = NULL;
 
-    HASH_FIND_INT(characteristics, (int *) &uuid, chrc);
+    int id = uuid;
+    HASH_FIND_INT(characteristics, &id, chrc);
     if (chrc != NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "characteristic is already registered");
     }
