@@ -25,7 +25,7 @@ static dy_err_t load() {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
-    size_t len = 256;
+    size_t len = sizeof(cfg_buf);
     esp_err_t err = nvs_get_blob(nvs_hdl, "config", cfg_buf, &len);
 
     if (err != ESP_OK) {

@@ -126,7 +126,8 @@ static void on_gatts_service_create(struct gatts_create_evt_param evt) {
         }
     }
 
-    if ((err = esp_ble_gatts_start_service(evt.service_handle) != ESP_OK)) {
+    err = esp_ble_gatts_start_service(evt.service_handle);
+    if (err != ESP_OK) {
         ESP_LOGE(LTAG, "GATTS: start service failed: %s", esp_err_to_name(err));
         return;
     }
