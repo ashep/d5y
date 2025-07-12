@@ -339,7 +339,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 
 dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_bt_chrc_writer_t w) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
     dy_bt_chrc_t *chrc = NULL;
@@ -368,7 +368,7 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
 
 dy_err_t dy_bt_set_service_uuid(uint16_t svc_uuid) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
     service_id.id.uuid.uuid.uuid16 = svc_uuid;
@@ -388,7 +388,7 @@ dy_err_t dy_bt_set_device_name_prefix(const char *s) {
 
 dy_err_t dy_bt_set_device_appearance(uint16_t appearance) {
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
     adv_data.appearance = appearance;
@@ -400,7 +400,7 @@ dy_err_t dy_bt_init() {
     esp_err_t err;
 
     if (initialized) {
-        return dy_err(DY_ERR_INVALID_STATE, "already initialized");
+        return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
     // We don't need classic mode, so release memory it occupies
