@@ -342,7 +342,14 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
         return dy_err(DY_ERR_INVALID_STATE, "already initialized");
     }
 
-    dy_bt_chrc_t *chrc = (dy_bt_chrc_t *) malloc(sizeof(dy_bt_chrc_t));
+    dy_bt_chrc_t *chrc = NULL;
+
+    HASH_FIND_INT(characteristics, (int *) &uuid, chrc);
+    if (chrc != NULL) {
+        return dy_err(DY_ERR_INVALID_ARG, "characteristic is already registered");
+    }
+
+    chrc = (dy_bt_chrc_t *) malloc(sizeof(dy_bt_chrc_t));
     if (chrc == NULL) {
         return dy_err(DY_ERR_NO_MEM, "malloc failed");
     }
