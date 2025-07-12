@@ -117,20 +117,26 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
     }
 }
 
-static void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
+static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
-        ESP_LOGE(LTAG, "%s: semaphore take failed", __func__);
-        return;
+        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
+    if (sizeof(configuration) > *len) {
+        xSemaphoreGive(mux);
+        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %d < %d", *len, sizeof(configuration));
+    }
+
+    memcpy(val, configuration, sizeof(configuration));
     *len = sizeof(configuration);
-    *val = configuration;
 
     xSemaphoreGive(mux);
+
+    return dy_ok();
 }
 
 // TODO: chunked transfers are not supported
-static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
+static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len, uint16_t offset) {
     ESP_LOGI(LTAG, "%s: len=%d, offset=%d", __func__, len, offset);
 
     // byte 0: op
@@ -180,7 +186,7 @@ bool dy_net_cfg_net_ready() {
 }
 
 #ifdef CONFIG_BT_ENABLED // TODO: decouple BT
-dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
+dy_err_t dy_net_cfg_init() {
     dy_err_t err;
 
     mux = xSemaphoreCreateMutex();
@@ -188,14 +194,9 @@ dy_err_t dy_net_cfg_init(dy_bt_chrc_num btc_n) {
         return dy_err(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
     }
 
-    err = dy_bt_register_chrc_reader(btc_n, on_bt_chrc_read);
+    err = dy_bt_register_characteristic(0xff01, on_bt_chrc_read, on_bt_chrc_write);
     if (dy_is_err(err)) {
-        return dy_err_pfx("dy_bt_register_chrc_reader failed", err);
-    }
-
-    err = dy_bt_register_chrc_writer(btc_n, on_bt_chrc_write);
-    if (dy_is_err(err)) {
-        return dy_err_pfx("dy_bt_register_chrc_writer failed", err);
+        return dy_err_pfx("dy_bt_register_characteristic", err);
     }
 
     esp_err_t esp_err = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ev_handler, NULL);

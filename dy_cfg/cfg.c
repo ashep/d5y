@@ -18,14 +18,14 @@
 
 static SemaphoreHandle_t mux = NULL;
 static nvs_handle_t nvs_hdl;
-static uint8_t cfg_buf[DY_CFG_ID_MAX + 1];
+static uint8_t cfg_buf[DY_CFG_ID_MAX];
 
 static dy_err_t load() {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
-    size_t len = DY_CFG_ID_MAX + 1;
+    size_t len = DY_CFG_ID_MAX;
     esp_err_t err = nvs_get_blob(nvs_hdl, "config", cfg_buf, &len);
 
     if (err != ESP_OK) {
@@ -61,7 +61,7 @@ static dy_err_t save() {
     cfg_buf[DY_CFG_ID_APP_VER_PATCH] = ai.ver.patch;
     cfg_buf[DY_CFG_ID_APP_VER_ALPHA] = ai.ver.alpha;
 
-    esp_err = nvs_set_blob(nvs_hdl, "config", cfg_buf, DY_CFG_ID_MAX + 1);
+    esp_err = nvs_set_blob(nvs_hdl, "config", cfg_buf, DY_CFG_ID_MAX);
 
     xSemaphoreGive(mux);
 
@@ -74,19 +74,25 @@ static dy_err_t save() {
     return dy_ok();
 }
 
-static void on_bt_chrc_read(uint16_t *len, uint8_t **val) {
+static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
-        ESP_LOGE(LTAG, "%s: xSemaphoreTake failed", __func__);
-        return;
+        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
+    if (sizeof(cfg_buf) > *len) {
+        xSemaphoreGive(mux);
+        return dy_err(DY_ERR_INVALID_SIZE, "buffer too small: %d < %d", *len, sizeof(cfg_buf));
+    }
+
+    memcpy(val, cfg_buf, sizeof(cfg_buf));
     *len = sizeof(cfg_buf);
-    *val = cfg_buf;
 
     xSemaphoreGive(mux);
+
+    return dy_ok();
 }
 
-static dy_err_t on_bt_chrc_write(uint16_t len, uint16_t offset, const uint8_t *val) {
+static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len, uint16_t offset) {
     dy_err_t err;
 
     if (len != 2) {
@@ -172,7 +178,7 @@ uint8_t dy_cfg_get(uint8_t id, uint8_t def) {
 }
 
 #ifdef CONFIG_BT_ENABLED // FIXME: decouple from BT
-dy_err_t dy_cfg_init(dy_bt_chrc_num btc_n) {
+dy_err_t dy_cfg_init() {
     dy_err_t err;
     esp_err_t esp_err;
 
@@ -196,14 +202,9 @@ dy_err_t dy_cfg_init(dy_bt_chrc_num btc_n) {
         return dy_err_pfx("initial data load failed", err);
     }
 
-    err = dy_bt_register_chrc_reader(btc_n, on_bt_chrc_read);
+    err = dy_bt_register_characteristic(0xff02, on_bt_chrc_read, on_bt_chrc_write);
     if (dy_is_err(err)) {
-        return dy_err_pfx("dy_bt_register_chrc_reader failed", err);
-    }
-
-    err = dy_bt_register_chrc_writer(btc_n, on_bt_chrc_write);
-    if (dy_is_err(err)) {
-        return dy_err_pfx("dy_bt_register_chrc_writer failed", err);
+        return dy_err_pfx("dy_bt_register_characteristic", err);
     }
 
     return dy_ok();
