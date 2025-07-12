@@ -84,7 +84,7 @@ static void on_gatts_app_register(esp_gatt_if_t iface, struct gatts_reg_evt_para
 
     dy_bt_evt_ready_t ready_evt = {};
     memcpy(ready_evt.address, addr, 6);
-    if ((err = esp_event_post(DY_BT_EVENT_BASE, DY_BT_EVENT_READY, &evt, sizeof(evt), 10)) != ESP_OK) {
+    if ((err = esp_event_post(DY_BT_EVENT_BASE, DY_BT_EVENT_READY, &ready_evt, sizeof(ready_evt), 10)) != ESP_OK) {
         ESP_LOGE(LTAG, "GAP: post ready event failed: %s", esp_err_to_name(err));
     }
 

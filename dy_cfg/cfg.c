@@ -61,7 +61,7 @@ static dy_err_t save() {
     cfg_buf[DY_CFG_ID_APP_VER_PATCH] = ai.ver.patch;
     cfg_buf[DY_CFG_ID_APP_VER_ALPHA] = ai.ver.alpha;
 
-    esp_err = nvs_set_blob(nvs_hdl, "config", cfg_buf, DY_CFG_ID_MAX);
+    esp_err = nvs_set_blob(nvs_hdl, "config", cfg_buf, sizeof(cfg_buf));
 
     xSemaphoreGive(mux);
 
