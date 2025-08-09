@@ -1,18 +1,12 @@
+#include "dy/cfg.h"
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
-
 #include "esp_log.h"
+#include "esp_event.h"
 #include "nvs.h"
-
 #include "dy/error.h"
 #include "dy/appinfo.h"
-
-#ifdef CONFIG_BT_ENABLED
 #include "dy/bt.h"
-#endif
-
-#include "dy/cfg.h"
 
 #define LTAG "DY_CFG"
 
@@ -21,22 +15,32 @@ static nvs_handle_t nvs_hdl;
 static uint8_t cfg_buf[256];
 
 static dy_err_t load() {
+    dy_err_t err;
+    esp_err_t esp_err;
+
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
     size_t len = sizeof(cfg_buf);
-    esp_err_t err = nvs_get_blob(nvs_hdl, "config", cfg_buf, &len);
-
-    if (err != ESP_OK) {
+    esp_err = nvs_get_blob(nvs_hdl, "config", cfg_buf, &len);
+    if (esp_err != ESP_OK) {
         xSemaphoreGive(mux);
-
-        if (err == ESP_ERR_NVS_NOT_FOUND) {
+        if (esp_err == ESP_ERR_NVS_NOT_FOUND) {
             return dy_err(DY_ERR_NOT_FOUND, "nvs entry not found");
         }
-
-        return dy_err(DY_ERR_FAILED, "nvs_get_blob failed: %s", esp_err_to_name(err));
+        return dy_err(DY_ERR_FAILED, "nvs_get_blob failed: %s", esp_err_to_name(esp_err));
     }
+
+    // It doesn't matter what version is stored in the NVS, we always use the current app version.
+    dy_appinfo_info_t ai;
+    if (dy_is_err(err = dy_appinfo_get(&ai))) {
+        return dy_err_pfx("dy_appinfo_get", err);
+    }
+    cfg_buf[DY_CFG_ID_APP_VER_MAJOR] = ai.ver.major;
+    cfg_buf[DY_CFG_ID_APP_VER_MINOR] = ai.ver.minor;
+    cfg_buf[DY_CFG_ID_APP_VER_PATCH] = ai.ver.patch;
+    cfg_buf[DY_CFG_ID_APP_VER_ALPHA] = ai.ver.alpha;
 
     xSemaphoreGive(mux);
 
@@ -55,14 +59,12 @@ static dy_err_t save() {
     if (dy_is_err(err = dy_appinfo_get(&ai))) {
         return dy_err_pfx("dy_appinfo_get", err);
     }
-
     cfg_buf[DY_CFG_ID_APP_VER_MAJOR] = ai.ver.major;
     cfg_buf[DY_CFG_ID_APP_VER_MINOR] = ai.ver.minor;
     cfg_buf[DY_CFG_ID_APP_VER_PATCH] = ai.ver.patch;
     cfg_buf[DY_CFG_ID_APP_VER_ALPHA] = ai.ver.alpha;
 
     esp_err = nvs_set_blob(nvs_hdl, "config", cfg_buf, sizeof(cfg_buf));
-
     xSemaphoreGive(mux);
 
     if (esp_err != ESP_OK) {
@@ -74,7 +76,7 @@ static dy_err_t save() {
     return dy_ok();
 }
 
-static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
+static dy_err_t on_bt_chrc_read(esp_bt_uuid_t uuid, uint8_t *val, size_t *len) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
@@ -92,7 +94,7 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     return dy_ok();
 }
 
-static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len) {
+static dy_err_t on_bt_chrc_write(esp_bt_uuid_t uuid, const uint8_t *val, size_t len) {
     dy_err_t err;
 
     if (len != 2) {
@@ -125,6 +127,8 @@ void dy_cfg_must_set_initial(uint8_t id, uint8_t val) {
 }
 
 dy_err_t dy_cfg_set(uint8_t id, uint8_t val) {
+    esp_err_t esp_err;
+
     if (id < DY_CFG_ID_MIN) {
         return dy_err(DY_ERR_INVALID_ARG, "reserved id: %d", id);
     }
@@ -140,6 +144,14 @@ dy_err_t dy_cfg_set(uint8_t id, uint8_t val) {
     cfg_buf[id] = val;
 
     xSemaphoreGive(mux);
+
+    dy_cfg_evt_set_t evt = {
+            .id = id,
+            .val = val,
+    };
+    if ((esp_err = esp_event_post(DY_CFG_EVENT_BASE, DY_CFG_EVENT_SET, &evt, sizeof(evt), 10)) != ESP_OK) {
+        ESP_LOGE(LTAG, "post set event failed: %s", esp_err_to_name(esp_err));
+    }
 
     return dy_ok();
 }
@@ -174,6 +186,7 @@ uint8_t dy_cfg_get(uint8_t id, uint8_t def) {
 }
 
 #ifdef CONFIG_BT_ENABLED // FIXME: decouple from BT
+
 dy_err_t dy_cfg_init() {
     dy_err_t err;
     esp_err_t esp_err;
@@ -205,4 +218,5 @@ dy_err_t dy_cfg_init() {
 
     return dy_ok();
 }
+
 #endif
