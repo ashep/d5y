@@ -13,9 +13,9 @@ enum {
     DY_BT_EVENT_READY, // Bluetooth is set up and ready
 };
 
-typedef dy_err_t (*dy_bt_chrc_reader_t)(uint8_t *val, size_t *len);
+typedef dy_err_t (*dy_bt_chrc_reader_t)(esp_bt_uuid_t uuid, uint8_t *val, size_t *len);
 
-typedef dy_err_t (*dy_bt_chrc_writer_t)(const uint8_t *val, size_t len);
+typedef dy_err_t (*dy_bt_chrc_writer_t)(esp_bt_uuid_t uuid, const uint8_t *val, size_t len);
 
 typedef struct {
     uint8_t address[6];

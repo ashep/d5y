@@ -1,5 +1,6 @@
 #include "dy/bt.h"
 #include <string.h>
+#include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
@@ -14,6 +15,7 @@
 
 static char device_name_prefix[DY_BT_DEVICE_NAME_PREFIX_MAX_LEN] = "D5Y";
 static char device_name[16];
+static SemaphoreHandle_t mux = NULL;
 
 typedef struct {
     esp_bt_uuid_t uuid;
@@ -207,7 +209,7 @@ static void on_gatts_read(esp_gatt_if_t iface, struct gatts_read_evt_param evt) 
         };
 
         size_t len = ESP_GATT_MAX_ATTR_LEN; // tell the reader how much space we have
-        err = chrc->reader(rsp.attr_value.value, &len); // reader fills the value and updates len
+        err = chrc->reader(chrc->uuid, rsp.attr_value.value, &len); // reader fills the value and updates len
         if (dy_is_err(err)) {
             ESP_LOGW(LTAG, "GATTS: characteristic read failed: %s", dy_err_str(err));
             return;
@@ -249,7 +251,7 @@ static void on_gatts_write(struct gatts_write_evt_param evt) {
             return;
         }
 
-        dy_err_t w_err = chrc->writer(evt.value, evt.len);
+        dy_err_t w_err = chrc->writer(chrc->uuid, evt.value, evt.len);
         if (dy_is_err(w_err)) {
             ESP_LOGW(LTAG, "GATTS: characteristic write failed: %s", dy_err_str(w_err));
             return;
@@ -342,12 +344,18 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
         return dy_err(DY_ERR_INVALID_STATE, "bluetooth is already initialized");
     }
 
+    if (mux == NULL) {
+        if ((mux = xSemaphoreCreateMutex()) == NULL) {
+            return dy_err(DY_ERR_NO_MEM, "xSemaphoreCreateMutex returned null");
+        }
+    }
+
     dy_bt_chrc_t *chrc = NULL;
 
     int id = uuid;
     HASH_FIND_INT(characteristics, &id, chrc);
     if (chrc != NULL) {
-        return dy_err(DY_ERR_INVALID_ARG, "characteristic is already registered");
+        return dy_err(DY_ERR_INVALID_ARG, "already registered at %p", chrc);
     }
 
     chrc = (dy_bt_chrc_t *) malloc(sizeof(dy_bt_chrc_t));
@@ -360,8 +368,13 @@ dy_err_t dy_bt_register_characteristic(uint16_t uuid, dy_bt_chrc_reader_t r, dy_
     chrc->reader = r;
     chrc->writer = w;
 
+    if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
+        return dy_err(DY_ERR_FAILED, "semaphore take failed");
+    }
     HASH_ADD_INT(characteristics, id, chrc);
-    ESP_LOGI(LTAG, "characteristic registered: 0x%04x", chrc->uuid.uuid.uuid16);
+    xSemaphoreGive(mux);
+
+    ESP_LOGI(LTAG, "characteristic registered: 0x%04x: %p", chrc->uuid.uuid.uuid16, chrc);
 
     return dy_ok();
 }
