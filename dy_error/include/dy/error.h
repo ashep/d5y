@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include "esp_err.h"
 
-#define DY_ERROR_DESC_MAX_LEN 100
+#define DY_ERROR_DESC_MAX_LEN 128
 
 typedef enum {
     DY_OK,
