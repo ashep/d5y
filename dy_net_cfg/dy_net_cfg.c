@@ -117,7 +117,7 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
     }
 }
 
-static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
+static dy_err_t on_bt_chrc_read(esp_bt_uuid_t uuid, uint8_t *val, size_t *len) {
     if (xSemaphoreTake(mux, portTICK_PERIOD_MS) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
@@ -135,7 +135,7 @@ static dy_err_t on_bt_chrc_read(uint8_t *val, size_t *len) {
     return dy_ok();
 }
 
-static dy_err_t on_bt_chrc_write(const uint8_t *val, size_t len) {
+static dy_err_t on_bt_chrc_write(esp_bt_uuid_t uuid, const uint8_t *val, size_t len) {
     // byte 0: op
     // byte 1-32: SSID (optional)
     // byte 33-97: password (optional)
