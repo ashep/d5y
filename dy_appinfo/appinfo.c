@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-
 #include "dy/error.h"
-
 #include "dy/appinfo.h"
 
-static bool init = 0;
+static bool initialized = 0;
 
 static char owner[DY_APPINFO_APP_OWNER_LEN + 1];
 static char name[DY_APPINFO_APP_NAME_LEN + 1];
@@ -22,7 +20,7 @@ static char arch[DY_APPINFO_APP_ARCH_LEN + 1];
 static char id[DY_APPINFO_APP_ID_LEN + 1];
 
 dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
-    if (init) {
+    if (initialized) {
         return dy_err(DY_ERR_INVALID_STATE, "already configured");
     }
 
@@ -46,7 +44,7 @@ dy_err_t dy_appinfo_set(dy_appinfo_info_t *inf) {
         strncat(id, al_s, 4);
     }
 
-    init = true;
+    initialized = true;
 
     return dy_ok();
 }
@@ -56,7 +54,7 @@ void dy_appinfo_set_auth(const char *s) {
 }
 
 dy_err_t dy_appinfo_get(dy_appinfo_info_t *dst) {
-    if (!init) {
+    if (!initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_appinfo_set must be called before");
     }
 
