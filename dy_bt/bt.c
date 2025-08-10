@@ -17,6 +17,8 @@ static char device_name_prefix[DY_BT_DEVICE_NAME_PREFIX_MAX_LEN] = "D5Y";
 static char device_name[16];
 static SemaphoreHandle_t mux = NULL;
 
+esp_gatts_attr_db_t a[10] = {};
+
 typedef struct {
     esp_bt_uuid_t uuid;
     dy_bt_chrc_reader_t reader;
@@ -79,7 +81,7 @@ static void on_gatts_app_register(esp_gatt_if_t iface, struct gatts_reg_evt_para
     }
     ESP_LOGI(LTAG, "GATTS: device name set: %s", device_name);
 
-    if ((err = esp_ble_gatts_create_service(iface, &service_id, 16)) != ESP_OK) {
+    if ((err = esp_ble_gatts_create_service(iface, &service_id, 32)) != ESP_OK) {
         ESP_LOGE(LTAG, "GATTS: create service failed: %s", esp_err_to_name(err));
         return;
     }
@@ -100,8 +102,10 @@ static void on_gatts_service_create(struct gatts_create_evt_param evt) {
     esp_err_t err;
     dy_bt_chrc_t *chrc;
 
-    ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d", evt.status, evt.service_handle);
+    ESP_LOGI(LTAG, "GATTS: service created, status=%d, handle=%d, is_primary=%d, uuid=0x%04x",
+             evt.status, evt.service_handle, evt.service_id.is_primary, evt.service_id.id.uuid.uuid.uuid16);
 
+    // Add registered characteristics to the service
     for (chrc = characteristics; chrc != NULL; chrc = chrc->hh.next) {
         esp_gatt_perm_t perm = 0;
         esp_gatt_char_prop_t prop = 0;
@@ -118,6 +122,8 @@ static void on_gatts_service_create(struct gatts_create_evt_param evt) {
 
         // No reader, no writer -- no characteristic
         if (perm == 0) {
+            ESP_LOGW(LTAG, "%s: characteristic has no read nor write handler, and will be ignored: 0x%04x",
+                     __func__, chrc->uuid.uuid.uuid16);
             continue;
         }
 
@@ -137,8 +143,8 @@ static void on_gatts_service_create(struct gatts_create_evt_param evt) {
 
 static void on_gatts_characteristic_add(struct gatts_add_char_evt_param evt) {
     if (evt.status != ESP_GATT_OK) {
-        ESP_LOGE(LTAG, "GATTS: add characteristic failed: uuid=0x%x, status=%d, handle=%d",
-                 evt.char_uuid.uuid.uuid16, evt.status, evt.attr_handle);
+        ESP_LOGE(LTAG, "GATTS: add characteristic not added: uuid=0x%04x, status=%d",
+                 evt.char_uuid.uuid.uuid16, evt.status);
         return;
     }
 
@@ -185,11 +191,11 @@ static void on_gatts_read(esp_gatt_if_t iface, struct gatts_read_evt_param evt) 
     dy_err_t err;
     dy_bt_chrc_t *chrc = NULL;
 
-    ESP_LOGI(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
+    ESP_LOGD(LTAG, "GATTS: read request: handle=%d, trans_id=%lu, need_rsp=%d, is_long=%d, offset=%d",
              evt.handle, evt.trans_id, evt.need_rsp, evt.is_long, evt.offset);
 
     if (evt.offset > 0) {
-        ESP_LOGW(LTAG, "GATTS: read write requests are not supported yet: handle=%d", evt.handle);
+        ESP_LOGW(LTAG, "GATTS: long read requests are not supported yet: handle=%d", evt.handle);
         return;
     }
 
@@ -202,11 +208,7 @@ static void on_gatts_read(esp_gatt_if_t iface, struct gatts_read_evt_param evt) 
             return;
         }
 
-        esp_gatt_rsp_t rsp = {
-                .attr_value = {
-                        .handle = evt.handle,
-                },
-        };
+        esp_gatt_rsp_t rsp = {.attr_value = {.handle = evt.handle}};
 
         size_t len = ESP_GATT_MAX_ATTR_LEN; // tell the reader how much space we have
         err = chrc->reader(chrc->uuid, rsp.attr_value.value, &len); // reader fills the value and updates len
@@ -232,7 +234,7 @@ static void on_gatts_read(esp_gatt_if_t iface, struct gatts_read_evt_param evt) 
 static void on_gatts_write(struct gatts_write_evt_param evt) {
     dy_bt_chrc_t *chrc = NULL;
 
-    ESP_LOGI(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d, offset=%d",
+    ESP_LOGD(LTAG, "GATTS: write request: handle=%d, need_rsp=%d, trans_id=%lu, len=%d, offset=%d",
              evt.handle, evt.need_rsp, evt.trans_id, evt.len, evt.offset);
 
     // Long read requests with offset are not supported yet
@@ -330,7 +332,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
             break;
 
         case ESP_GATTS_RESPONSE_EVT:
-            ESP_LOGI(LTAG, "GATTS: response sent: status=%d, handle=%d", param->rsp.status, param->rsp.handle);
+            ESP_LOGD(LTAG, "GATTS: response sent: status=%d, handle=%d", param->rsp.status, param->rsp.handle);
             break;
 
         default:
