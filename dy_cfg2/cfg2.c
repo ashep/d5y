@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "esp_log.h"
+#include "esp_event.h"
 #include "nvs.h"
 #include "dy/error.h"
 #include "dy/util/uthash.h"
@@ -9,9 +11,7 @@
 #define DY_CFG2_NVS_NAMESPACE "dy_cfg"
 #define DY_CFG2_NVS_KEY_LEN 5 // 4 hex digits + null terminator
 
-#define DY_CFG2_VALUE_TYPE_U8  0x01
-#define DY_CFG2_VALUE_TYPE_I8  0x02
-#define DY_CFG2_VALUE_TYPE_STR 0x03
+#define LTAG "DY_CFG2"
 
 typedef struct {
     int id;
@@ -146,31 +146,28 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
         return dy_err(DY_ERR_FAILED, "nvs_get: %s", esp_err_to_name(esp_err));
     }
 
-    err = set_cache(id, type, dst);
-    if (dy_is_err(err)) {
+    if (dy_is_err(err = set_cache(id, type, dst))) {
         return dy_err_pfx("set_cache", err);
     }
 
     return err;
 }
 
-static dy_err_t set(int id, uint8_t type, void *src, bool overwrite) {
+/**
+ * @brief Sets a configuration value in NVS and updates the cache.
+ *
+ * @param id The configuration parameter ID.
+ * @param type The type of the value (DY_CFG2_VALUE_TYPE_U8, DY_CFG2_VALUE_TYPE_I8, DY_CFG2_VALUE_TYPE_STR, etc).
+ * @param src Pointer to the source value to set.
+ * @param overwrite If true, will overwrite existing value; if false, will not set if value already exists.
+ * @return dy_err_t indicating success or failure.
+ */
+static dy_err_t set(int id, uint8_t type, void *src) {
     esp_err_t esp_err;
     dy_err_t err;
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
-    }
-
-    if (!overwrite) {
-        uint8_t tmp[DY_CFG2_STR_MAX_LEN];
-        err = get(id, type, &tmp);
-        if (!dy_is_err(err)) {
-            return dy_ok(); // value is already exists
-        }
-        if(dy_is_err(err) && err->code != DY_ERR_NOT_FOUND) {
-            return dy_err(DY_ERR_FAILED, "get: %s", dy_err_str(err));
-        }
     }
 
     char key[DY_CFG2_NVS_KEY_LEN];
@@ -202,6 +199,11 @@ static dy_err_t set(int id, uint8_t type, void *src, bool overwrite) {
         return dy_err_pfx("set_cache", err);
     }
 
+    dy_cfg2_evt_set_t evt = {.id = id, .type = type, .val = src};
+    if ((esp_err = esp_event_post(DY_CFG2_EVENT_BASE, DY_CFG2_EVENT_SET, &evt, sizeof(evt), 10)) != ESP_OK) {
+        ESP_LOGE(LTAG, "%s: post set event failed: %s", __func__, esp_err_to_name(esp_err));
+    }
+
     return dy_ok();
 }
 
@@ -209,12 +211,17 @@ dy_err_t dy_cfg2_get_u8(int id, uint8_t *dst) {
     return get(id, DY_CFG2_VALUE_TYPE_U8, dst);
 }
 
-dy_err_t dy_cfg2_set_u8(int id, uint8_t val) {
-    return set(id, DY_CFG2_VALUE_TYPE_U8, &val, true);
+dy_err_t dy_cfg2_get_u8_dft(int id, uint8_t *dst, uint8_t dft) {
+    dy_err_t err = get(id, DY_CFG2_VALUE_TYPE_U8, dst);
+    if (err->code == DY_ERR_NOT_FOUND) {
+        *dst = dft;
+        return dy_ok();
+    }
+    return err;
 }
 
-dy_err_t dy_cfg2_set_u8_if_not_set(int id, uint8_t val) {
-    return set(id, DY_CFG2_VALUE_TYPE_U8, &val, false);
+dy_err_t dy_cfg2_set_u8(int id, uint8_t val) {
+    return set(id, DY_CFG2_VALUE_TYPE_U8, &val);
 }
 
 dy_err_t dy_cfg2_get_i8(int id, int8_t *dst) {
@@ -222,7 +229,7 @@ dy_err_t dy_cfg2_get_i8(int id, int8_t *dst) {
 }
 
 dy_err_t dy_cfg2_set_i8(int id, int8_t val) {
-    return set(id, DY_CFG2_VALUE_TYPE_I8, &val, true);
+    return set(id, DY_CFG2_VALUE_TYPE_I8, &val);
 }
 
 dy_err_t dy_cfg2_get_str(int id, char *dst) {
@@ -230,7 +237,7 @@ dy_err_t dy_cfg2_get_str(int id, char *dst) {
 }
 
 dy_err_t dy_cfg2_set_str(int id, const char *val) {
-    return set(id, DY_CFG2_VALUE_TYPE_STR, (void *) val, true);
+    return set(id, DY_CFG2_VALUE_TYPE_STR, (void *) val);
 }
 
 dy_err_t dy_cfg2_init() {
