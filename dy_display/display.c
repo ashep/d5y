@@ -3,6 +3,7 @@
 #include "dy/display.h"
 
 static dy_display_driver_t drivers[DY_DISPLAY_ID_MAX];
+static uint8_t brightness[DY_DISPLAY_ID_MAX] = {0};
 
 dy_err_t dy_display_set_driver(uint8_t id, dy_display_driver_t drv) {
     if (id >= DY_DISPLAY_ID_MAX) {
@@ -46,7 +47,20 @@ dy_err_t dy_display_set_brightness(uint8_t id, uint8_t value) {
         return dy_err(DY_ERR_INVALID_ARG, "driver is not initialized");
     }
 
-    return drivers[id].set_brightness(drivers[id].cfg, value);
+    dy_err_t err = drivers[id].set_brightness(drivers[id].cfg, value);
+    if (!dy_is_err(err)) {
+        brightness[id] = value;
+    }
+
+    return err;
+}
+
+uint8_t dy_display_get_brightness(uint8_t id) {
+    if (id >= DY_DISPLAY_ID_MAX) {
+        return 0; // Invalid ID, return 0 as a safe default
+    }
+
+    return brightness[id];
 }
 
 dy_err_t dy_display_refresh(uint8_t id) {
