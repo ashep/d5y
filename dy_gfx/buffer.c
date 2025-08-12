@@ -86,7 +86,7 @@ uint32_t dy_gfx_get_px_pos(const dy_gfx_buf_t *buf, uint16_t x, uint16_t y) {
 
 void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, dy_gfx_px_t px) {
     // It's okay to set a pixel outside buffer's boundaries
-    if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) {
+    if (x >= buf->width || y >= buf->height) {
         return;
     }
 
@@ -95,7 +95,7 @@ void dy_gfx_set_px(dy_gfx_buf_t *buf, uint16_t x, uint16_t y, dy_gfx_px_t px) {
 
 dy_gfx_px_t dy_gfx_get_px(const dy_gfx_buf_t *buf, uint16_t x, uint16_t y) {
     // It's okay to get a pixel outside buffer's boundaries
-    if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) {
+    if (x >= buf->width || y >= buf->height) {
         return (dy_gfx_px_t) {};
     }
 
@@ -165,6 +165,20 @@ dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos) {
     dy_gfx_free_buf(tmp_buf);
 
     return DY_OK;
+}
+
+void dy_gfx_colorize(dy_gfx_buf_t *buf, dy_gfx_px_t px) {
+    dy_gfx_px_t px0;
+
+    for (uint16_t x = 0; x < buf->width; x++) {
+        for (uint16_t y = 0; y < buf->height; y++) {
+            px0 = dy_gfx_get_px(buf, x, y);
+            if (px0.r == 0 && px0.g == 0 && px0.b == 0) {
+                continue; // skip black pixels
+            }
+            dy_gfx_set_px(buf, x, y, px);
+        }
+    }
 }
 
 dy_err_t dy_gfx_write_sprite(dy_gfx_buf_t *buf, uint16_t bx, uint16_t by, const dy_gfx_sprite_t *sp) {

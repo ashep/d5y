@@ -125,3 +125,10 @@ dy_gfx_buf_array_t *dy_gfx_split(const dy_gfx_buf_t *src, uint8_t chunk_w, uint8
  * @return Result of the operation.
  */
 dy_err_code_t dy_gfx_move(dy_gfx_buf_t *buf, dy_gfx_point_t pos);
+
+/**
+ * @brief Colorizes a buffer with a given pixel color.
+ * @param buf  A buffer to colorize.
+ * @param px   A pixel color to use for colorization.
+ */
+void dy_gfx_colorize(dy_gfx_buf_t *buf, dy_gfx_px_t px);
