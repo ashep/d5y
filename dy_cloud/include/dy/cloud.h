@@ -50,6 +50,28 @@ typedef struct {
 } dy_cloud_weather_t;
 
 /**
+ * @brief Sets the location for weather and time fetching.
+ *
+ * @param new_lat New latitude.
+ * @param new_lng New longitude.
+ */
+void dy_cloud_set_location(float new_lat, float new_lng);
+
+/**
+ * @brief Gets the currently set latitude.
+ *
+ * @return Current latitude.
+ */
+float dy_cloud_get_location_lat();
+
+/**
+ * @brief Gets the currently set longitude.
+ *
+ * @return Current longitude.
+ */
+float dy_cloud_get_location_lng();
+
+/**
  * @brief Starts the current time fetcher.
  *
  * @param lat Latitude of the location.
@@ -58,7 +80,7 @@ typedef struct {
  *  - DY_ERR_FAILED if the scheduler could not be started.
  *  - DY_OK on success.
  */
-dy_err_t dy_cloud_time_scheduler_start(float lat, float lng);
+dy_err_t dy_cloud_time_scheduler_start();
 
 /**
  * @brief Starts the weather fetcher.
@@ -69,7 +91,7 @@ dy_err_t dy_cloud_time_scheduler_start(float lat, float lng);
  *  - DY_ERR_FAILED if the scheduler could not be started.
  *  - DY_OK on success.
  */
-dy_err_t dy_cloud_weather_scheduler_start(float lat, float lng);
+dy_err_t dy_cloud_weather_scheduler_start();
 
 /**
  * @brief Starts the firmware update scheduler.

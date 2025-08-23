@@ -1,10 +1,7 @@
 #include "dy/cloud.h"
-
 #include <string.h>
-
 #include "esp_log.h"
 #include "cJSON.h"
-
 #include "dy/error.h"
 #include "dy/net_cfg.h"
 
@@ -75,8 +72,9 @@ _Noreturn static void task() {
     }
 }
 
-dy_err_t dy_cloud_time_scheduler_start(float lat, float lng) {
-    int n = snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL, lat, lng);
+dy_err_t dy_cloud_time_scheduler_start() {
+    int n = snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL,
+                     dy_cloud_get_location_lat(), dy_cloud_get_location_lng());
     if (n < 0 || n >= URL_MAX_LEN) {
         return dy_err(DY_ERR_FAILED, "api url is too long");
     }
