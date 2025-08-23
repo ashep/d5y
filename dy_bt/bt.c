@@ -81,7 +81,7 @@ static void on_gatts_app_register(esp_gatt_if_t iface, struct gatts_reg_evt_para
     }
     ESP_LOGI(LTAG, "GATTS: device name set: %s", device_name);
 
-    if ((err = esp_ble_gatts_create_service(iface, &service_id, 32)) != ESP_OK) {
+    if ((err = esp_ble_gatts_create_service(iface, &service_id, 64)) != ESP_OK) {
         ESP_LOGE(LTAG, "GATTS: create service failed: %s", esp_err_to_name(err));
         return;
     }
