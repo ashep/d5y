@@ -18,7 +18,7 @@ typedef struct {
     uint8_t type;
     union {
         uint8_t val_u8;
-        int8_t val_i8;
+        float val_float;
         char val_str[DY_CFG2_STR_MAX_LEN];
     };
     UT_hash_handle hh;
@@ -61,8 +61,8 @@ static dy_err_t set_cache(int id, uint8_t type, void *src) {
         case DY_CFG2_VALUE_TYPE_U8:
             item->val_u8 = *(uint8_t *) src;
             break;
-        case DY_CFG2_VALUE_TYPE_I8:
-            item->val_i8 = *(int8_t *) src;
+        case DY_CFG2_VALUE_TYPE_FLOAT:
+            item->val_float = *(float *) src;
             break;
         case DY_CFG2_VALUE_TYPE_STR:
             if (strlen((char *) src) >= DY_CFG2_STR_MAX_LEN) {
@@ -91,8 +91,8 @@ static dy_err_t get_from_cache(int id, uint8_t type, void *value) {
         case DY_CFG2_VALUE_TYPE_U8:
             *(uint8_t *) value = item->val_u8;
             break;
-        case DY_CFG2_VALUE_TYPE_I8:
-            *(int8_t *) value = item->val_i8;
+        case DY_CFG2_VALUE_TYPE_FLOAT:
+            *(float *) value = item->val_float;
             break;
         case DY_CFG2_VALUE_TYPE_STR:
             strlcpy((char *) value, item->val_str, DY_CFG2_STR_MAX_LEN);
@@ -104,9 +104,32 @@ static dy_err_t get_from_cache(int id, uint8_t type, void *value) {
     return dy_ok();
 }
 
+bool dy_cfg2_is_set(int id) {
+    if (!nvs_initialized) {
+        return false;
+    }
+
+    dy_cfg2_cache_item_t *item = NULL;
+    HASH_FIND_INT(cache, &id, item);
+    if (item != NULL) {
+        return true;
+    }
+
+    char key[DY_CFG2_NVS_KEY_LEN];
+    id2key(id, key);
+
+    nvs_type_t kt;
+    if (nvs_find_key(nvs_hdl, key, &kt) == ESP_OK) {
+        return true;
+    }
+
+    return false;
+}
+
 static dy_err_t get(int id, uint8_t type, void *dst) {
     dy_err_t err;
     esp_err_t esp_err;
+    uint32_t bits;
 
     if (dst == NULL) {
         return dy_err(DY_ERR_INVALID_ARG, "dst is null");
@@ -128,8 +151,11 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
         case DY_CFG2_VALUE_TYPE_U8:
             esp_err = nvs_get_u8(nvs_hdl, key, (uint8_t *) dst);
             break;
-        case DY_CFG2_VALUE_TYPE_I8:
-            esp_err = nvs_get_i8(nvs_hdl, key, (int8_t *) dst);
+        case DY_CFG2_VALUE_TYPE_FLOAT:
+            esp_err = nvs_get_u32(nvs_hdl, key, &bits);
+            if (esp_err == ESP_OK) {
+                memcpy((float *) dst, &bits, sizeof(bits));
+            }
             break;
         case DY_CFG2_VALUE_TYPE_STR: {
             size_t len = DY_CFG2_STR_MAX_LEN;
@@ -153,18 +179,10 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
     return err;
 }
 
-/**
- * @brief Sets a configuration value in NVS and updates the cache.
- *
- * @param id The configuration parameter ID.
- * @param type The type of the value (DY_CFG2_VALUE_TYPE_U8, DY_CFG2_VALUE_TYPE_I8, DY_CFG2_VALUE_TYPE_STR, etc).
- * @param src Pointer to the source value to set.
- * @param overwrite If true, will overwrite existing value; if false, will not set if value already exists.
- * @return dy_err_t indicating success or failure.
- */
 static dy_err_t set(int id, uint8_t type, void *src) {
     esp_err_t esp_err;
     dy_err_t err;
+    uint32_t bits;
 
     if (!nvs_initialized) {
         return dy_err(DY_ERR_NOT_CONFIGURED, "dy_cfg2_init must be called first");
@@ -177,8 +195,9 @@ static dy_err_t set(int id, uint8_t type, void *src) {
         case DY_CFG2_VALUE_TYPE_U8:
             esp_err = nvs_set_u8(nvs_hdl, key, *(uint8_t *) src);
             break;
-        case DY_CFG2_VALUE_TYPE_I8:
-            esp_err = nvs_set_i8(nvs_hdl, key, *(int8_t *) src);
+        case DY_CFG2_VALUE_TYPE_FLOAT:
+            memcpy(&bits, (float *) src, sizeof(bits));
+            esp_err = nvs_set_u32(nvs_hdl, key, *(uint32_t *) src);
             break;
         case DY_CFG2_VALUE_TYPE_STR:
             esp_err = nvs_set_str(nvs_hdl, key, (const char *) src);
@@ -224,16 +243,34 @@ dy_err_t dy_cfg2_set_u8(int id, uint8_t val) {
     return set(id, DY_CFG2_VALUE_TYPE_U8, &val);
 }
 
-dy_err_t dy_cfg2_get_i8(int id, int8_t *dst) {
-    return get(id, DY_CFG2_VALUE_TYPE_I8, dst);
+dy_err_t dy_cfg2_get_float(int id, float *dst) {
+    return get(id, DY_CFG2_VALUE_TYPE_FLOAT, dst);
 }
 
-dy_err_t dy_cfg2_set_i8(int id, int8_t val) {
-    return set(id, DY_CFG2_VALUE_TYPE_I8, &val);
+dy_err_t dy_cfg2_get_float_dft(int id, float *dst, float dft) {
+    dy_err_t err = get(id, DY_CFG2_VALUE_TYPE_FLOAT, dst);
+    if (err->code == DY_ERR_NOT_FOUND) {
+        *dst = dft;
+        return dy_ok();
+    }
+    return err;
+}
+
+dy_err_t dy_cfg2_set_float(int id, float val) {
+    return set(id, DY_CFG2_VALUE_TYPE_FLOAT, &val);
 }
 
 dy_err_t dy_cfg2_get_str(int id, char *dst) {
     return get(id, DY_CFG2_VALUE_TYPE_STR, dst);
+}
+
+dy_err_t dy_cfg2_get_str_dft(int id, char *dst, const char *dft) {
+    dy_err_t err = get(id, DY_CFG2_VALUE_TYPE_STR, dst);
+    if (err->code == DY_ERR_NOT_FOUND) {
+        strlcpy(dst, dft, DY_CFG2_STR_MAX_LEN);
+        return dy_ok();
+    }
+    return err;
 }
 
 dy_err_t dy_cfg2_set_str(int id, const char *val) {
