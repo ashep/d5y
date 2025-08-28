@@ -1,14 +1,11 @@
+#include "dy/net.h"
 #include <stdbool.h>
 #include <string.h>
-
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_netif_sntp.h"
-
 #include "freertos/FreeRTOS.h"
-
-#include "dy/net.h"
 
 #define LTAG "DY_NET"
 #define WATCHDOG_PERIOD 10000
@@ -103,7 +100,7 @@ void dy_net_clear_config_and_disconnect() {
     sta_configured = false;
 }
 
-static void watchdog() {
+_Noreturn static void watchdog() {
     esp_err_t err;
 
     while (true) {
