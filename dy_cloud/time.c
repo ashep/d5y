@@ -59,7 +59,7 @@ _Noreturn static void task() {
     int delay_sec;
 
     while (true) {
-        if (!dy_net_cfg_net_ready()) {
+        if (!dy_net_cfg_net_connected()) {
             delay_sec = 10;
         } else if (dy_is_err(err = get_cloud_time())) {
             ESP_LOGE(LTAG, "set_localtime_from_cloud: %s", dy_err_str(err));

@@ -138,7 +138,7 @@ _Noreturn static void task() {
     dy_cloud_resp_fw_update_t upd;
 
     while (1) {
-        if (!dy_net_cfg_net_ready()) {
+        if (!dy_net_cfg_net_connected()) {
             vTaskDelay(pdMS_TO_TICKS(1000 * 10));
             continue;
         }
