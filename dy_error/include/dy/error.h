@@ -1,10 +1,4 @@
-/**
- * Author: Oleksandr Shepetko <a@shepetko.com>
- * License: MIT
- */
-
-#ifndef DY_ERROR_H
-#define DY_ERROR_H
+#pragma once
 
 #include <stdbool.h>
 #include "esp_err.h"
@@ -42,14 +36,6 @@ typedef struct {
 } dy_err_struct_t, *dy_err_t;
 
 /**
- * Value with error result.
- */
-typedef struct {
-    dy_err_t err;
-    void *val;
-} dy_val_t;
-
-/**
  * Creates an error.
  */
 dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...);
@@ -60,7 +46,7 @@ dy_err_t dy_err(dy_err_code_t code, const char *fmt, ...);
 char *dy_err_str(dy_err_t err);
 
 /**
- * Make an DY_OK error.
+ * Make a DY_OK error.
  */
 dy_err_t dy_ok();
 
@@ -78,5 +64,3 @@ dy_err_t dy_err_pfx(const char *prefix, dy_err_t err);
  * Get human readable error name.
  */
 const char *dy_err_code_str(dy_err_code_t e);
-
-#endif // DY_ERROR_H
