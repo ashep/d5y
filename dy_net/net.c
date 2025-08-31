@@ -4,7 +4,6 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
-#include "esp_netif_sntp.h"
 #include "freertos/FreeRTOS.h"
 #include "dy/internal.h"
 #include "dy/cfg2.h"
@@ -94,7 +93,7 @@ void dy_net_set_config_and_connect(const char *ssid, const char *password) {
 void dy_net_clear_config_and_disconnect() {
     wifi_config_t cfg = {};
     memset(cfg.sta.ssid, 0, 32);
-    memset(cfg.sta.ssid, 0, 64);
+    memset(cfg.sta.password, 0, 64);
 
     esp_err_t esp_err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
     if (esp_err != ESP_OK) {
