@@ -65,10 +65,10 @@ static dy_err_t set_cache(int id, uint8_t type, void *src) {
             item->val_float = *(float *) src;
             break;
         case DY_CFG2_VALUE_TYPE_STR:
-            if (strlen((char *) src) >= DY_CFG2_STR_MAX_LEN) {
+            if (strlen(src) >= DY_CFG2_STR_MAX_LEN) {
                 return dy_err(DY_ERR_INVALID_ARG, "string value is too long");
             }
-            strlcpy(item->val_str, (char *) src, DY_CFG2_STR_MAX_LEN);
+            strlcpy(item->val_str, src, DY_CFG2_STR_MAX_LEN);
             break;
         default:
             return dy_err(DY_ERR_INVALID_ARG, "unexpected type %d", type);
@@ -95,7 +95,7 @@ static dy_err_t get_from_cache(int id, uint8_t type, void *value) {
             *(float *) value = item->val_float;
             break;
         case DY_CFG2_VALUE_TYPE_STR:
-            strlcpy((char *) value, item->val_str, DY_CFG2_STR_MAX_LEN);
+            strlcpy(value, item->val_str, DY_CFG2_STR_MAX_LEN);
             break;
         default:
             return dy_err(DY_ERR_INVALID_ARG, "unexpected type %d", item->type);
@@ -140,7 +140,9 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
 
     if (!dy_is_err(err = get_from_cache(id, type, dst))) {
         return dy_ok();
-    } else if (err->code != DY_ERR_NOT_FOUND) {
+    }
+
+    if (err->code != DY_ERR_NOT_FOUND) {
         return dy_err_pfx("get_from_cache", err);
     }
 
@@ -149,17 +151,17 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
 
     switch (type) {
         case DY_CFG2_VALUE_TYPE_U8:
-            esp_err = nvs_get_u8(nvs_hdl, key, (uint8_t *) dst);
+            esp_err = nvs_get_u8(nvs_hdl, key, dst);
             break;
         case DY_CFG2_VALUE_TYPE_FLOAT:
             esp_err = nvs_get_u32(nvs_hdl, key, &bits);
             if (esp_err == ESP_OK) {
-                memcpy((float *) dst, &bits, sizeof(bits));
+                memcpy(dst, &bits, sizeof(bits));
             }
             break;
         case DY_CFG2_VALUE_TYPE_STR: {
             size_t len = DY_CFG2_STR_MAX_LEN;
-            esp_err = nvs_get_str(nvs_hdl, key, (char *) dst, &len);
+            esp_err = nvs_get_str(nvs_hdl, key, dst, &len);
             break;
         }
         default:
@@ -168,7 +170,8 @@ static dy_err_t get(int id, uint8_t type, void *dst) {
 
     if (esp_err == ESP_ERR_NVS_NOT_FOUND) {
         return dy_err(DY_ERR_NOT_FOUND, "key not found: %s", key);
-    } else if (esp_err != ESP_OK) {
+    }
+    if (esp_err != ESP_OK) {
         return dy_err(DY_ERR_FAILED, "nvs_get: %s", esp_err_to_name(esp_err));
     }
 
@@ -196,11 +199,11 @@ static dy_err_t set(int id, uint8_t type, void *src) {
             esp_err = nvs_set_u8(nvs_hdl, key, *(uint8_t *) src);
             break;
         case DY_CFG2_VALUE_TYPE_FLOAT:
-            memcpy(&bits, (float *) src, sizeof(bits));
+            memcpy(&bits, src, sizeof(bits));
             esp_err = nvs_set_u32(nvs_hdl, key, *(uint32_t *) src);
             break;
         case DY_CFG2_VALUE_TYPE_STR:
-            esp_err = nvs_set_str(nvs_hdl, key, (const char *) src);
+            esp_err = nvs_set_str(nvs_hdl, key, src);
             break;
         default:
             return dy_err(DY_ERR_INVALID_ARG, "unexpected type %d", type);
