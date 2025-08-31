@@ -6,6 +6,8 @@
 #include "esp_wifi.h"
 #include "esp_netif_sntp.h"
 #include "freertos/FreeRTOS.h"
+#include "dy/internal.h"
+#include "dy/cfg2.h"
 
 #define LTAG "DY_NET"
 #define WATCHDOG_PERIOD 10000
@@ -47,12 +49,22 @@ static void ip_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_
 }
 
 static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *data) {
+    dy_err_t err;
+
     switch (event_id) {
         case WIFI_EVENT_STA_CONNECTED:
             sta_configured = true;
             sta_connected = true;
-            break;
 
+            uint8_t check;
+            dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED, &check, 0);
+            if (!check) {
+                if (dy_is_err(err = dy_cfg2_set_u8(DY_INTERNAL_CFG_ID_NET_CONFIGURED, 1))) {
+                    ESP_LOGE(LTAG, "%s: dy_cfg2_set_u8(DY_INTERNAL_CFG_ID_NET_CONFIGURED) failed: %s",
+                             __func__, dy_err_str(err));
+                }
+            }
+            break;
         case WIFI_EVENT_STA_DISCONNECTED:
             sta_connected = false;
             break;
@@ -64,13 +76,11 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
 }
 
 void dy_net_set_config_and_connect(const char *ssid, const char *password) {
-    esp_err_t err;
-
     wifi_config_t cfg = {};
-    strncpy((char *) cfg.sta.ssid, (const char *) ssid, 32);
-    strncpy((char *) cfg.sta.password, (const char *) password, 64);
+    strncpy((char *) cfg.sta.ssid, ssid, 32);
+    strncpy((char *) cfg.sta.password, password, 64);
 
-    err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
+    esp_err_t err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
     if (err != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_set_config failed: %s", __func__, esp_err_to_name(err));
         return;
@@ -78,7 +88,6 @@ void dy_net_set_config_and_connect(const char *ssid, const char *password) {
 
     if ((err = esp_wifi_connect()) != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_connect failed: %s", __func__, esp_err_to_name(err));
-        return;
     }
 }
 
@@ -87,14 +96,19 @@ void dy_net_clear_config_and_disconnect() {
     memset(cfg.sta.ssid, 0, 32);
     memset(cfg.sta.ssid, 0, 64);
 
-    esp_err_t err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "%s: esp_wifi_set_config failed: %s", __func__, esp_err_to_name(err));
+    esp_err_t esp_err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
+    if (esp_err != ESP_OK) {
+        ESP_LOGE(LTAG, "%s: esp_wifi_set_config failed: %s", __func__, esp_err_to_name(esp_err));
     }
 
-    err = esp_wifi_disconnect();
-    if (err != ESP_OK) {
-        ESP_LOGE(LTAG, "%s: esp_wifi_disconnect failed: %s", __func__, esp_err_to_name(err));
+    dy_err_t err = dy_cfg2_set_u8(DY_INTERNAL_CFG_ID_NET_CONFIGURED, 0);
+    if (dy_is_err(err)) {
+        ESP_LOGE(LTAG, "%s: dy_cfg2_set_u8(DY_INTERNAL_CFG_ID_NET_CONFIGURED) failed: %s", __func__, dy_err_str(err));
+    }
+
+    esp_err = esp_wifi_disconnect();
+    if (esp_err != ESP_OK) {
+        ESP_LOGE(LTAG, "%s: esp_wifi_disconnect failed: %s", __func__, esp_err_to_name(esp_err));
     }
 
     sta_configured = false;
@@ -110,7 +124,7 @@ _Noreturn static void watchdog() {
             continue;
         }
 
-        ESP_LOGI(LTAG, "%s: reconnecting...", __func__ );
+        ESP_LOGI(LTAG, "%s: reconnecting...", __func__);
         if ((err = esp_wifi_connect()) != ESP_OK) {
             ESP_LOGW(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(err));
         }
@@ -152,6 +166,11 @@ dy_err_t dy_net_init() {
     // Initial attempt to connect since at start we have no idea whether connection is configured
     if ((esp_err = esp_wifi_connect()) != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(esp_err));
+    }
+
+    dy_err_t err = dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED, (uint8_t *) &sta_configured, 0);
+    if (dy_is_err(err)) {
+        return dy_err_pfx("dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED)", err);
     }
 
     xTaskCreate(watchdog, "watchdog", WATCHDOG_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);

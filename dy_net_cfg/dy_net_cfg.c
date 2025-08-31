@@ -6,6 +6,7 @@
 #include "dy/error.h"
 #include "dy/net.h"
 #include "dy/bt.h"
+#include "dy/internal.h"
 
 // byte 0:       bits 0-3: state; bits 4-7: error reason
 // byte 1-32:    connected SSID
@@ -56,7 +57,7 @@ static void set_ssid_list(wifi_ap_record_t *records, int len) {
     xSemaphoreGive(mux);
 }
 
-static void on_wifi_scan_done(wifi_event_sta_scan_done_t *data) {
+static void on_wifi_scan_done(const wifi_event_sta_scan_done_t *data) {
     ESP_LOGI(LTAG, "%s: status=%ld, number=%d", __func__, data->status, data->number);
 
     uint16_t len = sizeof(scan_result) / sizeof(scan_result[0]);
@@ -70,13 +71,13 @@ static void on_wifi_scan_done(wifi_event_sta_scan_done_t *data) {
 }
 
 static void on_wifi_connect(wifi_event_sta_connected_t *ev) {
-    ESP_LOGI(LTAG, "wifi sta connected: ssid=%s, auth_mode=%d", ev->ssid, ev->authmode);
+    ESP_LOGI(LTAG, "wi-fi sta connected: ssid=%s, auth_mode=%d", ev->ssid, ev->authmode);
     set_state(DY_NET_CFG_CONN_CONNECTED, DY_NET_CFG_ERR_NONE);
     set_connected_ssid(ev->ssid);
 }
 
-static void on_wifi_disconnect(wifi_event_sta_disconnected_t *ev) {
-    ESP_LOGW(LTAG, "wifi sta disconnected: reason=%d", ev->reason);
+static void on_wifi_disconnect(const wifi_event_sta_disconnected_t *ev) {
+    ESP_LOGW(LTAG, "wi-fi sta disconnected: reason=%d", ev->reason);
 
     enum dy_net_cfg_err_reason rsn = DY_NET_CFG_ERR_NONE;
     if (ev->reason != WIFI_REASON_UNSPECIFIED) {
@@ -89,13 +90,13 @@ static void on_wifi_disconnect(wifi_event_sta_disconnected_t *ev) {
 static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *data) {
     switch (event_id) {
         case WIFI_EVENT_SCAN_DONE:
-            on_wifi_scan_done((wifi_event_sta_scan_done_t *) data);
+            on_wifi_scan_done(data);
             break;
         case WIFI_EVENT_STA_CONNECTED:
-            on_wifi_connect((wifi_event_sta_connected_t *) data);
+            on_wifi_connect(data);
             break;
         case WIFI_EVENT_STA_DISCONNECTED:
-            on_wifi_disconnect((wifi_event_sta_disconnected_t *) data);
+            on_wifi_disconnect(data);
             break;
         default:
             ESP_LOGI(LTAG, "%s: WIFI_EVENT: %ld", __func__, event_id);

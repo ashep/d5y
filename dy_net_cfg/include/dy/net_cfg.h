@@ -1,8 +1,6 @@
 #pragma once
 
-#include "esp_wifi.h"
 #include "dy/error.h"
-#include "dy/bt.h"
 
 enum dy_net_cfg_conn_state {
     DY_NET_CFG_CONN_DISCONNECTED,
