@@ -37,24 +37,66 @@ typedef struct {
     dy_gfx_buf_t **buffers;
 } dy_gfx_buf_array_t;
 
+typedef enum {
+    DY_CFG_COLOR_BLACK = 0,
+    DY_CFG_COLOR_RED,
+    DY_CFG_COLOR_GREEN,
+    DY_CFG_COLOR_BLUE,
+    DY_CFG_COLOR_CYAN,
+    DY_CFG_COLOR_MAGENTA,
+    DY_CFG_COLOR_YELLOW,
+    DY_CFG_COLOR_WHITE,
 
-#define DY_GFX_C_BLACK dy_gfx_new_px(0, 0, 0)
-#define DY_GFX_C_RED dy_gfx_new_px(255, 0, 0)
-#define DY_GFX_C_GREEN dy_gfx_new_px(0, 255, 0)
-#define DY_GFX_C_BLUE dy_gfx_new_px(0, 0, 255)
-#define DY_GFX_C_CYAN dy_gfx_new_px(0, 255, 255)
-#define DY_GFX_C_MAGENTA dy_gfx_new_px(255, 0, 255)
-#define DY_GFX_C_YELLOW dy_gfx_new_px(255, 255, 0)
-#define DY_GFX_C_WHITE dy_gfx_new_px(255, 255, 255)
+    DY_CFG_COLOR_ORANGE,
+    DY_CFG_COLOR_PURPLE,
+    DY_CFG_COLOR_PINK,
+    DY_CFG_COLOR_LIME,
+    DY_CFG_COLOR_TEAL,
+    DY_CFG_COLOR_BROWN,
+    DY_CFG_COLOR_GOLD,
+    DY_CFG_COLOR_SILVER,
+} dy_gfx_color_code;
 
-#define DY_GFX_C_ORANGE dy_gfx_new_px(255, 64, 0)
-#define DY_GFX_C_PURPLE dy_gfx_new_px(128, 64, 128)
-#define DY_GFX_C_PINK dy_gfx_new_px(128, 105, 180)
-#define DY_GFX_C_LIME dy_gfx_new_px(191, 255, 0)
-#define DY_GFX_C_TEAL dy_gfx_new_px(0, 128, 129)
-#define DY_GFX_C_BROWN dy_gfx_new_px(129, 69, 19)
-#define DY_GFX_C_GOLD dy_gfx_new_px(255, 128, 0)
-#define DY_GFX_C_SILVER dy_gfx_new_px(128, 128, 128)
+#define DY_GFX_PX_BLACK dy_gfx_new_px(0, 0, 0)
+#define DY_GFX_PX_RED dy_gfx_new_px(255, 0, 0)
+#define DY_GFX_PX_GREEN dy_gfx_new_px(0, 255, 0)
+#define DY_GFX_PX_BLUE dy_gfx_new_px(0, 0, 255)
+#define DY_GFX_PX_CYAN dy_gfx_new_px(0, 255, 255)
+#define DY_GFX_PX_MAGENTA dy_gfx_new_px(255, 0, 255)
+#define DY_GFX_PX_YELLOW dy_gfx_new_px(255, 255, 0)
+#define DY_GFX_PX_WHITE dy_gfx_new_px(255, 255, 255)
+
+#define DY_GFX_PX_ORANGE dy_gfx_new_px(255, 64, 0)
+#define DY_GFX_PX_PURPLE dy_gfx_new_px(128, 64, 128)
+#define DY_GFX_PX_PINK dy_gfx_new_px(128, 105, 180)
+#define DY_GFX_PX_LIME dy_gfx_new_px(191, 255, 0)
+#define DY_GFX_PX_TEAL dy_gfx_new_px(0, 128, 129)
+#define DY_GFX_PX_BROWN dy_gfx_new_px(129, 69, 19)
+#define DY_GFX_PX_GOLD dy_gfx_new_px(255, 128, 0)
+#define DY_GFX_PX_SILVER dy_gfx_new_px(128, 128, 128)
+
+/**
+ * Returns a pixel based on color code.
+ */
+#define dy_gfx_px_by_code(code) ( \
+    (code) == DY_CFG_COLOR_BLACK   ? DY_GFX_PX_BLACK   : \
+    (code) == DY_CFG_COLOR_RED     ? DY_GFX_PX_RED     : \
+    (code) == DY_CFG_COLOR_GREEN   ? DY_GFX_PX_GREEN   : \
+    (code) == DY_CFG_COLOR_BLUE    ? DY_GFX_PX_BLUE    : \
+    (code) == DY_CFG_COLOR_CYAN    ? DY_GFX_PX_CYAN    : \
+    (code) == DY_CFG_COLOR_MAGENTA ? DY_GFX_PX_MAGENTA : \
+    (code) == DY_CFG_COLOR_YELLOW  ? DY_GFX_PX_YELLOW  : \
+    (code) == DY_CFG_COLOR_WHITE   ? DY_GFX_PX_WHITE   : \
+    (code) == DY_CFG_COLOR_ORANGE  ? DY_GFX_PX_ORANGE  : \
+    (code) == DY_CFG_COLOR_PURPLE  ? DY_GFX_PX_PURPLE  : \
+    (code) == DY_CFG_COLOR_PINK    ? DY_GFX_PX_PINK    : \
+    (code) == DY_CFG_COLOR_LIME    ? DY_GFX_PX_LIME    : \
+    (code) == DY_CFG_COLOR_TEAL    ? DY_GFX_PX_TEAL    : \
+    (code) == DY_CFG_COLOR_BROWN   ? DY_GFX_PX_BROWN   : \
+    (code) == DY_CFG_COLOR_GOLD    ? DY_GFX_PX_GOLD    : \
+    (code) == DY_CFG_COLOR_SILVER  ? DY_GFX_PX_SILVER  : \
+    DY_GFX_PX_BLACK \
+)
 
 /**
  * Creates a pixel from RGB888 parts.
