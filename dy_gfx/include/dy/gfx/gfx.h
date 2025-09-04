@@ -38,23 +38,23 @@ typedef struct {
 } dy_gfx_buf_array_t;
 
 typedef enum {
-    DY_CFG_COLOR_BLACK = 0,
-    DY_CFG_COLOR_RED,
-    DY_CFG_COLOR_GREEN,
-    DY_CFG_COLOR_BLUE,
-    DY_CFG_COLOR_CYAN,
-    DY_CFG_COLOR_MAGENTA,
-    DY_CFG_COLOR_YELLOW,
-    DY_CFG_COLOR_WHITE,
+    DY_GFX_COLOR_BLACK = 0,
+    DY_GFX_COLOR_RED,
+    DY_GFX_COLOR_GREEN,
+    DY_GFX_COLOR_BLUE,
+    DY_GFX_COLOR_CYAN,
+    DY_GFX_COLOR_MAGENTA,
+    DY_GFX_COLOR_YELLOW,
+    DY_GFX_COLOR_WHITE,
 
-    DY_CFG_COLOR_ORANGE,
-    DY_CFG_COLOR_PURPLE,
-    DY_CFG_COLOR_PINK,
-    DY_CFG_COLOR_LIME,
-    DY_CFG_COLOR_TEAL,
-    DY_CFG_COLOR_BROWN,
-    DY_CFG_COLOR_GOLD,
-    DY_CFG_COLOR_SILVER,
+    DY_GFX_COLOR_ORANGE,
+    DY_GFX_COLOR_PURPLE,
+    DY_GFX_COLOR_PINK,
+    DY_GFX_COLOR_LIME,
+    DY_GFX_COLOR_TEAL,
+    DY_GFX_COLOR_BROWN,
+    DY_GFX_COLOR_GOLD,
+    DY_GFX_COLOR_SILVER,
 } dy_gfx_color_code;
 
 #define DY_GFX_PX_BLACK dy_gfx_new_px(0, 0, 0)
@@ -79,22 +79,22 @@ typedef enum {
  * Returns a pixel based on color code.
  */
 #define dy_gfx_px_by_code(code) ( \
-    (code) == DY_CFG_COLOR_BLACK   ? DY_GFX_PX_BLACK   : \
-    (code) == DY_CFG_COLOR_RED     ? DY_GFX_PX_RED     : \
-    (code) == DY_CFG_COLOR_GREEN   ? DY_GFX_PX_GREEN   : \
-    (code) == DY_CFG_COLOR_BLUE    ? DY_GFX_PX_BLUE    : \
-    (code) == DY_CFG_COLOR_CYAN    ? DY_GFX_PX_CYAN    : \
-    (code) == DY_CFG_COLOR_MAGENTA ? DY_GFX_PX_MAGENTA : \
-    (code) == DY_CFG_COLOR_YELLOW  ? DY_GFX_PX_YELLOW  : \
-    (code) == DY_CFG_COLOR_WHITE   ? DY_GFX_PX_WHITE   : \
-    (code) == DY_CFG_COLOR_ORANGE  ? DY_GFX_PX_ORANGE  : \
-    (code) == DY_CFG_COLOR_PURPLE  ? DY_GFX_PX_PURPLE  : \
-    (code) == DY_CFG_COLOR_PINK    ? DY_GFX_PX_PINK    : \
-    (code) == DY_CFG_COLOR_LIME    ? DY_GFX_PX_LIME    : \
-    (code) == DY_CFG_COLOR_TEAL    ? DY_GFX_PX_TEAL    : \
-    (code) == DY_CFG_COLOR_BROWN   ? DY_GFX_PX_BROWN   : \
-    (code) == DY_CFG_COLOR_GOLD    ? DY_GFX_PX_GOLD    : \
-    (code) == DY_CFG_COLOR_SILVER  ? DY_GFX_PX_SILVER  : \
+    (code) == DY_GFX_COLOR_BLACK   ? DY_GFX_PX_BLACK   : \
+    (code) == DY_GFX_COLOR_RED     ? DY_GFX_PX_RED     : \
+    (code) == DY_GFX_COLOR_GREEN   ? DY_GFX_PX_GREEN   : \
+    (code) == DY_GFX_COLOR_BLUE    ? DY_GFX_PX_BLUE    : \
+    (code) == DY_GFX_COLOR_CYAN    ? DY_GFX_PX_CYAN    : \
+    (code) == DY_GFX_COLOR_MAGENTA ? DY_GFX_PX_MAGENTA : \
+    (code) == DY_GFX_COLOR_YELLOW  ? DY_GFX_PX_YELLOW  : \
+    (code) == DY_GFX_COLOR_WHITE   ? DY_GFX_PX_WHITE   : \
+    (code) == DY_GFX_COLOR_ORANGE  ? DY_GFX_PX_ORANGE  : \
+    (code) == DY_GFX_COLOR_PURPLE  ? DY_GFX_PX_PURPLE  : \
+    (code) == DY_GFX_COLOR_PINK    ? DY_GFX_PX_PINK    : \
+    (code) == DY_GFX_COLOR_LIME    ? DY_GFX_PX_LIME    : \
+    (code) == DY_GFX_COLOR_TEAL    ? DY_GFX_PX_TEAL    : \
+    (code) == DY_GFX_COLOR_BROWN   ? DY_GFX_PX_BROWN   : \
+    (code) == DY_GFX_COLOR_GOLD    ? DY_GFX_PX_GOLD    : \
+    (code) == DY_GFX_COLOR_SILVER  ? DY_GFX_PX_SILVER  : \
     DY_GFX_PX_BLACK \
 )
 
