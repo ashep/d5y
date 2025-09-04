@@ -21,42 +21,24 @@ static uint32_t px_offset(dy_ws2812_config_t *cfg, uint32_t x, uint32_t y) {
     return pos + cfg->segments.ppx * cfg->segments.ppy * seg_pos;
 }
 
-/**
- * It's assumed that passed px has maximum brightness.
- */
 static dy_gfx_px_t set_px_brightness(dy_gfx_px_t px, uint8_t level) {
     if (level >= DY_DISPLAY_BRI_MAX) {
         return px;
     }
 
-    uint8_t divider = 255 - level * (DY_DISPLAY_BRI_MAX + 1);
+    uint8_t new_r = px.r / DY_DISPLAY_BRI_MAX * level;
+    uint8_t new_g = px.g / DY_DISPLAY_BRI_MAX * level;
+    uint8_t new_b = px.b / DY_DISPLAY_BRI_MAX * level;
 
-    if (px.r != 0) {
-        px.r = px.r / divider * (level + 1);
-        if (px.r == 0) {
-            px.r = 1;
-        }
-    }
-
-    if (px.g != 0) {
-        px.g = px.g / divider * (level + 1);
-        if (px.g == 0) {
-            px.g = 1;
-        }
-    }
-
-    if (px.b != 0) {
-        px.b = px.b / divider * (level + 1);
-        if (px.b == 0) {
-            px.b = 1;
-        }
-    }
+    px.r = new_r == 0 && px.r > 0 ? 1 : new_r;
+    px.g = new_g == 0 && px.g > 0 ? 1 : new_g;
+    px.b = new_b == 0 && px.b > 0 ? 1 : new_b;
 
     return px;
 }
 
 static dy_err_t write(void *cf, dy_gfx_buf_t *buf) {
-    dy_ws2812_config_t *cfg = (dy_ws2812_config_t *) cf;
+    dy_ws2812_config_t *cfg = cf;
 
     for (uint16_t y = 0; y < buf->height; y++) {
         for (uint16_t x = 0; x < buf->width; x++) {
@@ -91,27 +73,25 @@ static dy_err_t refresh(void *cfg) {
 }
 
 dy_err_t dy_display_driver_ws2812_init(
-        uint8_t id,
-        gpio_num_t pin_data,
-        dy_display_driver_ws2812_segments_config_t segments
+    uint8_t id,
+    gpio_num_t pin_data,
+    dy_display_driver_ws2812_segments_config_t segments
 ) {
     led_strip_config_t strip_config = {
-            .strip_gpio_num = pin_data,
-            .max_leds = segments.ppx * segments.cols * segments.ppy * segments.rows,
-            .led_model = LED_MODEL_WS2812,
-            .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
-            .flags = {
-                    .invert_out = false,
-            }
+        .strip_gpio_num = pin_data,
+        .max_leds = segments.ppx * segments.cols * segments.ppy * segments.rows,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags = {
+            .invert_out = false,
+        }
     };
 
     led_strip_rmt_config_t rmt_config = {
-            .clk_src = RMT_CLK_SRC_DEFAULT,
-            .resolution_hz =  10 * 1000 * 1000,
-            .mem_block_symbols = 64,
-            .flags = {
-                    .with_dma = true,
-            }
+        .mem_block_symbols = 1024,
+        .flags = {
+            .with_dma = true,
+        }
     };
 
     led_strip_handle_t handle;
@@ -129,10 +109,10 @@ dy_err_t dy_display_driver_ws2812_init(
     cfg->handle = handle;
 
     dy_display_driver_t drv = {
-            .cfg=cfg,
-            .write=write,
-            .set_brightness=set_brightness,
-            .refresh=refresh,
+        .cfg = cfg,
+        .write = write,
+        .set_brightness = set_brightness,
+        .refresh = refresh,
     };
 
     return dy_display_set_driver(id, drv);
