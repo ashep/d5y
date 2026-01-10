@@ -32,6 +32,7 @@
 typedef enum {
     DY_CLOUD_EV_TIME_UPDATED,
     DY_CLOUD_EV_WEATHER_UPDATED,
+    DY_CLOUD_EV_AIR_RAID_ALERT_UPDATED,
 } dy_cloud_event_id_t;
 
 typedef struct {
@@ -49,9 +50,13 @@ typedef struct {
     time_t ts;
 } dy_cloud_weather_t;
 
+typedef struct {
+    bool is_active;
+    time_t ts;
+} dy_cloud_air_raid_alert_t;
+
 /**
  * @brief Sets the location for weather and time fetching.
- *
  * @param new_lat New latitude.
  * @param new_lng New longitude.
  */
@@ -72,10 +77,19 @@ float dy_cloud_get_location_lat();
 float dy_cloud_get_location_lng();
 
 /**
+ * @brief Sets location latitude.
+ * @param new_lat New latitude.
+ */
+void dy_cloud_set_location_lat(float new_lat);
+
+/**
+ * @brief Sets location longitude.
+ * @param new_lng New longitude.
+ */
+void dy_cloud_set_location_lng(float new_lng);
+
+/**
  * @brief Starts the current time fetcher.
- *
- * @param lat Latitude of the location.
- * @param lng Longitude of the location.
  * @return
  *  - DY_ERR_FAILED if the scheduler could not be started.
  *  - DY_OK on success.
@@ -84,9 +98,6 @@ dy_err_t dy_cloud_time_scheduler_start();
 
 /**
  * @brief Starts the weather fetcher.
- *
- * @param lat Latitude of the location.
- * @param lng Longitude of the location.
  * @return
  *  - DY_ERR_FAILED if the scheduler could not be started.
  *  - DY_OK on success.
@@ -102,3 +113,17 @@ dy_err_t dy_cloud_weather_scheduler_start();
  *  - DY_OK on success.
  */
 dy_err_t dy_cloud_fwupdate_scheduler_start(bool allow_alpha);
+
+/**
+ * @brief Starts the air raid alert fetcher.
+ * @return
+ * - DY_ERR_FAILED if the scheduler could not be started.
+ * - DY_OK on success.
+ */
+dy_err_t dy_cloud_air_raid_alert_scheduler_start();
+
+/**
+ * @brief Enables or disables air raid alert fetching.
+ * @param v true to enable, false to disable.
+ */
+void dy_cloud_air_raid_alert_set_enabled(bool v);

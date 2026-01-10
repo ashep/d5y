@@ -11,7 +11,7 @@
 #include "dy/net_cfg.h"
 #include "dy/appinfo.h"
 
-#define API_URL "https://api.d5y.xyz/v2/firmware/update"
+#define API_URL "https://api.d5y.xyz/v3/firmware/update"
 #define CHECK_PERIOD 42949 // ~11 hours, limited by max value of uint32
 #define URL_MAX_LEN 512 // URL can be really long, so we use 512 bytes
 #define HTTP_REQ_TIMEOUT 5000

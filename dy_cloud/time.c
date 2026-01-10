@@ -7,23 +7,26 @@
 #include "dy/net_cfg.h"
 
 #define SYNC_PERIOD 42949 // ~11 hours, limited by max value of uint32
-#define API_URL "https://api.d5y.xyz/v2/time"
+#define API_URL "https://api.d5y.xyz/v3/time"
 #define URL_MAX_LEN 128
 #define LTAG "DY_CLOUD"
 
 ESP_EVENT_DEFINE_BASE(DY_CLOUD_EVENT_BASE);
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
-static char time_url[URL_MAX_LEN] = {0};
 
 static dy_err_t get_cloud_time() {
-    dy_err_t err;
     cJSON *json;
+    dy_cloud_time_t res = {0};
+    char url[URL_MAX_LEN] = {0};
 
-    dy_cloud_time_t res;
-    memset(&res, 0, sizeof(res));
+    const int n = snprintf(url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL,
+                           dy_cloud_get_location_lat(), dy_cloud_get_location_lng());
+    if (n < 0 || n >= URL_MAX_LEN) {
+        return dy_err(DY_ERR_FAILED, "api url is too long");
+    }
 
-    err = http_get_json(time_url, &json);
+    dy_err_t err = http_get_json(url, &json);
     if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
@@ -74,12 +77,6 @@ _Noreturn static void task() {
 }
 
 dy_err_t dy_cloud_time_scheduler_start() {
-    int n = snprintf(time_url, URL_MAX_LEN, "%s?lat=%.5f&lng=%.5f", API_URL,
-                     dy_cloud_get_location_lat(), dy_cloud_get_location_lng());
-    if (n < 0 || n >= URL_MAX_LEN) {
-        return dy_err(DY_ERR_FAILED, "api url is too long");
-    }
-
     BaseType_t res = xTaskCreate(task, "dy_cloud_time", 4096, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {
         return dy_err(DY_ERR_FAILED, "xTaskCreate");

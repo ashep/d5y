@@ -6,6 +6,14 @@ void dy_cloud_set_location(float new_lat, float new_lng) {
     lng = new_lng;
 }
 
+void dy_cloud_set_location_lat(float new_lat) {
+    lat = new_lat;
+}
+
+void dy_cloud_set_location_lng(float new_lng) {
+    lng = new_lng;
+}
+
 float dy_cloud_get_location_lat() {
     return lat;
 }
