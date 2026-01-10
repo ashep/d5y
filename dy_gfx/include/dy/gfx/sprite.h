@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdio.h>
 #include "dy/gfx/gfx.h"
 
 typedef struct {
