@@ -64,14 +64,12 @@ void dy_cloud_set_location(float new_lat, float new_lng);
 
 /**
  * @brief Gets the currently set latitude.
- *
  * @return Current latitude.
  */
 float dy_cloud_get_location_lat();
 
 /**
  * @brief Gets the currently set longitude.
- *
  * @return Current longitude.
  */
 float dy_cloud_get_location_lng();
@@ -106,7 +104,6 @@ dy_err_t dy_cloud_weather_scheduler_start();
 
 /**
  * @brief Starts the firmware update scheduler.
- *
  * @param allow_alpha If true, allows alpha versions of the firmware to be fetched.
  * @return
  *  - DY_ERR_FAILED if the scheduler could not be started.
@@ -117,8 +114,8 @@ dy_err_t dy_cloud_fwupdate_scheduler_start(bool allow_alpha);
 /**
  * @brief Starts the air raid alert fetcher.
  * @return
- * - DY_ERR_FAILED if the scheduler could not be started.
- * - DY_OK on success.
+ *  - DY_ERR_FAILED if the scheduler could not be started.
+ *  - DY_OK on success.
  */
 dy_err_t dy_cloud_air_raid_alert_scheduler_start();
 
