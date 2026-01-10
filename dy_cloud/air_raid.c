@@ -84,7 +84,7 @@ dy_err_t dy_cloud_air_raid_alert_scheduler_start() {
     return dy_ok();
 }
 
-void dy_cloud_air_raid_alert_set_enabled(const bool v) {
+void dy_cloud_air_raid_alert_set_enabled(bool v) {
     scheduler_enabled = v;
     ESP_LOGI(LTAG, "air raid alert scheduler enabled: %d", v);
 }
