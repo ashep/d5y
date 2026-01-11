@@ -33,6 +33,7 @@ typedef enum {
     DY_CLOUD_EV_TIME_UPDATED,
     DY_CLOUD_EV_WEATHER_UPDATED,
     DY_CLOUD_EV_AIR_RAID_ALERT_UPDATED,
+    DY_CLOUD_EV_FW_UPDATE_STARTED,
 } dy_cloud_event_id_t;
 
 typedef struct {
@@ -101,6 +102,12 @@ dy_err_t dy_cloud_time_scheduler_start();
  *  - DY_OK on success.
  */
 dy_err_t dy_cloud_weather_scheduler_start();
+
+/**
+ * @brief Checks if the firmware update is in progress.
+ * @return true if started, false otherwise.
+ */
+bool dy_cloud_fwupdate_in_progress();
 
 /**
  * @brief Starts the firmware update scheduler.

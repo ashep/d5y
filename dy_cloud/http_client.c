@@ -9,7 +9,7 @@
 #include "dy/appinfo.h"
 #include "dy/error.h"
 
-#define HTTP_REQ_TIMEOUT 5000
+#define HTTP_REQ_TIMEOUT 30000
 #define HTTP_RSP_MAX_LEN 2048 // Should be enough for any reasonable response
 #define HTTP_AUTHORIZATION_MAX_LEN 128
 
@@ -58,7 +58,6 @@ static esp_err_t http_cli_ev_handler(esp_http_client_event_t *evt) {
 dy_err_t http_request(dy_cloud_http_req_t *req) {
     dy_err_t err;
     esp_err_t esp_err;
-    esp_http_client_handle_t cli;
 
     dy_appinfo_info_t ai;
     if (dy_is_err(err = dy_appinfo_get(&ai))) {
@@ -72,7 +71,7 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
         }
     }
 
-    if (xSemaphoreTake(mux, (TickType_t) 100) != pdTRUE) {
+    if (xSemaphoreTake(mux, 5000) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
     }
 
@@ -86,7 +85,7 @@ dy_err_t http_request(dy_cloud_http_req_t *req) {
             .crt_bundle_attach = esp_crt_bundle_attach,
     };
 
-    cli = esp_http_client_init(&cfg);
+    esp_http_client_handle_t cli = esp_http_client_init(&cfg);
     if (cli == NULL) {
         xSemaphoreGive(mux);
         return dy_err(DY_ERR_NO_MEM, "esp_http_client_init failed");
@@ -146,10 +145,12 @@ dy_err_t http_get_json(const char *url, cJSON **rsp_json) {
     if (rsp_status == 204) {
         free(rsp_body);
         return dy_err(DY_ERR_NO_CONTENT, "no content");
-    } else if (rsp_status == HttpStatus_NotFound) {
+    }
+    if (rsp_status == HttpStatus_NotFound) {
         free(rsp_body);
         return dy_err(DY_ERR_NOT_FOUND, "not found");
-    } else if (rsp_status > HttpStatus_BadRequest) {
+    }
+    if (rsp_status > HttpStatus_BadRequest) {
         free(rsp_body);
         return dy_err(DY_ERR_FAILED, "bad http response status: %d", rsp_status);
     }

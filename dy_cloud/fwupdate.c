@@ -1,3 +1,5 @@
+#include "dy/cloud.h"
+
 #include <stdbool.h>
 
 #include "freertos/FreeRTOS.h"
@@ -11,16 +13,18 @@
 #include "dy/net_cfg.h"
 #include "dy/appinfo.h"
 
+#define LTAG "DY_CLOUD"
 #define API_URL "https://api.d5y.xyz/v3/firmware/update"
 #define CHECK_PERIOD 42949 // ~11 hours, limited by max value of uint32
-#define URL_MAX_LEN 512 // URL can be really long, so we use 512 bytes
+#define URL_MAX_LEN 512 // URL can be really long
 #define HTTP_REQ_TIMEOUT 5000
-#define LTAG "DY_CLOUD"
+#define DELAY_BEFORE_PERFORM_SEC 5
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
 
-static char fwupdate_url[URL_MAX_LEN] = {0};
 static bool allow_alpha_versions = false;
+static bool in_progress = false;
+static QueueHandle_t mux = NULL;
 
 typedef struct {
     char url[URL_MAX_LEN];
@@ -36,16 +40,18 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
         return dy_err_pfx("dy_appinfo_get", err);
     }
 
-    int n = snprintf(fwupdate_url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
+    char url[URL_MAX_LEN] = {0};
+    const int n = snprintf(url, URL_MAX_LEN, "%s?app=%s&to_alpha=%d", API_URL, ai.id, allow_alpha_versions);
     if (n < 0 || n >= URL_MAX_LEN) {
         return dy_err(DY_ERR_INVALID_ARG, "firmware update url is too long");
     }
 
     cJSON *json;
-    err = http_get_json(fwupdate_url, &json);
+    err = http_get_json(url, &json);
     if (err->code == DY_ERR_NOT_FOUND) {
         return err;
-    } else if (dy_is_err(err)) {
+    }
+    if (dy_is_err(err)) {
         return dy_err_pfx("http_get_json", err);
     }
 
@@ -87,8 +93,7 @@ static dy_err_t print_part_info() {
     return dy_ok();
 }
 
-static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
-    esp_err_t esp_err;
+static dy_err_t perform(dy_cloud_resp_fw_update_t *info) {
     dy_err_t err;
 
     dy_appinfo_info_t ai;
@@ -103,10 +108,26 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
 
     ESP_LOGI(LTAG, "starting firmware update");
 
+    esp_err_t esp_err = esp_event_post(
+        DY_CLOUD_EV_BASE, DY_CLOUD_EV_FW_UPDATE_STARTED, info, sizeof(dy_cloud_resp_fw_update_t), 10);
+    if (esp_err != ESP_OK) {
+        return dy_err(DY_ERR_FAILED, "esp_event_post: %s", esp_err_to_name(esp_err));
+    }
+
+    if (xSemaphoreTake(mux, 100) != pdTRUE) {
+        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
+    }
+    in_progress = true;
+    xSemaphoreGive(mux);
+
+    // Give some time for the event to be processed by other components
+    ESP_LOGI(LTAG, "waiting %d seconds before performing firmware update", DELAY_BEFORE_PERFORM_SEC);
+    vTaskDelay(pdMS_TO_TICKS(1000 * DELAY_BEFORE_PERFORM_SEC));
+
     esp_http_client_config_t http_cfg = {
             .user_agent = ai.id,
             .method = HTTP_METHOD_GET,
-            .url = res->url,
+            .url = info->url,
             .timeout_ms = HTTP_REQ_TIMEOUT,
             .keep_alive_enable = false,
             .crt_bundle_attach = esp_crt_bundle_attach,
@@ -134,7 +155,6 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *res) {
 }
 
 _Noreturn static void task() {
-    dy_err_t err;
     dy_cloud_resp_fw_update_t upd;
 
     while (1) {
@@ -143,13 +163,14 @@ _Noreturn static void task() {
             continue;
         }
 
-        err = check(&upd);
+        dy_err_t err = check(&upd);
 
         if (err->code == DY_ERR_NOT_FOUND) {
             ESP_LOGI(LTAG, "no firmware update found");
             vTaskDelay(pdMS_TO_TICKS(1000 * CHECK_PERIOD));
             continue;
-        } else if (dy_is_err(err)) {
+        }
+        if (dy_is_err(err)) {
             ESP_LOGE(LTAG, "firmware update check: %s", dy_err_str(err));
             vTaskDelay(pdMS_TO_TICKS(1000 * 10));
             continue;
@@ -169,8 +190,22 @@ _Noreturn static void task() {
     }
 }
 
+bool dy_cloud_fwupdate_in_progress() {
+    bool res = false;
+    if (xSemaphoreTake(mux, portMAX_DELAY) == pdTRUE) {
+        res = in_progress;
+        xSemaphoreGive(mux);
+    }
+    return res;
+}
+
 dy_err_t dy_cloud_fwupdate_scheduler_start(bool allow_alpha) {
     allow_alpha_versions = allow_alpha;
+
+    mux = xSemaphoreCreateMutex();
+    if (mux == NULL) {
+        return dy_err(DY_ERR_FAILED, "xSemaphoreCreateMutex returned null");
+    }
 
     if (xTaskCreate(task, "dy_cloud_fw_upd", 8192, NULL, tskIDLE_PRIORITY, NULL) != pdTRUE) {
         return dy_err(DY_ERR_FAILED, "task create failed");
