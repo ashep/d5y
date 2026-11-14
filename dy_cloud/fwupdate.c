@@ -205,6 +205,11 @@ _Noreturn static void task() {
         }
 
         ESP_LOGI(LTAG, "update succeeded");
+
+        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade, including the download; remove before release
+        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
+                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
+
         ESP_LOGI(LTAG, "restarting...");
 
         esp_restart();
