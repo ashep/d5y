@@ -58,6 +58,14 @@ Behavior notes:
 
 Clears stored credentials, resets the persistent "configured" flag, and disconnects STA.
 
+### dy_err_t dy_net_scan_start()
+
+Starts an asynchronous scan; results arrive with `WIFI_EVENT_SCAN_DONE`.
+
+ESP-IDF refuses to scan while the station is connecting, and when the configured AP is unreachable the watchdog keeps
+the station connecting almost all the time. So if the station is not connected, this function aborts the ongoing
+connection attempt and pauses the watchdog until `WIFI_EVENT_SCAN_DONE` (or for at most 20s as a safety net).
+
 After calling this, the watchdog stops reconnect attempts until new credentials are applied.
 
 ## Typical lifecycle

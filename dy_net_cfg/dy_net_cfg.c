@@ -130,7 +130,7 @@ static dy_err_t on_bt_chrc_write(esp_bt_uuid_t uuid, const uint8_t *val, size_t 
         return dy_err(DY_ERR_INVALID_ARG, "invalid request len");
     }
 
-    esp_err_t err;
+    dy_err_t err;
     switch (val[0]) {
         case DY_NET_CFG_OP_CLEAR_CONFIG:
             ESP_LOGI(LTAG, "wifi disconnect request");
@@ -138,8 +138,8 @@ static dy_err_t on_bt_chrc_write(esp_bt_uuid_t uuid, const uint8_t *val, size_t 
             break;
         case DY_NET_CFG_OP_SCAN:
             ESP_LOGI(LTAG, "wifi scan request");
-            if ((err = esp_wifi_scan_start(NULL, 0)) != ESP_OK) {
-                return dy_err(DY_ERR_FAILED, "esp_wifi_scan_start: %s", esp_err_to_name(err));
+            if (dy_is_err(err = dy_net_scan_start())) {
+                return dy_err_pfx("dy_net_scan_start", err);
             }
             break;
         case DY_NET_CFG_OP_CONNECT:

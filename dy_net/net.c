@@ -11,9 +11,27 @@
 #define LTAG "DY_NET"
 #define WATCHDOG_PERIOD 10000
 #define WATCHDOG_STACK_SIZE 4096
+#define WATCHDOG_PAUSE_MAX_MS 20000 // safety net in case WIFI_EVENT_SCAN_DONE never arrives
+#define WIFI_STATE_RETRY_ATTEMPTS 10
+#define WIFI_STATE_RETRY_DELAY_MS 50
 
-static bool sta_configured = false;
-static bool sta_connected = false;
+static volatile bool sta_configured = false;
+static volatile bool sta_connected = false;
+
+// While paused, the watchdog does not issue reconnect attempts. Used to make room for a scan: ESP-IDF refuses to scan
+// (ESP_ERR_WIFI_STATE) while the station is connecting, and the watchdog keeps it connecting almost all the time
+// when the configured AP is unreachable.
+static volatile bool watchdog_paused = false;
+static volatile TickType_t watchdog_paused_at = 0;
+
+static void watchdog_pause() {
+    watchdog_paused_at = xTaskGetTickCount();
+    watchdog_paused = true;
+}
+
+static void watchdog_resume() {
+    watchdog_paused = false;
+}
 
 static void on_got_addr(ip_event_got_ip_t *ev) {
     ESP_LOGI(LTAG, "IP_EVENT_STA_GOT_IP: addr="IPSTR"; mask="IPSTR"; gw="IPSTR,
@@ -68,6 +86,10 @@ static void wifi_ev_handler(void *arg, esp_event_base_t event_base, int32_t even
             sta_connected = false;
             break;
 
+        case WIFI_EVENT_SCAN_DONE:
+            watchdog_resume();
+            break;
+
         default:
             ESP_LOGI(LTAG, "%s: WIFI_EVENT: %ld", __func__, event_id);
             break;
@@ -79,15 +101,64 @@ void dy_net_set_config_and_connect(const char *ssid, const char *password) {
     strncpy((char *) cfg.sta.ssid, ssid, 32);
     strncpy((char *) cfg.sta.password, password, 64);
 
-    esp_err_t err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
+    esp_err_t err;
+
+    // ESP-IDF refuses to change the STA config while the station is connecting (ESP_ERR_WIFI_STATE),
+    // so abort any ongoing connection attempt first and keep the watchdog from starting a new one meanwhile.
+    watchdog_pause();
+    if ((err = esp_wifi_disconnect()) != ESP_OK) {
+        ESP_LOGW(LTAG, "%s: esp_wifi_disconnect: %s", __func__, esp_err_to_name(err));
+    }
+
+    // The disconnect is processed asynchronously by the Wi-Fi task, so the station may still be in the connecting
+    // state for a short moment.
+    for (int i = 0; i < WIFI_STATE_RETRY_ATTEMPTS; i++) {
+        err = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
+        if (err != ESP_ERR_WIFI_STATE) {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(WIFI_STATE_RETRY_DELAY_MS));
+    }
     if (err != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_set_config failed: %s", __func__, esp_err_to_name(err));
+        watchdog_resume();
         return;
     }
 
     if ((err = esp_wifi_connect()) != ESP_OK) {
         ESP_LOGE(LTAG, "%s: esp_wifi_connect failed: %s", __func__, esp_err_to_name(err));
     }
+
+    watchdog_resume();
+}
+
+dy_err_t dy_net_scan_start() {
+    esp_err_t err;
+
+    // Scanning is allowed while connected, but not while a connection attempt is in progress.
+    // In the latter case abort the attempt and pause the watchdog until WIFI_EVENT_SCAN_DONE.
+    if (!sta_connected) {
+        watchdog_pause();
+        if ((err = esp_wifi_disconnect()) != ESP_OK) {
+            ESP_LOGW(LTAG, "%s: esp_wifi_disconnect: %s", __func__, esp_err_to_name(err));
+        }
+    }
+
+    // See the comment in dy_net_set_config_and_connect().
+    for (int i = 0; i < WIFI_STATE_RETRY_ATTEMPTS; i++) {
+        err = esp_wifi_scan_start(NULL, false);
+        if (err != ESP_ERR_WIFI_STATE) {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(WIFI_STATE_RETRY_DELAY_MS));
+    }
+
+    if (err != ESP_OK) {
+        watchdog_resume();
+        return dy_err(DY_ERR_FAILED, "esp_wifi_scan_start: %s", esp_err_to_name(err));
+    }
+
+    return dy_ok();
 }
 
 void dy_net_clear_config_and_disconnect() {
@@ -118,6 +189,14 @@ _Noreturn static void watchdog() {
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(WATCHDOG_PERIOD));
+
+        if (watchdog_paused) {
+            if (pdTICKS_TO_MS(xTaskGetTickCount() - watchdog_paused_at) < WATCHDOG_PAUSE_MAX_MS) {
+                continue;
+            }
+            ESP_LOGW(LTAG, "%s: pause timed out, resuming", __func__);
+            watchdog_resume();
+        }
 
         if (!sta_configured || sta_connected) {
             continue;
@@ -167,10 +246,12 @@ dy_err_t dy_net_init() {
         ESP_LOGE(LTAG, "%s: esp_wifi_connect: %s", __func__, esp_err_to_name(esp_err));
     }
 
-    dy_err_t err = dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED, (uint8_t *) &sta_configured, 0);
+    uint8_t configured = 0;
+    dy_err_t err = dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED, &configured, 0);
     if (dy_is_err(err)) {
         return dy_err_pfx("dy_cfg2_get_u8_dft(DY_INTERNAL_CFG_ID_NET_CONFIGURED)", err);
     }
+    sta_configured = configured != 0;
 
     xTaskCreate(watchdog, "watchdog", WATCHDOG_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
