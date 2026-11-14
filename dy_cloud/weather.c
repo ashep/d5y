@@ -86,10 +86,6 @@ _Noreturn static void task() {
             delay_sec = SYNC_PERIOD;
         }
 
-        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade; remove before release
-        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
-                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
-
         vTaskDelay(pdMS_TO_TICKS(1000 * delay_sec));
     }
 }

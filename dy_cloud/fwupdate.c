@@ -174,10 +174,6 @@ _Noreturn static void task() {
 
         dy_err_t err = check(&upd);
 
-        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade; remove before release
-        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
-                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
-
         if (err->code == DY_ERR_NOT_FOUND) {
             ESP_LOGI(LTAG, "no firmware update found");
             vTaskDelay(pdMS_TO_TICKS(1000 * CHECK_PERIOD));
@@ -205,11 +201,6 @@ _Noreturn static void task() {
         }
 
         ESP_LOGI(LTAG, "update succeeded");
-
-        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade, including the download; remove before release
-        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
-                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
-
         ESP_LOGI(LTAG, "restarting...");
 
         esp_restart();
