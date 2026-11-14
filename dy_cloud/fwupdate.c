@@ -19,6 +19,7 @@
 #define URL_MAX_LEN 512 // URL can be really long
 #define HTTP_REQ_TIMEOUT 5000
 #define DELAY_BEFORE_PERFORM_SEC 5
+#define RETRY_DELAY_AFTER_FAILURE_SEC 300 // do not re-download the whole image in a tight loop on a flaky connection
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
 
@@ -77,6 +78,16 @@ static dy_err_t check(dy_cloud_resp_fw_update_t *res) {
     return dy_ok();
 }
 
+static dy_err_t set_in_progress(bool v) {
+    if (xSemaphoreTake(mux, 100) != pdTRUE) {
+        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
+    }
+    in_progress = v;
+    xSemaphoreGive(mux);
+
+    return dy_ok();
+}
+
 static dy_err_t print_part_info() {
     const esp_partition_t *run_part = esp_ota_get_running_partition();
     if (run_part == NULL) {
@@ -114,11 +125,9 @@ static dy_err_t perform(dy_cloud_resp_fw_update_t *info) {
         return dy_err(DY_ERR_FAILED, "esp_event_post: %s", esp_err_to_name(esp_err));
     }
 
-    if (xSemaphoreTake(mux, 100) != pdTRUE) {
-        return dy_err(DY_ERR_FAILED, "xSemaphoreTake failed");
+    if (dy_is_err(err = set_in_progress(true))) {
+        return err;
     }
-    in_progress = true;
-    xSemaphoreGive(mux);
 
     // Give some time for the event to be processed by other components
     ESP_LOGI(LTAG, "waiting %d seconds before performing firmware update", DELAY_BEFORE_PERFORM_SEC);
@@ -165,6 +174,10 @@ _Noreturn static void task() {
 
         dy_err_t err = check(&upd);
 
+        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade; remove before release
+        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
+                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
+
         if (err->code == DY_ERR_NOT_FOUND) {
             ESP_LOGI(LTAG, "no firmware update found");
             vTaskDelay(pdMS_TO_TICKS(1000 * CHECK_PERIOD));
@@ -180,6 +193,14 @@ _Noreturn static void task() {
 
         if (dy_is_err(err = perform(&upd))) {
             ESP_LOGE(LTAG, "firmware update failed: %s", dy_err_str(err));
+
+            // Let the UI drop the "update in progress" indication; otherwise it would stay until reboot.
+            if (dy_is_err(err = set_in_progress(false))) {
+                ESP_LOGE(LTAG, "set_in_progress: %s", dy_err_str(err));
+            }
+
+            ESP_LOGI(LTAG, "retrying in %d seconds", RETRY_DELAY_AFTER_FAILURE_SEC);
+            vTaskDelay(pdMS_TO_TICKS(1000 * RETRY_DELAY_AFTER_FAILURE_SEC));
             continue;
         }
 

@@ -11,6 +11,7 @@
 #define SYNC_PERIOD 60
 #define URL_MAX_LEN 128
 #define LTAG "DY_CLOUD"
+#define TASK_STACK_SIZE 8192 // HTTPS (esp-tls + mbedTLS + cert bundle) needs more than 4K since ESP-IDF 5.5
 
 extern dy_err_t http_get_json(const char *url, cJSON **rsp_json);
 
@@ -71,12 +72,16 @@ _Noreturn static void task() {
             delay_sec = SYNC_PERIOD;
         }
 
+        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade; remove before release
+        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
+                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
+
         vTaskDelay(pdMS_TO_TICKS(1000 * delay_sec));
     }
 }
 
 dy_err_t dy_cloud_air_raid_alert_scheduler_start() {
-    BaseType_t res = xTaskCreate(task, "dy_cloud_airraid", 4096, NULL, tskIDLE_PRIORITY, NULL);
+    BaseType_t res = xTaskCreate(task, "dy_cloud_airraid", TASK_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {
         return dy_err(DY_ERR_FAILED, "xTaskCreate");
     }

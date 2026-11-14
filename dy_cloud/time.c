@@ -10,6 +10,7 @@
 #define API_URL "https://api.d5y.xyz/v3/time"
 #define URL_MAX_LEN 128
 #define LTAG "DY_CLOUD"
+#define TASK_STACK_SIZE 8192 // HTTPS (esp-tls + mbedTLS + cert bundle) needs more than 4K since ESP-IDF 5.5
 
 ESP_EVENT_DEFINE_BASE(DY_CLOUD_EVENT_BASE);
 
@@ -72,12 +73,16 @@ _Noreturn static void task() {
             delay_sec = SYNC_PERIOD;
         }
 
+        // TEMP: stack usage check after the ESP-IDF 5.5 upgrade; remove before release
+        ESP_LOGI(LTAG, "%s: stack high water mark: %u bytes", pcTaskGetName(NULL),
+                 (unsigned) uxTaskGetStackHighWaterMark(NULL));
+
         vTaskDelay(pdMS_TO_TICKS(1000 * delay_sec));
     }
 }
 
 dy_err_t dy_cloud_time_scheduler_start() {
-    BaseType_t res = xTaskCreate(task, "dy_cloud_time", 4096, NULL, tskIDLE_PRIORITY, NULL);
+    BaseType_t res = xTaskCreate(task, "dy_cloud_time", TASK_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
     if (res != pdPASS) {
         return dy_err(DY_ERR_FAILED, "xTaskCreate");
     }
